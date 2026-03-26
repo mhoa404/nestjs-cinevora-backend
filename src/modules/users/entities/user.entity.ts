@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
-import { Booking } from '../../bookings/entities/booking.entity';
 import { UserRole } from '../../../shared/constants/role.constant';
+import { Booking } from '../../bookings/entities/booking.entity';
 
 export enum UserSex {
   MAM = 'Nam',
@@ -19,13 +19,13 @@ export class User {
   @Column({ length: 150, unique: true })
   email!: string;
 
-  @Column()
+  @Column({ length: 512 })
   password!: string;
 
-  @Column({ name: 'date_of_birth', type: 'date', nullable: true })
-  dateOfBirth!: Date | null;
+  @Column({ name: 'date_of_birth', type: 'date' })
+  dateOfBirth!: Date;
 
-  @Column({ type: 'varchar', length: 15 })
+  @Column({ type: 'varchar', length: 15, unique: true })
   phone!: string | null;
 
   @Column({ type: 'varchar', length: 50, nullable: true })
@@ -54,28 +54,28 @@ export class User {
   @Column({ name: 'role_level', type: 'int', default: 0 })
   roleLevel!: number;
 
-  @Column({ name: 'is_active', default: true })
+  @Column({ name: 'is_active', type: 'boolean', default: true })
   isActive!: boolean;
 
-  @Column({ name: 'last_login_at', type: 'timestamp', nullable: true })
+  @Column({ name: 'last_login_at', type: 'datetime', nullable: true })
   lastLoginAt!: Date | null;
 
   @Column({
     name: 'created_at',
-    type: 'timestamp',
+    type: 'datetime',
     default: () => 'CURRENT_TIMESTAMP',
   })
   createdAt!: Date;
 
   @Column({
     name: 'updated_at',
-    type: 'timestamp',
+    type: 'datetime',
     default: () => 'CURRENT_TIMESTAMP',
     onUpdate: 'CURRENT_TIMESTAMP',
   })
   updatedAt!: Date;
 
-  //Relations (n)
+  //Relations
   @OneToMany(() => Booking, (booking) => booking.user)
   bookings!: Booking[];
 }

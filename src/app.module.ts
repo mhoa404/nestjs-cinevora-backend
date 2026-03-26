@@ -1,37 +1,42 @@
-import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { APP_GUARD } from '@nestjs/core';
+import { Module } from '@nestjs/common';
+
+import { PromotionsController } from './modules/promotions/promotions.controller';
+import { BookingsController } from './modules/bookings/bookings.controller';
+import { PromotionsService } from './modules/promotions/promotions.service';
+import { PromotionsModule } from './modules/promotions/promotions.module';
+// import { PaymentsModule } from './modules/payments/payments.module';
+import { ShowtimesModule } from './modules/showtimes/showtimes.module';
+import { MoviesController } from './modules/movies/movies.controller';
+import { BookingsModule } from './modules/bookings/bookings.module';
+import { SeatsController } from './modules/seats/seats.controller';
+import { AdminController } from './modules/admin/admin.controller';
+import { CinemasModule } from './modules/cinemas/cinemas.module';
+import { MoviesService } from './modules/movies/movies.service';
+import { MoviesModule } from './modules/movies/movies.module';
+import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
+import { UsersModule } from './modules/users/users.module';
+import { RoomsModule } from './modules/rooms/rooms.module';
+import { AdminModule } from './modules/admin/admin.module';
+import { SeatsModule } from './modules/seats/seats.module';
+import { AuthModule } from './modules/auth/auth.module';
 import databaseConfig from './config/database.config';
 import { AppController } from './app.controller';
+import jwtConfig from './config/jwt.config';
 import { AppService } from './app.service';
-import { AuthModule } from './modules/auth/auth.module';
-import { UsersModule } from './modules/users/users.module';
-import { MoviesService } from './modules/movies/movies.service';
-import { MoviesController } from './modules/movies/movies.controller';
-import { MoviesModule } from './modules/movies/movies.module';
-import { CinemasModule } from './modules/cinemas/cinemas.module';
-import { RoomsModule } from './modules/rooms/rooms.module';
-import { SeatsController } from './modules/seats/seats.controller';
-import { SeatsModule } from './modules/seats/seats.module';
-import { ShowtimesModule } from './modules/showtimes/showtimes.module';
-import { BookingsController } from './modules/bookings/bookings.controller';
-import { BookingsModule } from './modules/bookings/bookings.module';
-import { PromotionsService } from './modules/promotions/promotions.service';
-import { PromotionsController } from './modules/promotions/promotions.controller';
-import { PromotionsModule } from './modules/promotions/promotions.module';
-import { AdminController } from './modules/admin/admin.controller';
-import { AdminModule } from './modules/admin/admin.module';
-import { PaymentsModule } from './modules/payments/payments.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [databaseConfig],
+      load: [databaseConfig, jwtConfig],
     }),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => configService.get('database')!,
+      useFactory: (configService: ConfigService) =>
+        configService.get('database')!,
     }),
     AuthModule,
     UsersModule,
@@ -43,7 +48,6 @@ import { PaymentsModule } from './modules/payments/payments.module';
     BookingsModule,
     PromotionsModule,
     AdminModule,
-    PaymentsModule,
   ],
   controllers: [
     AppController,
@@ -53,6 +57,14 @@ import { PaymentsModule } from './modules/payments/payments.module';
     PromotionsController,
     AdminController,
   ],
-  providers: [AppService, MoviesService, PromotionsService],
+  providers: [
+    AppService,
+    MoviesService,
+    PromotionsService,
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+  ],
 })
-export class AppModule { }
+export class AppModule {}
