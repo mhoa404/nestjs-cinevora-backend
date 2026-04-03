@@ -2,10 +2,13 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinTable,
+  ManyToMany,
   OneToMany,
-  PrimaryColumn,
+  PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Showtime } from '../../showtimes/entities/showtime.entity';
+import { Genre } from '../../genres/entities/genre.entity';
 
 export enum AgeRating {
   P = 'P',
@@ -14,13 +17,22 @@ export enum AgeRating {
   C18 = 'C18',
 }
 
+export enum MovieStatus {
+  SHOWING = 'now_showing',
+  COMMING = 'upcoming',
+  ENDED = 'ended',
+}
+
 @Entity('movies')
 export class Movie {
-  @PrimaryColumn({ length: 100 })
-  id!: string;
+  @PrimaryGeneratedColumn()
+  id!: number;
 
   @Column({ length: 255 })
   title!: string;
+
+  @Column({ length: 255, unique: true, nullable: true })
+  slug!: string;
 
   @Column({ name: 'poster_url', type: 'text' })
   posterUrl!: string;
@@ -34,9 +46,6 @@ export class Movie {
   @Column({ type: 'int' })
   duration!: number;
 
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  genre!: string | null;
-
   @Column({ type: 'varchar', length: 200, nullable: true })
   director!: string | null;
 
@@ -46,14 +55,19 @@ export class Movie {
   @Column({ type: 'varchar', length: 50, nullable: true })
   language!: string | null;
 
-  @Column({ type: 'enum', enum: AgeRating })
+  @Column({ name: 'age_rating', type: 'enum', enum: AgeRating })
   ageRating!: string | null;
 
   @Column({ type: 'varchar', length: 100, nullable: true })
   rated!: string | null;
 
-  @Column({ name: 'is_upcoming', type: 'boolean', default: false })
-  isUpcoming!: boolean;
+  @Column({
+    name: 'status',
+    type: 'enum',
+    enum: MovieStatus,
+    default: MovieStatus.COMMING,
+  })
+  status!: MovieStatus;
 
   @Column({ name: 'release_date', type: 'date' })
   releaseDate!: Date;
@@ -76,4 +90,11 @@ export class Movie {
 
   @OneToMany(() => Showtime, (showtime) => showtime.movie)
   showtimes!: Showtime[];
+  @ManyToMany(() => Genre, (genre) => genre.movies)
+  @JoinTable({
+    name: 'movie_genres',
+    joinColumn: { name: 'movie_id', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'genre_id', referencedColumnName: 'id' },
+  })
+  genres!: Genre[];
 }

@@ -23,7 +23,6 @@ import { LoginDto } from './dto/login.dto';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  // API dùng chung
   @Public()
   @Post('register')
   async register(
@@ -32,7 +31,6 @@ export class AuthController {
     return this.authService.register(dto);
   }
 
-  // Web API
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
@@ -111,7 +109,6 @@ export class AuthController {
     return { message: 'Đăng xuất thành công' };
   }
 
-  // Mobile API
   @Public()
   @Post('mobile/login')
   @HttpCode(HttpStatus.OK)

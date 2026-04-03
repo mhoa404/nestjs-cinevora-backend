@@ -93,29 +93,24 @@ describe('[API] POST /auth/refresh', () => {
     jwtService = app.get<JwtService>(JwtService);
     configService = app.get<ConfigService>(ConfigService);
 
-    const registerBody = {
-      fullName: 'Test Refresh User',
-      email: `refresh_test_${Date.now()}@example.com`,
-      password: 'TestPassword@123',
-      dateOfBirth: '2000-01-01',
-      phone: `9${Math.floor(10000000 + Math.random() * 89999999)}`,
-      recaptchaToken: 'bypass-token',
+    const account = {
+      email: 'api_client@gmail.com',
+      password: 'Api_client_123',
     };
-    await request(server).post('/auth/register').send(registerBody);
 
     const loginMobileRes = await request(server)
       .post('/auth/mobile/login')
       .send({
-        email: registerBody.email,
-        password: registerBody.password,
+        email: account.email,
+        password: account.password,
       });
     const mobileData = parseApiData<AuthResponse>(loginMobileRes);
     validUser = mobileData.user;
     mobileRefreshToken = mobileData.refreshToken as string;
 
     const loginWebRes = await request(server).post('/auth/mobile/login').send({
-      email: registerBody.email,
-      password: registerBody.password,
+      email: account.email,
+      password: account.password,
     });
     const webData = parseApiData<AuthResponse>(loginWebRes);
     webRefreshToken = webData.refreshToken as string;
@@ -126,7 +121,6 @@ describe('[API] POST /auth/refresh', () => {
     await app.close();
   });
 
-  // Mobile API
   describe('Mobile Scope', () => {
     it('Refresh Token thành công (Mobile)', async () => {
       const body: RefreshBody = { refreshToken: mobileRefreshToken };
@@ -295,7 +289,6 @@ describe('[API] POST /auth/refresh', () => {
     });
   });
 
-  // Web API
   describe('Web Scope', () => {
     it('Refresh Token thành công (Web)', async () => {
       const body: RefreshBody = {};

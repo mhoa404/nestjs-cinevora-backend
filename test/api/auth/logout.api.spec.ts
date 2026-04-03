@@ -31,12 +31,8 @@ describe('[API] POST /auth/logout', () => {
   let counter = 0;
 
   const validUser = {
-    fullName: 'Test Logout User',
-    email: `logout_test_${Date.now()}@example.com`,
-    password: 'TestPassword@123',
-    dateOfBirth: '2000-01-01',
-    phone: `9${Math.floor(10000000 + Math.random() * 89999999)}`,
-    recaptchaToken: 'bypass-token',
+    email: 'api_client@gmail.com',
+    password: 'Api_client_123',
   };
 
   let mobileRefreshToken = '';
@@ -96,8 +92,6 @@ describe('[API] POST /auth/logout', () => {
 
     await app.init();
     server = app.getHttpServer() as Server;
-
-    await request(server).post('/auth/register').send(validUser);
 
     const loginMobileRes = await request(server)
       .post('/auth/mobile/login')
@@ -238,7 +232,6 @@ describe('[API] POST /auth/logout', () => {
     });
   });
 
-  // Web API
   describe('Web Scope', () => {
     it('Đăng xuất thành công (Web)', async () => {
       const body: LogoutBody = {};
@@ -290,7 +283,7 @@ describe('[API] POST /auth/logout', () => {
           testCase: 'Token đã thu hồi',
           description: 'Gửi Cookie chứa token đã bị thu hồi trước đó.',
           procedure: 'Gửi Header: Cookie với token cũ.',
-          expectedResult: 401, // Báo lỗi 401 đúng thực tế
+          expectedResult: 401,
           preconditions: 'Token đã bị đánh dấu is_revoked.',
         },
         async () => {

@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 
 import { AuthResponseDto, AuthUserDto } from './dto/auth-response.dto';
+import { hashRefreshToken } from '../../shared/utils/token-hash.util';
 import { JwtPayload } from '../../shared/types/jwt-payload.type';
 import { AuthTokens } from './interfaces/auth-tokens.interface';
 import { RefreshToken } from './entities/refresh-token.entity';
@@ -83,9 +84,11 @@ export class AuthService {
       );
     }
 
+    const tokenHash = hashRefreshToken(oldRefreshToken);
+
     const storedToken = await this.refreshTokenRepository.findOne({
       where: {
-        token: oldRefreshToken,
+        token: tokenHash,
         isRevoked: false,
       },
     });
@@ -116,8 +119,10 @@ export class AuthService {
   }
 
   async logout(refreshToken: string): Promise<void> {
+    const tokenHash = hashRefreshToken(refreshToken);
+
     const storedToken = await this.refreshTokenRepository.findOne({
-      where: { token: refreshToken, isRevoked: false },
+      where: { token: tokenHash, isRevoked: false },
     });
 
     if (!storedToken) {
@@ -179,7 +184,7 @@ export class AuthService {
 
     const refreshTokenEntity = this.refreshTokenRepository.create({
       userId: user.id,
-      token: refreshToken,
+      token: hashRefreshToken(refreshToken),
       expiresAt: new Date(Date.now() + refreshExpiresInMs),
       isRevoked: false,
     });
@@ -202,12 +207,10 @@ export class AuthService {
   private async verifyRecaptcha(token: string): Promise<void> {
     const isEnabled =
       this.configService.get<string>('ENABLE_RECAPTCHA') === 'true';
-
     if (!isEnabled) {
       return;
     }
     const secretKey = this.configService.get<string>('RECAPTCHA_SECRET_KEY');
-
     if (!secretKey) {
       throw new InternalServerErrorException(
         'Thiếu cấu hình RECAPTCHA_SECRET_KEY',
@@ -224,7 +227,6 @@ export class AuthService {
           response: token,
         },
       });
-
       if (!response.data.success) {
         throw new BadRequestException('Xác minh reCAPTCHA thất bại');
       }
@@ -232,7 +234,6 @@ export class AuthService {
       if (error instanceof BadRequestException) {
         throw error;
       }
-
       throw new BadRequestException('Không thể xác minh reCAPTCHA');
     }
   }

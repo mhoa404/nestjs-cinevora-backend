@@ -1,10 +1,10 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class CreatePromotions1710000000005 implements MigrationInterface {
-    name = 'CreatePromotions1710000000005';
+  name = 'CreatePromotions1710000000005';
 
-    public async up(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.query(`
+  public async up(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(`
             CREATE TABLE \`promotions\` (
                 \`id\`               INT             NOT NULL AUTO_INCREMENT,
                 \`title\`            VARCHAR(255)    NOT NULL,
@@ -19,9 +19,9 @@ export class CreatePromotions1710000000005 implements MigrationInterface {
                 CONSTRAINT \`PK_promotions\` PRIMARY KEY (\`id\`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         `);
-    }
+  }
 
-    public async down(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.query(`DROP TABLE \`promotions\``);
-    }
+  public async down(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(`DROP TABLE \`promotions\``);
+  }
 }

@@ -1,10 +1,10 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class CreateBookings1710000000004 implements MigrationInterface {
-    name = 'CreateBookings1710000000004';
+  name = 'CreateBookings1710000000004';
 
-    public async up(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.query(`
+  public async up(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(`
             CREATE TABLE \`bookings\` (
                 \`id\`              INT             NOT NULL AUTO_INCREMENT,
                 \`user_id\`         VARCHAR(36)     NOT NULL,
@@ -22,9 +22,11 @@ export class CreateBookings1710000000004 implements MigrationInterface {
                     REFERENCES \`showtimes\`(\`id\`) ON DELETE RESTRICT
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         `);
-        await queryRunner.query(`CREATE INDEX \`IDX_bookings_user_id\` ON \`bookings\`(\`user_id\`)`);
+    await queryRunner.query(
+      `CREATE INDEX \`IDX_bookings_user_id\` ON \`bookings\`(\`user_id\`)`,
+    );
 
-        await queryRunner.query(`
+    await queryRunner.query(`
             CREATE TABLE \`booking_seats\` (
                 \`id\`          INT             NOT NULL AUTO_INCREMENT,
                 \`booking_id\`  INT             NOT NULL,
@@ -38,15 +40,25 @@ export class CreateBookings1710000000004 implements MigrationInterface {
                     REFERENCES \`seats\`(\`id\`) ON DELETE RESTRICT
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         `);
-        await queryRunner.query(`CREATE INDEX \`IDX_booking_seats_booking_id\` ON \`booking_seats\`(\`booking_id\`)`);
-        await queryRunner.query(`CREATE INDEX \`IDX_booking_seats_seat_id\` ON \`booking_seats\`(\`seat_id\`)`);
-    }
+    await queryRunner.query(
+      `CREATE INDEX \`IDX_booking_seats_booking_id\` ON \`booking_seats\`(\`booking_id\`)`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX \`IDX_booking_seats_seat_id\` ON \`booking_seats\`(\`seat_id\`)`,
+    );
+  }
 
-    public async down(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.query(`DROP INDEX \`IDX_booking_seats_seat_id\` ON \`booking_seats\``);
-        await queryRunner.query(`DROP INDEX \`IDX_booking_seats_booking_id\` ON \`booking_seats\``);
-        await queryRunner.query(`DROP TABLE \`booking_seats\``);
-        await queryRunner.query(`DROP INDEX \`IDX_bookings_user_id\` ON \`bookings\``);
-        await queryRunner.query(`DROP TABLE \`bookings\``);
-    }
+  public async down(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(
+      `DROP INDEX \`IDX_booking_seats_seat_id\` ON \`booking_seats\``,
+    );
+    await queryRunner.query(
+      `DROP INDEX \`IDX_booking_seats_booking_id\` ON \`booking_seats\``,
+    );
+    await queryRunner.query(`DROP TABLE \`booking_seats\``);
+    await queryRunner.query(
+      `DROP INDEX \`IDX_bookings_user_id\` ON \`bookings\``,
+    );
+    await queryRunner.query(`DROP TABLE \`bookings\``);
+  }
 }

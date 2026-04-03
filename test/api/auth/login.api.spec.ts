@@ -24,16 +24,12 @@ describe('[API] POST /auth/login', () => {
   let server: Server;
 
   const results: TestCaseRecord[] = [];
-  const PREFIX = (process.env.TEST_PREFIX ?? 'LOG').toUpperCase();
+  const PREFIX = 'LOG';
   let counter = 0;
 
   const validUser = {
-    fullName: 'Test Login User',
-    email: `login_test_${Date.now()}@example.com`,
-    password: 'TestPassword@123',
-    dateOfBirth: '2000-01-01',
-    phone: `9${Math.floor(10000000 + Math.random() * 89999999)}`,
-    recaptchaToken: 'bypass-token',
+    email: 'api_client@gmail.com',
+    password: 'Api_client_123',
   };
 
   const nextId = (): string => {
@@ -97,30 +93,6 @@ describe('[API] POST /auth/login', () => {
     await app.close();
   });
 
-  // Register: API dùng chung
-
-  it('Đăng ký tài khoản (Setup cho Login)', async () => {
-    await record(
-      {
-        id: nextId(),
-        scope: 'All',
-        testCase: 'Đăng ký tài khoản test',
-        description: 'Tạo tài khoản mới để đảm bảo có user thực tế cho test.',
-        procedure: stringifyProcedure(validUser),
-        expectedResult: 201,
-        preconditions: 'Server chạy, DB kết nối thành công.',
-      },
-      async () => {
-        const response = await request(server)
-          .post('/auth/register')
-          .send(validUser);
-        expect(response.status).toBe(201);
-        return response;
-      },
-    );
-  });
-
-  // API Mobile
   describe('Mobile Scope', () => {
     it('Đăng nhập Mobile thành công', async () => {
       const body: LoginBody = {
@@ -301,7 +273,6 @@ describe('[API] POST /auth/login', () => {
     });
   });
 
-  // Web API
   describe('Web Scope', () => {
     it('Đăng nhập Web thành công', async () => {
       const body: LoginBody = {
@@ -327,16 +298,13 @@ describe('[API] POST /auth/login', () => {
           const res = parseApiData<AuthResponse>(response);
           expect(res.accessToken).toBeDefined();
 
-          // Đảm bảo token KHÔNG bị rò rỉ ra Body JSON
           expect(res.refreshToken).toBeUndefined();
           expect(res.user.email).toBe(validUser.email);
           expect(res.user.role).toBeDefined();
 
-          // Kiểm tra xem backend có gửi Cookie cho trình duyệt không
           const rawCookies = response.headers['set-cookie'];
           expect(rawCookies).toBeDefined();
 
-          // Đảm bảo đưa về dạng mảng dù supertest trả về chuỗi hay mảng
           const cookies: string[] = Array.isArray(rawCookies)
             ? rawCookies
             : [rawCookies];
