@@ -19,7 +19,7 @@ export class User {
   @Column({ length: 150, unique: true })
   email!: string;
 
-  @Column({ length: 512 })
+  @Column({ length: 255 })
   password!: string;
 
   @Column({ name: 'date_of_birth', type: 'date' })
@@ -50,9 +50,6 @@ export class User {
     default: UserRole.CUSTOMER,
   })
   role!: UserRole;
-
-  @Column({ name: 'role_level', type: 'int', default: 0 })
-  roleLevel!: number;
 
   @Column({ name: 'is_active', type: 'boolean', default: true })
   isActive!: boolean;

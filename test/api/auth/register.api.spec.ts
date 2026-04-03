@@ -52,7 +52,7 @@ describe('[API] POST /auth/register', () => {
     const seed = `${Date.now()}_${Math.floor(Math.random() * 100000)}`;
 
     return {
-      fullName: 'Lê Nguyễn Minh Hoà',
+      fullName: 'Test Register',
       email: `register_${seed}@example.com`,
       password: 'Test@1234',
       dateOfBirth: '2004-01-20',
@@ -615,7 +615,7 @@ describe('[API] POST /auth/register', () => {
         testCase: 'Số điện thoại bị trùng',
         description: 'Dùng số điện thoại đã có trong DB để đăng ký lại.',
         procedure: stringifyProcedure(body),
-        expectedResult: 409, // Trùng theo logic UsersService
+        expectedResult: 409,
         preconditions: 'SĐT test đã tồn tại trong DB.',
       },
       async () => {
