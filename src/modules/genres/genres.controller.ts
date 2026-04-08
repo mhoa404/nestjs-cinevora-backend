@@ -15,7 +15,7 @@ import {
 import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
-import { UserRole } from '../../shared/constants/role.constant';
+import { UserRole } from '../../common/constants/role.constant';
 import { CreateGenreDto } from './dto/create-genre.dto';
 import { GenreResponseDto } from './dto/genre-response.dto';
 import { UpdateGenreDto } from './dto/update-genre.dto';
@@ -23,7 +23,7 @@ import { GenresService } from './genres.service';
 
 @Controller('genres')
 export class GenresController {
-  constructor(private readonly genresService: GenresService) {}
+  constructor(private readonly genresService: GenresService) { }
 
   @Public()
   @Get()

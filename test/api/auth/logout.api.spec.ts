@@ -167,7 +167,7 @@ describe('[API] POST /auth/logout', () => {
           expectErrorMessage(
             res,
             401,
-            'Refresh token không hợp lệ hoặc đã bị thu hồi',
+            'Refresh token không hợp lệ, đã hết hạn hoặc đã bị thu hồi.',
           );
 
           return response;
@@ -298,7 +298,7 @@ describe('[API] POST /auth/logout', () => {
           expectErrorMessage(
             res,
             401,
-            'Refresh token không hợp lệ hoặc đã bị thu hồi',
+            'Refresh token không hợp lệ, đã hết hạn hoặc đã bị thu hồi.',
           );
 
           return response;

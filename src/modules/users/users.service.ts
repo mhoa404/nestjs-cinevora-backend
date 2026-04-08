@@ -4,14 +4,7 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 
 import { User } from './entities/user.entity';
-
-interface CreateUserInput {
-  fullName: string;
-  email: string;
-  password: string;
-  dateOfBirth: string;
-  phone: string;
-}
+import { CreateUserDto } from './dto/create-user.dto';
 
 @Injectable()
 export class UsersService {
@@ -36,7 +29,7 @@ export class UsersService {
     return this.usersRepository.findOne({ where: { id } });
   }
 
-  async createUSer(data: CreateUserInput): Promise<User> {
+  async createUser(data: CreateUserDto): Promise<User> {
     const normalizedEmail = data.email.toLowerCase().trim();
     const normalizedPhone = data.phone.trim();
     const existing = await this.findByEmail(normalizedEmail);

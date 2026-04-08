@@ -7,7 +7,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { BookingSeat } from '../../bookings/entities/booking-seat.entity';
-import { SeatType } from '../../../shared/constants/seat-type.constant';
+import { SeatType } from '../../../common/constants/seat-type.constant';
 import { Room } from '../../rooms/entities/room.entity';
 
 @Entity('seats')

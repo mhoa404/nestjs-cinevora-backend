@@ -1,59 +1,65 @@
 import {
-  Controller,
-  Get,
-  Post,
   Body,
-  Patch,
-  Param,
+  Controller,
   Delete,
-  UseGuards,
+  Get,
   HttpCode,
   HttpStatus,
+  Param,
+  ParseIntPipe,
+  Post,
+  Put,
+  UseGuards,
 } from '@nestjs/common';
-import { MoviesService } from './movies.service';
-import { CreateMovieDto } from './dto/create-movie.dto';
-import { UpdateMovieDto } from './dto/update-movie.dto';
+
 import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
-import { UserRole } from '../../shared/constants/role.constant';
+import { UserRole } from '../../common/constants/role.constant';
+import { CreateMovieDto } from './dto/create-movie.dto';
+import { MovieResponseDto } from './dto/movie-response.dto';
+import { UpdateMovieDto } from './dto/update-movie.dto';
+import { MoviesService } from './movies.service';
 
 @Controller('movies')
 export class MoviesController {
-  constructor(private readonly moviesService: MoviesService) {}
+  constructor(private readonly moviesService: MoviesService) { }
 
   @Post()
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @HttpCode(HttpStatus.CREATED)
-  create(@Body() createMovieDto: CreateMovieDto) {
-    return this.moviesService.create(createMovieDto);
+  create(@Body() dto: CreateMovieDto): Promise<MovieResponseDto> {
+    return this.moviesService.create(dto);
   }
 
   @Public()
   @Get()
-  findAll() {
+  findAll(): Promise<MovieResponseDto[]> {
     return this.moviesService.findAll();
   }
 
   @Public()
   @Get(':slugOrId')
-  findOne(@Param('slugOrId') slugOrId: string) {
+  findOne(@Param('slugOrId') slugOrId: string): Promise<MovieResponseDto> {
     return this.moviesService.findOneBySlugOrId(slugOrId);
   }
 
-  @Patch(':id')
+  @Put(':id')
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
-  update(@Param('id') id: string, @Body() updateMovieDto: UpdateMovieDto) {
-    return this.moviesService.update(+id, updateMovieDto);
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateMovieDto,
+  ): Promise<MovieResponseDto> {
+    return this.moviesService.update(id, dto);
   }
 
   @Delete(':id')
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id') id: string) {
-    return this.moviesService.remove(+id);
+  remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
+    return this.moviesService.remove(id);
   }
 }

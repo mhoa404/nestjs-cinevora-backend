@@ -1,11 +1,17 @@
 import { ValidationPipe } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import cookieParser from 'cookie-parser';
 
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  const configService = app.get(ConfigService);
+  const port = configService.get<number>('app.port')!;
+  const frontendUrl = configService.get<string>('app.frontendUrl')!;
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -16,13 +22,18 @@ async function bootstrap() {
     }),
   );
 
+  app.useGlobalFilters(new HttpExceptionFilter());
+
   app.use(cookieParser());
 
   app.enableCors({
-    origin: process.env.FRONTEND_URL,
+    origin: frontendUrl,
     credentials: true,
   });
 
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(port);
 }
-bootstrap();
+
+bootstrap().catch((err) => {
+  console.error('Lỗi khởi động server:', err);
+});

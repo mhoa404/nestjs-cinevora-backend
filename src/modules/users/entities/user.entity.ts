@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
-import { UserRole } from '../../../shared/constants/role.constant';
+import { UserRole } from '../../../common/constants/role.constant';
 import { Booking } from '../../bookings/entities/booking.entity';
 
 export enum UserSex {

@@ -7,8 +7,6 @@ import {
   Post,
   Req,
   Res,
-  BadRequestException,
-  UnauthorizedException,
 } from '@nestjs/common';
 
 import { AuthResponseDto, AuthUserDto } from './dto/auth-response.dto';
@@ -18,10 +16,14 @@ import { RegisterDto } from './dto/register.dto';
 import { AuthService } from './auth.service';
 import { LogoutDto } from './dto/logout.dto';
 import { LoginDto } from './dto/login.dto';
+import { AuthCookieService } from './services/auth-cookie.service';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly cookieService: AuthCookieService,
+  ) {}
 
   @Public()
   @Post('register')
@@ -40,12 +42,7 @@ export class AuthController {
   ): Promise<Omit<AuthResponseDto, 'refreshToken'>> {
     const result = await this.authService.login(dto);
 
-    res.cookie('refreshToken', result.refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 30 * 24 * 60 * 60 * 1000,
-    });
+    this.cookieService.setCookie(res, result.refreshToken);
 
     return {
       accessToken: result.accessToken,
@@ -61,23 +58,11 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<Omit<AuthResponseDto, 'refreshToken'>> {
-    const cookies = req.cookies as Record<string, string | undefined>;
-    const token = cookies?.refreshToken;
-
-    if (!token) {
-      throw new UnauthorizedException(
-        'Không tìm thấy refresh token trong Cookie',
-      );
-    }
+    const token = this.cookieService.extractCookie(req, 'unauthorized');
 
     const result = await this.authService.refreshTokens(token);
 
-    res.cookie('refreshToken', result.refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 30 * 24 * 60 * 60 * 1000,
-    });
+    this.cookieService.setCookie(res, result.refreshToken);
 
     return {
       accessToken: result.accessToken,
@@ -93,18 +78,11 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<{ message: string }> {
-    const cookies = req.cookies as Record<string, string | undefined>;
-    const token = cookies?.refreshToken;
-
-    if (!token) {
-      throw new BadRequestException(
-        'Không tìm thấy refresh token trong Cookie',
-      );
-    }
+    const token = this.cookieService.extractCookie(req, 'bad_request');
 
     await this.authService.logout(token);
 
-    res.clearCookie('refreshToken');
+    this.cookieService.clearCookie(res);
 
     return { message: 'Đăng xuất thành công' };
   }
@@ -120,9 +98,6 @@ export class AuthController {
   @Post('mobile/refresh')
   @HttpCode(HttpStatus.OK)
   async refreshMobile(@Body() dto: RefreshTokenDto): Promise<AuthResponseDto> {
-    if (!dto.refreshToken) {
-      throw new BadRequestException('Vui lòng cung cấp refresh token');
-    }
     return this.authService.refreshTokens(dto.refreshToken);
   }
 
@@ -130,11 +105,7 @@ export class AuthController {
   @Post('mobile/logout')
   @HttpCode(HttpStatus.OK)
   async logoutMobile(@Body() dto: LogoutDto): Promise<{ message: string }> {
-    if (!dto.refreshToken) {
-      throw new BadRequestException('Vui lòng cung cấp refresh token');
-    }
     await this.authService.logout(dto.refreshToken);
-
     return { message: 'Đăng xuất thành công' };
   }
 }

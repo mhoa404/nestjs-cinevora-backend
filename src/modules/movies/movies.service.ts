@@ -1,15 +1,17 @@
 import {
+  BadRequestException,
   Injectable,
   NotFoundException,
-  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
-import { Movie, MovieStatus } from './entities/movie.entity';
+import { In, Repository } from 'typeorm';
+
 import { Genre } from '../genres/entities/genre.entity';
 import { CreateMovieDto } from './dto/create-movie.dto';
+import { MovieResponseDto } from './dto/movie-response.dto';
 import { UpdateMovieDto } from './dto/update-movie.dto';
-import { generateSlug } from '../../shared/utils/slug.util';
+import { Movie, MovieStatus } from './entities/movie.entity';
+import { prepareMovieInput } from './utils/movie-input.util';
 
 @Injectable()
 export class MoviesService {
@@ -20,45 +22,129 @@ export class MoviesService {
     private readonly genreRepository: Repository<Genre>,
   ) {}
 
-  async create(createMovieDto: CreateMovieDto): Promise<Movie> {
-    if (createMovieDto.genreIds && createMovieDto.genreIds.length > 0) {
-      const existingGenres = await this.genreRepository.find({
-        where: { id: In(createMovieDto.genreIds) },
-      });
-      const existingIds = existingGenres.map((g) => g.id);
-      const invalidIds = createMovieDto.genreIds.filter(
-        (id) => !existingIds.includes(id),
-      );
+  async create(dto: CreateMovieDto): Promise<MovieResponseDto> {
+    this.validateEndDate(dto.endDate, dto.releaseDate);
 
-      if (invalidIds.length > 0) {
-        throw new BadRequestException(
-          `Thể loại với id [${invalidIds.join(', ')}] không tồn tại`,
-        );
-      }
-    }
+    const preparedInput = prepareMovieInput({
+      title: dto.title,
+      posterUrl: dto.posterUrl,
+      trailerUrl: dto.trailerUrl,
+      description: dto.description,
+      duration: dto.duration,
+      director: dto.director,
+      actor: dto.actor,
+      language: dto.language,
+      rated: dto.rated,
+    });
 
-    const movieData = {
-      ...createMovieDto,
-      genres: createMovieDto.genreIds?.map((id) => ({ id })) || [],
-    };
+    const genres = await this.validateGenreIds(dto.genreIds);
 
-    let movie = this.movieRepository.create(movieData);
+    let movie = this.movieRepository.create({
+      title: preparedInput.title,
+      posterUrl: preparedInput.posterUrl,
+      trailerUrl: preparedInput.trailerUrl,
+      description: preparedInput.description,
+      duration: preparedInput.duration,
+      director: preparedInput.director,
+      actor: preparedInput.actor,
+      language: preparedInput.language,
+      ageRating: dto.ageRating,
+      rated: preparedInput.rated,
+      status: dto.status ?? MovieStatus.COMING,
+      releaseDate: new Date(dto.releaseDate),
+      endDate: dto.endDate ? new Date(dto.endDate) : null,
+      genres,
+    });
 
     movie = await this.movieRepository.save(movie);
+    movie.slug = this.buildMovieSlug(preparedInput.baseSlug, movie.id);
 
-    const idPadded = String(movie.id).padStart(3, '0');
-    const baseSlug = generateSlug(movie.title);
-    movie.slug = `${baseSlug}-${idPadded}`;
+    const savedMovie = await this.movieRepository.save(movie);
 
-    return this.movieRepository.save(movie);
+    return MovieResponseDto.fromEntity(savedMovie);
   }
 
-  async findAll(): Promise<Movie[]> {
-    return this.movieRepository.find({ relations: ['genres'] });
+  async findAll(): Promise<MovieResponseDto[]> {
+    const movies = await this.movieRepository.find({
+      relations: ['genres'],
+      order: { createdAt: 'DESC' },
+    });
+
+    return movies.map((movie) => MovieResponseDto.fromEntity(movie));
   }
 
-  async findOneBySlugOrId(slugOrId: string): Promise<Movie> {
+  async findOneBySlugOrId(slugOrId: string): Promise<MovieResponseDto> {
+    const movie = await this.findEntityBySlugOrId(slugOrId);
+    return MovieResponseDto.fromEntity(movie);
+  }
+
+  async update(id: number, dto: UpdateMovieDto): Promise<MovieResponseDto> {
+    const movie = await this.findEntityById(id);
+
+    this.validateEndDate(dto.endDate, dto.releaseDate);
+
+    const prepared = prepareMovieInput({
+      title: dto.title,
+      posterUrl: dto.posterUrl,
+      trailerUrl: dto.trailerUrl,
+      description: dto.description,
+      duration: dto.duration,
+      director: dto.director,
+      actor: dto.actor,
+      language: dto.language,
+      rated: dto.rated,
+    });
+
+    const genres = await this.validateGenreIds(dto.genreIds);
+
+    movie.title = prepared.title;
+    movie.slug = this.buildMovieSlug(prepared.baseSlug, movie.id);
+    movie.posterUrl = prepared.posterUrl;
+    movie.trailerUrl = prepared.trailerUrl;
+    movie.description = prepared.description;
+    movie.duration = prepared.duration;
+    movie.director = prepared.director;
+    movie.actor = prepared.actor;
+    movie.language = prepared.language;
+    movie.ageRating = dto.ageRating;
+    movie.rated = prepared.rated;
+    movie.status = dto.status ?? MovieStatus.COMING;
+    movie.releaseDate = new Date(dto.releaseDate);
+    movie.endDate = dto.endDate ? new Date(dto.endDate) : null;
+    movie.genres = genres;
+
+    const savedMovie = await this.movieRepository.save(movie);
+    return MovieResponseDto.fromEntity(savedMovie);
+  }
+
+  async remove(id: number): Promise<void> {
+    const movie = await this.findEntityById(id);
+
+    if (movie.status !== MovieStatus.ENDED) {
+      throw new BadRequestException(
+        'Chỉ có thể xoá phim khi trạng thái đã kết thúc.',
+      );
+    }
+
+    await this.movieRepository.remove(movie);
+  }
+
+  private async findEntityById(id: number): Promise<Movie> {
+    const movie = await this.movieRepository.findOne({
+      where: { id },
+      relations: ['genres'],
+    });
+
+    if (!movie) {
+      throw new NotFoundException(`Phim #${id} không tồn tại.`);
+    }
+
+    return movie;
+  }
+
+  private async findEntityBySlugOrId(slugOrId: string): Promise<Movie> {
     const isNumericId = /^\d+$/.test(slugOrId);
+
     const query = this.movieRepository
       .createQueryBuilder('movie')
       .leftJoinAndSelect('movie.genres', 'genres');
@@ -70,70 +156,60 @@ export class MoviesService {
     }
 
     const movie = await query.getOne();
+
     if (!movie) {
       throw new NotFoundException(
-        `Movie with identifier ${slugOrId} not found`,
+        `Không tìm thấy phim với định danh "${slugOrId}".`,
       );
     }
+
     return movie;
   }
 
-  async update(id: number, updateMovieDto: UpdateMovieDto): Promise<Movie> {
-    if (updateMovieDto.genreIds && updateMovieDto.genreIds.length > 0) {
-      const existingGenres = await this.genreRepository.find({
-        where: { id: In(updateMovieDto.genreIds) },
-      });
-      const existingIds = existingGenres.map((g) => g.id);
-      const invalidIds = updateMovieDto.genreIds.filter(
-        (genId) => !existingIds.includes(genId),
-      );
-
-      if (invalidIds.length > 0) {
-        throw new BadRequestException(
-          `Thể loại với id [${invalidIds.join(', ')}] không tồn tại`,
-        );
-      }
+  private async validateGenreIds(genreIds?: number[]): Promise<Genre[]> {
+    if (!genreIds || genreIds.length === 0) {
+      return [];
     }
 
-    const { genreIds, ...restDto } = updateMovieDto;
-    const updateData: Omit<UpdateMovieDto, 'genreIds'> & {
-      genres?: Pick<Genre, 'id'>[];
-    } = { ...restDto };
-
-    if (genreIds) {
-      updateData.genres = genreIds.map((val) => ({ id: val }));
-    }
-
-    const movie = await this.movieRepository.preload({
-      id,
-      ...updateData,
+    const genres = await this.genreRepository.find({
+      where: { id: In(genreIds) },
     });
 
-    if (!movie) {
-      throw new NotFoundException(`Movie #${id} not found`);
-    }
+    const foundIds = new Set(genres.map((genre) => genre.id));
+    const invalidIds = genreIds.filter((genreId) => !foundIds.has(genreId));
 
-    if (updateMovieDto.title) {
-      const idPadded = String(movie.id).padStart(3, '0');
-      const baseSlug = generateSlug(movie.title);
-      movie.slug = `${baseSlug}-${idPadded}`;
-    }
-
-    return this.movieRepository.save(movie);
-  }
-
-  async remove(id: number): Promise<void> {
-    const movie = await this.movieRepository.findOneBy({ id });
-    if (!movie) {
-      throw new NotFoundException(`Movie #${id} not found`);
-    }
-
-    if (movie.status !== MovieStatus.ENDED) {
+    if (invalidIds.length > 0) {
       throw new BadRequestException(
-        'Chỉ có thể xóa phim khi trạng thái đã chuyển sang ended.',
+        `Thể loại với id [${invalidIds.join(', ')}] không tồn tại.`,
       );
     }
 
-    await this.movieRepository.remove(movie);
+    return genres;
+  }
+
+  private buildMovieSlug(baseSlug: string, id: number): string {
+    return `${baseSlug}-${String(id).padStart(3, '0')}`;
+  }
+
+  private validateEndDate(endDate?: string, releaseDate?: string): void {
+    if (!endDate) return;
+
+    const end = new Date(endDate);
+
+    const minAllowed = new Date();
+    minAllowed.setDate(minAllowed.getDate() + 7);
+    minAllowed.setHours(0, 0, 0, 0);
+
+    if (end < minAllowed) {
+      throw new BadRequestException(
+        'Ngày kết thúc chiếu phải cách ít nhất 7 ngày kể từ hôm nay.',
+      );
+    }
+
+    if (releaseDate && end <= new Date(releaseDate)) {
+      throw new BadRequestException(
+        'Ngày kết thúc chiếu phải sau ngày khởi chiếu.',
+      );
+    }
   }
 }

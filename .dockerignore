@@ -1,0 +1,15 @@
+node_modules
+dist
+coverage
+.git
+.gitignore
+.env
+.env.*
+*.log
+logs
+results
+test
+dump-project.js
+Jenkinsfile
+README.md
+LICENSE

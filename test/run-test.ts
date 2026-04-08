@@ -39,22 +39,22 @@ const TEST_SUITES: Record<
   delete_genre: {
     prefix: 'DGR',
     file: 'test/api/genres/delete-genre.api.spec.ts',
-    description: 'API xoá thể loại phim (Genres)'
+    description: 'API xoá thể loại phim (Genres)',
   },
   create_movie: {
     prefix: 'CMV',
     file: 'test/api/movies/create-movie.api.spec.ts',
-    description: 'API Tạo phim (Movies)'
+    description: 'API Tạo phim (Movies)',
   },
   update_movie: {
     prefix: 'UMV',
     file: 'test/api/movies/update-movie.api.spec.ts',
-    description: 'API Cập nhật phim (Movies)'
+    description: 'API Cập nhật phim (Movies)',
   },
   delete_movie: {
     prefix: 'DMV',
     file: 'test/api/movies/delete-movie.api.spec.ts',
-    description: 'API xoá phim (Movies)'
+    description: 'API xoá phim (Movies)',
   },
 };
 

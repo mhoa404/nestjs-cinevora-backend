@@ -1,4 +1,4 @@
-import { SeatType } from '../../../shared/constants/seat-type.constant';
+import { SeatType } from '../../../common/constants/seat-type.constant';
 export interface SeatWithStatus {
   id: number;
   seatKey: string;

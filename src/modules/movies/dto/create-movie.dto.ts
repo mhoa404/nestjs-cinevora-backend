@@ -4,64 +4,79 @@ import {
   IsEnum,
   IsInt,
   IsNotEmpty,
-  IsNumber,
   IsOptional,
   IsString,
   IsUrl,
+  MaxLength,
+  Min,
 } from 'class-validator';
 import { AgeRating, MovieStatus } from '../entities/movie.entity';
 
 export class CreateMovieDto {
-  @IsString()
-  @IsNotEmpty()
+  @MaxLength(255, { message: 'Tên phim tối đa 255 ký tự.' })
+  @IsString({ message: 'Tên phim không hợp lệ.' })
+  @IsNotEmpty({ message: 'Vui lòng nhập tên phim.' })
   title!: string;
 
-  @IsUrl()
-  @IsNotEmpty()
+  @IsUrl({}, { message: 'Poster phim phải là URL hợp lệ.' })
+  @IsNotEmpty({ message: 'Vui lòng cung cấp poster phim.' })
   posterUrl!: string;
 
-  @IsUrl()
   @IsOptional()
+  @IsUrl({}, { message: 'Trailer phim phải là URL hợp lệ.' })
   trailerUrl?: string;
 
-  @IsString()
   @IsOptional()
+  @IsString({ message: 'Mô tả phim không hợp lệ.' })
   description?: string;
 
-  @IsInt()
-  @IsNotEmpty()
+  @Min(1, { message: 'Thời lượng phim phải lớn hơn 0.' })
+  @IsInt({ message: 'Thời lượng phim phải là số nguyên.' })
   duration!: number;
 
-  @IsString()
   @IsOptional()
+  @MaxLength(200, { message: 'Tên đạo diễn tối đa 200 ký tự.' })
+  @IsString({ message: 'Tên đạo diễn không hợp lệ.' })
   director?: string;
 
-  @IsString()
   @IsOptional()
+  @IsString({ message: 'Danh sách diễn viên không hợp lệ.' })
   actor?: string;
 
-  @IsString()
   @IsOptional()
+  @MaxLength(50, { message: 'Ngôn ngữ tối đa 50 ký tự.' })
+  @IsString({ message: 'Ngôn ngữ không hợp lệ.' })
   language?: string;
 
-  @IsEnum(AgeRating)
-  @IsNotEmpty()
+  @IsEnum(AgeRating, { message: 'Giới hạn độ tuổi không hợp lệ.' })
+  @IsNotEmpty({ message: 'Vui lòng chọn giới hạn độ tuổi.' })
   ageRating!: AgeRating;
 
-  @IsString()
   @IsOptional()
+  @MaxLength(100, { message: 'Nhãn đánh giá tối đa 100 ký tự.' })
+  @IsString({ message: 'Nhãn đánh giá không hợp lệ.' })
   rated?: string;
 
-  @IsEnum(MovieStatus)
   @IsOptional()
+  @IsEnum(MovieStatus, { message: 'Trạng thái phim không hợp lệ.' })
   status?: MovieStatus;
 
-  @IsDateString()
-  @IsNotEmpty()
-  releaseDate!: Date;
+  @IsDateString(
+    {},
+    { message: 'Ngày khởi chiếu không đúng định dạng YYYY-MM-DD.' },
+  )
+  @IsNotEmpty({ message: 'Vui lòng nhập ngày khởi chiếu.' })
+  releaseDate!: string;
 
-  @IsArray()
-  @IsNumber({}, { each: true })
   @IsOptional()
+  @IsDateString(
+    {},
+    { message: 'Ngày kết thúc chiếu không đúng định dạng YYYY-MM-DD.' },
+  )
+  endDate?: string;
+
+  @IsOptional()
+  @IsArray({ message: 'genreIds phải là một mảng.' })
+  @IsInt({ each: true, message: 'Mỗi genreId phải là số nguyên.' })
   genreIds?: number[];
 }
