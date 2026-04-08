@@ -4,15 +4,23 @@ import {
   IsEnum,
   IsInt,
   IsNotEmpty,
+<<<<<<< HEAD
   IsOptional,
   IsString,
   IsUrl,
   MaxLength,
   Min,
+=======
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUrl,
+>>>>>>> origin/main
 } from 'class-validator';
 import { AgeRating, MovieStatus } from '../entities/movie.entity';
 
 export class CreateMovieDto {
+<<<<<<< HEAD
   @MaxLength(255, { message: 'Tên phim tối đa 255 ký tự.' })
   @IsString({ message: 'Tên phim không hợp lệ.' })
   @IsNotEmpty({ message: 'Vui lòng nhập tên phim.' })
@@ -78,5 +86,58 @@ export class CreateMovieDto {
   @IsOptional()
   @IsArray({ message: 'genreIds phải là một mảng.' })
   @IsInt({ each: true, message: 'Mỗi genreId phải là số nguyên.' })
+=======
+  @IsString()
+  @IsNotEmpty()
+  title!: string;
+
+  @IsUrl()
+  @IsNotEmpty()
+  posterUrl!: string;
+
+  @IsUrl()
+  @IsOptional()
+  trailerUrl?: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @IsInt()
+  @IsNotEmpty()
+  duration!: number;
+
+  @IsString()
+  @IsOptional()
+  director?: string;
+
+  @IsString()
+  @IsOptional()
+  actor?: string;
+
+  @IsString()
+  @IsOptional()
+  language?: string;
+
+  @IsEnum(AgeRating)
+  @IsNotEmpty()
+  ageRating!: AgeRating;
+
+  @IsString()
+  @IsOptional()
+  rated?: string;
+
+  @IsEnum(MovieStatus)
+  @IsOptional()
+  status?: MovieStatus;
+
+  @IsDateString()
+  @IsNotEmpty()
+  releaseDate!: Date;
+
+  @IsArray()
+  @IsNumber({}, { each: true })
+  @IsOptional()
+>>>>>>> origin/main
   genreIds?: number[];
 }
