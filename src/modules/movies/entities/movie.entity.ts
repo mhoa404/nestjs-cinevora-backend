@@ -19,11 +19,7 @@ export enum AgeRating {
 
 export enum MovieStatus {
   SHOWING = 'now_showing',
-<<<<<<< HEAD
   COMING = 'upcoming',
-=======
-  COMMING = 'upcoming',
->>>>>>> origin/main
   ENDED = 'ended',
 }
 
@@ -35,13 +31,8 @@ export class Movie {
   @Column({ length: 255 })
   title!: string;
 
-<<<<<<< HEAD
   @Column({ type: 'varchar', length: 255, unique: true, nullable: true })
   slug!: string | null;
-=======
-  @Column({ length: 255, unique: true, nullable: true })
-  slug!: string;
->>>>>>> origin/main
 
   @Column({ name: 'poster_url', type: 'text' })
   posterUrl!: string;
@@ -65,11 +56,7 @@ export class Movie {
   language!: string | null;
 
   @Column({ name: 'age_rating', type: 'enum', enum: AgeRating })
-<<<<<<< HEAD
   ageRating!: AgeRating;
-=======
-  ageRating!: string | null;
->>>>>>> origin/main
 
   @Column({ type: 'varchar', length: 100, nullable: true })
   rated!: string | null;
@@ -78,11 +65,7 @@ export class Movie {
     name: 'status',
     type: 'enum',
     enum: MovieStatus,
-<<<<<<< HEAD
     default: MovieStatus.COMING,
-=======
-    default: MovieStatus.COMMING,
->>>>>>> origin/main
   })
   status!: MovieStatus;
 
@@ -110,10 +93,7 @@ export class Movie {
 
   @OneToMany(() => Showtime, (showtime) => showtime.movie)
   showtimes!: Showtime[];
-<<<<<<< HEAD
 
-=======
->>>>>>> origin/main
   @ManyToMany(() => Genre, (genre) => genre.movies)
   @JoinTable({
     name: 'movie_genres',

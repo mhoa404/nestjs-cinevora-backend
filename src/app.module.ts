@@ -3,10 +3,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { APP_GUARD } from '@nestjs/core';
 import { Module } from '@nestjs/common';
 
-<<<<<<< HEAD
-=======
-import { PromotionsService } from './modules/promotions/promotions.service';
->>>>>>> origin/main
 import { PromotionsModule } from './modules/promotions/promotions.module';
 import { ShowtimesModule } from './modules/showtimes/showtimes.module';
 import { BookingsModule } from './modules/bookings/bookings.module';
@@ -19,10 +15,7 @@ import { RoomsModule } from './modules/rooms/rooms.module';
 import { SeatsModule } from './modules/seats/seats.module';
 import { AuthModule } from './modules/auth/auth.module';
 import databaseConfig from './config/database.config';
-<<<<<<< HEAD
 import appConfig from './config/app.config';
-=======
->>>>>>> origin/main
 import jwtConfig from './config/jwt.config';
 
 @Module({
@@ -46,15 +39,8 @@ import jwtConfig from './config/jwt.config';
     ShowtimesModule,
     BookingsModule,
     PromotionsModule,
-<<<<<<< HEAD
   ],
   providers: [
-=======
-    AdminModule,
-  ],
-  providers: [
-    PromotionsService,
->>>>>>> origin/main
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,

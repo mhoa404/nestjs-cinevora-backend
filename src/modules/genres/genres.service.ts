@@ -1,27 +1,16 @@
 import {
   ConflictException,
-<<<<<<< HEAD
-=======
-  BadRequestException,
->>>>>>> origin/main
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
-<<<<<<< HEAD
-=======
-import { generateSlug } from '../../shared/utils/slug.util';
->>>>>>> origin/main
 import { CreateGenreDto } from './dto/create-genre.dto';
 import { GenreResponseDto } from './dto/genre-response.dto';
 import { UpdateGenreDto } from './dto/update-genre.dto';
 import { Genre } from './entities/genre.entity';
-<<<<<<< HEAD
 import { prepareGenreInput } from './utils/genre-input.util';
-=======
->>>>>>> origin/main
 
 @Injectable()
 export class GenresService {
@@ -44,21 +33,9 @@ export class GenresService {
   }
 
   async create(dto: CreateGenreDto): Promise<GenreResponseDto> {
-<<<<<<< HEAD
     const { name, slug, normalizedName } = prepareGenreInput(dto.name);
 
     await this.assertNameUnique(normalizedName);
-=======
-    const name = dto.name.trim();
-
-    if (name.length === 0) {
-      throw new BadRequestException('Tên thể loại không được để trống.');
-    }
-
-    const slug = generateSlug(name);
-
-    await this.assertNameUnique(name);
->>>>>>> origin/main
     await this.assertSlugUnique(slug);
 
     const genre = this.genreRepository.create({ name, slug });
@@ -69,7 +46,6 @@ export class GenresService {
 
   async update(id: number, dto: UpdateGenreDto): Promise<GenreResponseDto> {
     const genre = await this.findEntityById(id);
-<<<<<<< HEAD
     const { name, slug, normalizedName } = prepareGenreInput(dto.name);
 
     const isSameName = name === genre.name;
@@ -84,21 +60,6 @@ export class GenresService {
     }
 
     if (!isSameSlug) {
-=======
-    const name = dto.name.trim();
-
-    if (name.length === 0) {
-      throw new BadRequestException('Tên thể loại không được để trống.');
-    }
-
-    const slug = generateSlug(name);
-
-    if (name !== genre.name) {
-      await this.assertNameUnique(name, id);
-    }
-
-    if (slug !== genre.slug) {
->>>>>>> origin/main
       await this.assertSlugUnique(slug, id);
     }
 
@@ -126,7 +87,6 @@ export class GenresService {
   }
 
   private async assertNameUnique(
-<<<<<<< HEAD
     normalizedName: string,
     excludeId?: number,
   ): Promise<void> {
@@ -142,17 +102,6 @@ export class GenresService {
 
     if (existing) {
       throw new ConflictException('Tên thể loại đã tồn tại');
-=======
-    name: string,
-    excludeId?: number,
-  ): Promise<void> {
-    const existing = await this.genreRepository.findOne({ where: { name } });
-
-    if (existing && existing.id !== excludeId) {
-      if (existing.name.toLowerCase() === name.toLowerCase()) {
-        throw new ConflictException(`Tên thể loại đã tồn tại`);
-      }
->>>>>>> origin/main
     }
   }
 
@@ -163,11 +112,7 @@ export class GenresService {
     const existing = await this.genreRepository.findOne({ where: { slug } });
 
     if (existing && existing.id !== excludeId) {
-<<<<<<< HEAD
       throw new ConflictException('Slug này đã tồn tại.');
-=======
-      throw new ConflictException(`Slug này đã tồn tại.`);
->>>>>>> origin/main
     }
   }
 

@@ -20,6 +20,7 @@ export class CreateMovies1710000000001 implements MigrationInterface {
         \`rated\`        VARCHAR(255),
         \`status\`       ENUM('now_showing', 'upcoming', 'ended') NOT NULL DEFAULT 'upcoming',
         \`release_date\` DATE            NOT NULL,
+        \`end_date\`     DATE            NULL,
         \`avg_rating\`   DECIMAL(3,1),
         \`created_at\`   DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
         CONSTRAINT \`PK_movies\` PRIMARY KEY (\`id\`)
