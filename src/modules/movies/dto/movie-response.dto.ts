@@ -7,6 +7,7 @@ export class MovieResponseDto {
   slug!: string | null;
   posterUrl!: string;
   trailerUrl!: string | null;
+  bannerUrl!: string | null;
   description!: string | null;
   duration!: number;
   director!: string | null;
@@ -29,6 +30,7 @@ export class MovieResponseDto {
     dto.slug = movie.slug;
     dto.posterUrl = movie.posterUrl;
     dto.trailerUrl = movie.trailerUrl;
+    dto.bannerUrl = movie.bannerUrl;
     dto.description = movie.description;
     dto.duration = movie.duration;
     dto.director = movie.director;

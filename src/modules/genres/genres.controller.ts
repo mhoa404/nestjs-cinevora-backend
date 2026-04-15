@@ -23,7 +23,7 @@ import { GenresService } from './genres.service';
 
 @Controller('genres')
 export class GenresController {
-  constructor(private readonly genresService: GenresService) { }
+  constructor(private readonly genresService: GenresService) {}
 
   @Public()
   @Get()

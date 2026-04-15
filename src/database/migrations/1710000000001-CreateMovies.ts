@@ -11,6 +11,7 @@ export class CreateMovies1710000000001 implements MigrationInterface {
         \`title\`        VARCHAR(255)    NOT NULL,
         \`poster_url\`   TEXT            NOT NULL,
         \`trailer_url\`  TEXT,
+        \`banner_url\`   TEXT,
         \`description\`  TEXT,
         \`duration\`     INT             NOT NULL,
         \`director\`     VARCHAR(200),

@@ -41,9 +41,6 @@ export class CreateGenres1710000000007 implements MigrationInterface {
       `CREATE INDEX \`IDX_movie_genres_genre_id\` ON \`movie_genres\`(\`genre_id\`)`,
     );
 
-    // ─────────────────────────────────────────────
-    // 3. SEED GENRES (14 thể loại)
-    // ─────────────────────────────────────────────
     await queryRunner.query(`
       INSERT INTO \`genres\` (\`name\`, \`slug\`) VALUES
         ('Hành động',              'hanh-dong'),
@@ -62,14 +59,9 @@ export class CreateGenres1710000000007 implements MigrationInterface {
         ('Chính kịch',             'chinh-kich')
     `);
 
-    // ─────────────────────────────────────────────
-    // 4. SEED MOVIES (15 bộ phim)
-    //    Nguồn poster_url: frontend/src/db/db.json (movieList)
-    //    trailer_url: fake YouTube links
-    // ─────────────────────────────────────────────
     await queryRunner.query(`
       INSERT INTO \`movies\` (
-        \`slug\`, \`title\`, \`poster_url\`, \`trailer_url\`,
+        \`slug\`, \`title\`, \`poster_url\`, \`trailer_url\`, \`banner_url\`,
         \`description\`, \`duration\`, \`director\`, \`actor\`,
         \`language\`, \`age_rating\`, \`rated\`, \`status\`,
         \`release_date\`, \`end_date\`
@@ -81,6 +73,7 @@ export class CreateGenres1710000000007 implements MigrationInterface {
         'Thiên Đường Máu',
         'https://metiz.vn/media/poster_film/tdm.jpg',
         'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+        'https://metiz.vn/media/banner_web/Banner_Web_T%E1%BB%9Bi_Gi%E1%BB%9D_Ch%C6%A1i.jpg',
         'Một vụ án mạng bí ẩn xảy ra trong gia đình giàu có, hé lộ những góc khuất tăm tối của lòng tham và sự phản bội.',
         166,
         'Nguyễn Quang Dũng',
@@ -99,6 +92,7 @@ export class CreateGenres1710000000007 implements MigrationInterface {
         'Avatar 3: Lửa và Tro Tàn',
         'https://metiz.vn/media/poster_film/avatar.jpg',
         'https://www.youtube.com/watch?v=a8Gx8wiNbs8',
+        'https://metiz.vn/media/banner_web/Banner_Web_M%C3%A1y_v%E1%BA%BF.jpg',
         'Cuộc chiến mới trên hành tinh Pandora bùng nổ khi con người quay trở lại với tham vọng khai thác tàn khốc.',
         166,
         'James Cameron',
@@ -117,6 +111,7 @@ export class CreateGenres1710000000007 implements MigrationInterface {
         'Ai Thương Ai Mến',
         'https://metiz.vn/media/poster_film/ai_men.jpg',
         'https://www.youtube.com/watch?v=3JWTaaS7LdU',
+        'https://metiz.vn/media/banner_web/khuyến_mãi_metiz.jpg',
         'Câu chuyện gia đình nhẹ nhàng, hài hước xoay quanh những mâu thuẫn nhỏ nhưng đầy yêu thương.',
         166,
         'Huỳnh Đông',
@@ -135,6 +130,7 @@ export class CreateGenres1710000000007 implements MigrationInterface {
         'Gia Đình Khủng Long: Mắc Kẹt Kỷ Jura',
         'https://metiz.vn/media/poster_film/700x1000-dino.jpg',
         'https://www.youtube.com/watch?v=XSjk2eTZ7tY',
+        NULL,
         'Gia đình khủng long bị lạc vào kỷ Jura và phải hợp sức để tìm đường trở về nhà.',
         165,
         'Mark Dindal',
@@ -153,6 +149,7 @@ export class CreateGenres1710000000007 implements MigrationInterface {
         'Tom and Jerry: Chiếc La Bàn Kỳ Bí',
         'https://metiz.vn/media/poster_film/tom_GEQ3qx2.jpg',
         'https://www.youtube.com/watch?v=tgbNymZ7vqY',
+        NULL,
         'Tom và Jerry bước vào cuộc phiêu lưu kỳ lạ xoay quanh một chiếc la bàn phép thuật.',
         134,
         'Darrell Van Citters',
@@ -171,6 +168,7 @@ export class CreateGenres1710000000007 implements MigrationInterface {
         'Đại Thoại Tây Du',
         'https://metiz.vn/media/poster_film/tdk.jpg',
         'https://www.youtube.com/watch?v=GNXjlSjOPKY',
+        NULL,
         'Phiên bản hài hước kinh điển của Tây Du Ký với phong cách đặc trưng của Châu Tinh Trì.',
         94,
         'Lưu Trấn Vỹ',
@@ -189,6 +187,7 @@ export class CreateGenres1710000000007 implements MigrationInterface {
         'Godzilla x Kong: Đế Chế Mới',
         'https://image.tmdb.org/t/p/w500/2vFuG6bWGyQUzYS9d69E5l85nIz.jpg',
         'https://www.youtube.com/watch?v=lV1OOlGwExM',
+        'https://image.tmdb.org/t/p/original/t5zCBSB5xMCEcNqn41nAoB1exCE.jpg',
         'Godzilla và Kong buộc phải liên minh trước mối đe dọa mới có thể hủy diệt toàn bộ thế giới.',
         115,
         'Adam Wingard',
@@ -207,6 +206,7 @@ export class CreateGenres1710000000007 implements MigrationInterface {
         'Mai',
         'https://metiz.vn/media/poster_film/mai.jpg',
         'https://www.youtube.com/watch?v=ePpPVE-GGJw',
+        NULL,
         'Câu chuyện cảm xúc về tình yêu, gia đình và những lựa chọn khó khăn trong cuộc sống.',
         131,
         'Trấn Thành',
@@ -225,6 +225,7 @@ export class CreateGenres1710000000007 implements MigrationInterface {
         'Lạc Phàm Trần',
         'https://metiz.vn/media/poster_film/lac_phaqm_tran.jpg',
         'https://www.youtube.com/watch?v=fJ9rUzIMcZQ',
+        NULL,
         'Một chàng trai vô tình rơi vào chuỗi tình huống dở khóc dở cười giữa đời thường.',
         108,
         'Lý Hải',
@@ -243,6 +244,7 @@ export class CreateGenres1710000000007 implements MigrationInterface {
         'Nhà Hai Chủ',
         'https://metiz.vn/media/poster_film/nha_hai_chu.jpg',
         'https://www.youtube.com/watch?v=y6120QOlsfU',
+        NULL,
         'Hai gia đình cùng sở hữu một căn nhà, từ đó nảy sinh hàng loạt tình huống hài hước.',
         110,
         'Nhật Trung',
@@ -261,6 +263,7 @@ export class CreateGenres1710000000007 implements MigrationInterface {
         'Mission: Impossible 8',
         'https://iguov8nhvyobj.vcdn.cloud/media/catalog/product/cache/1/image/c5f0a1eff4c394a251036189ccddaacd/m/i/mi8_poster_470x700_1.jpg',
         'https://www.youtube.com/watch?v=avz06PDqDbk',
+        'https://image.tmdb.org/t/p/original/21pXEEW2YJmVdO7O0YV1I9r5T8q.jpg',
         'Ethan Hunt trở lại trong nhiệm vụ nguy hiểm nhất từ trước đến nay.',
         165,
         'Christopher McQuarrie',
@@ -279,6 +282,7 @@ export class CreateGenres1710000000007 implements MigrationInterface {
         'Inside Out 2',
         'https://iguov8nhvyobj.vcdn.cloud/media/catalog/product/cache/1/image/c5f0a1eff4c394a251036189ccddaacd/1/0/1080x1350-insideout.jpg',
         'https://www.youtube.com/watch?v=LEjhY15eCx0',
+        'https://image.tmdb.org/t/p/original/xg27NrFOB4EEiKoxoOWK8McvKzN.jpg',
         'Riley bước vào tuổi thiếu niên, kéo theo những cảm xúc hoàn toàn mới xuất hiện.',
         100,
         'Kelsey Mann',
@@ -297,6 +301,7 @@ export class CreateGenres1710000000007 implements MigrationInterface {
         'Transformers One',
         'https://iguov8nhvyobj.vcdn.cloud/media/catalog/product/cache/1/image/c5f0a1eff4c394a251036189ccddaacd/t/f/tf1_intl_allspark_dgtl_online_payoff_keyart_vie_470x700.jpg',
         'https://www.youtube.com/watch?v=aRGCFZRVp8Q',
+        'https://image.tmdb.org/t/p/original/phkNpE1Y9K4d35j8y5J3NtsDxyh.jpg',
         'Câu chuyện nguồn gốc của Optimus Prime và Megatron.',
         120,
         'Josh Cooley',
@@ -315,6 +320,7 @@ export class CreateGenres1710000000007 implements MigrationInterface {
         'Joker: Folie à Deux',
         'https://iguov8nhvyobj.vcdn.cloud/media/catalog/product/cache/1/image/c5f0a1eff4c394a251036189ccddaacd/r/s/rsz_poster_payoff_joker_folie_a_deux_5_1_.jpg',
         'https://www.youtube.com/watch?v=_rEA8Bkz334',
+        'https://image.tmdb.org/t/p/original/bcM2Tl5Hl0S4HhGj01w4n4Dk0wB.jpg',
         'Joker trở lại với một chương đen tối và điên loạn hơn bao giờ hết.',
         138,
         'Todd Phillips',
@@ -333,6 +339,7 @@ export class CreateGenres1710000000007 implements MigrationInterface {
         'Batman: The Dark Knight Rises',
         'https://toomva.com/images/videos/2022/05/ky-si-bong-dem-troi-day-2012--1652094438.jpg',
         'https://www.youtube.com/watch?v=g8evyE9TuYk',
+        'https://image.tmdb.org/t/p/original/n2aF1DeAmbaY57R3aEMfW52A2R6.jpg',
         'Tám năm sau cái chết của Harvey Dent, Batman buộc phải quay trở lại khi Gotham bị đe dọa bởi Bane – một kẻ khủng bố tàn bạo với âm mưu hủy diệt toàn bộ thành phố.',
         165,
         'Christopher Nolan',

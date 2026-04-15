@@ -12,7 +12,7 @@ export class AuthTokenService {
   constructor(
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
-  ) { }
+  ) {}
 
   generatePayload(user: User): JwtPayload {
     return {

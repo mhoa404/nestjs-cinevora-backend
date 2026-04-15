@@ -7,6 +7,7 @@ export interface PreparedMovieInput {
   baseSlug: string;
   posterUrl: string;
   trailerUrl: string | null;
+  bannerUrl: string | null;
   description: string | null;
   duration: number;
   director: string | null;
@@ -38,6 +39,7 @@ export function prepareMovieInput(input: {
   title: string;
   posterUrl: string;
   trailerUrl?: string;
+  bannerUrl?: string;
   description?: string;
   duration: number;
   director?: string;
@@ -57,6 +59,7 @@ export function prepareMovieInput(input: {
     baseSlug: generateSlug(title),
     posterUrl,
     trailerUrl: normalizeOptionalText(input.trailerUrl),
+    bannerUrl: normalizeOptionalText(input.bannerUrl),
     description: normalizeOptionalText(input.description),
     duration: input.duration,
     director: normalizeOptionalText(input.director),
