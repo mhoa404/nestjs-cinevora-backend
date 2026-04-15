@@ -2,6 +2,7 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request, { Response } from 'supertest';
 import { Server } from 'http';
+import { DataSource } from 'typeorm';
 
 import { exportTestReport, TestCaseRecord } from '../../helpers/excel-reporter';
 import { AppModule } from '../../../src/app.module';
@@ -20,6 +21,11 @@ type RegisterBody = {
   phone?: string;
   recaptchaToken?: string;
   unknownField?: string;
+  sex?: string;
+  city?: string;
+  district?: string;
+  address?: string;
+  IDCardNumber?: string;
 };
 
 type RegisterSuccessResponse = {
@@ -119,6 +125,14 @@ describe('[API] POST /auth/register', () => {
   });
 
   afterAll(async () => {
+    try {
+      const dataSource = app.get(DataSource);
+      await dataSource.query(
+        `DELETE FROM users WHERE email LIKE 'register_%@example.com'`,
+      );
+    } catch (e) {
+      console.warn('Failed to cleanup users', e);
+    }
     await exportTestReport(results, PREFIX, 'Register');
     await app.close();
   });
@@ -149,6 +163,42 @@ describe('[API] POST /auth/register', () => {
         expect(res.message).toBe('Đăng ký tài khoản thành công');
         expect(res.user.email).toBe(body.email);
         expect(res.user.fullName).toBe(body.fullName);
+
+        return response;
+      },
+    );
+  });
+
+  it('Đăng ký thành công - kèm trường tùy chọn', async () => {
+    const body = buildValidBody({
+      sex: 'Nam',
+      city: 'Da Nang',
+      district: 'Hai Chau',
+      address: '123 Le Loi',
+      IDCardNumber: `20${Math.floor(1000000 + Math.random() * 8999999)}`,
+    });
+
+    await record(
+      {
+        id: nextId(),
+        scope: 'All',
+        testCase: 'Đăng ký kèm trường mở rộng',
+        description: 'Gửi đầy đủ dữ liệu bắt buộc và tùy chọn.',
+        procedure: stringifyProcedure(body),
+        expectedResult: 201,
+        preconditions: 'Server chạy, DB kết nối thành công.',
+      },
+      async () => {
+        const response = await request(server)
+          .post('/auth/register')
+          .send(body);
+
+        expect(response.status).toBe(201);
+
+        const res = parseApiData<RegisterSuccessResponse>(response);
+
+        expect(res.message).toBe('Đăng ký tài khoản thành công');
+        expect(res.user.email).toBe(body.email);
 
         return response;
       },

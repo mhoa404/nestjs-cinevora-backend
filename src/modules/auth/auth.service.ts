@@ -35,6 +35,11 @@ export class AuthService {
       password: dto.password,
       dateOfBirth: dto.dateOfBirth,
       phone: dto.phone,
+      sex: dto.sex,
+      city: dto.city,
+      district: dto.district,
+      address: dto.address,
+      IDCardNumber: dto.IDCardNumber,
     });
 
     return {

@@ -6,7 +6,10 @@ import {
   Matches,
   IsStrongPassword,
   MaxLength,
+  IsOptional,
+  IsEnum,
 } from 'class-validator';
+import { UserSex } from '../../users/entities/user.entity';
 
 export class RegisterDto {
   @MaxLength(100, { message: 'Họ tên tối đa 100 ký tự.' })
@@ -49,4 +52,24 @@ export class RegisterDto {
   @IsString()
   @IsNotEmpty({ message: 'Vui lòng hoàn thành CAPTCHA.' })
   recaptchaToken!: string;
+
+  @IsOptional()
+  @IsEnum(UserSex, { message: 'Giới tính không hợp lệ.' })
+  sex?: UserSex;
+
+  @IsOptional()
+  @IsString()
+  city?: string;
+
+  @IsOptional()
+  @IsString()
+  district?: string;
+
+  @IsOptional()
+  @IsString()
+  address?: string;
+
+  @IsOptional()
+  @IsString()
+  IDCardNumber?: string;
 }

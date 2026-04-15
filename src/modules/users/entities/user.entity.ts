@@ -45,6 +45,15 @@ export class User {
   sex!: UserSex | null;
 
   @Column({
+    name: 'id_card_number',
+    type: 'varchar',
+    length: 20,
+    unique: true,
+    nullable: true,
+  })
+  IDCardNumber!: string | null;
+
+  @Column({
     type: 'enum',
     enum: UserRole,
     default: UserRole.CUSTOMER,

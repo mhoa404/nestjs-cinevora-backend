@@ -51,6 +51,11 @@ export class UsersService {
       password: hashedPassword,
       dateOfBirth: new Date(data.dateOfBirth),
       phone: data.phone.trim(),
+      sex: data.sex,
+      city: data.city,
+      district: data.district,
+      address: data.address,
+      IDCardNumber: data.IDCardNumber,
     });
 
     return this.usersRepository.save(user);
