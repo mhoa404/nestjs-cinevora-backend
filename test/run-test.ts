@@ -56,6 +56,31 @@ const TEST_SUITES: Record<
     file: 'test/api/movies/delete-movie.api.spec.ts',
     description: 'API xoá phim (Movies)',
   },
+  create_room: {
+    prefix: 'CRM',
+    file: 'test/api/rooms/create-room.api.spec.ts',
+    description: 'API Tạo phòng chiếu (Rooms)',
+  },
+  get_rooms: {
+    prefix: 'GRM',
+    file: 'test/api/rooms/get-rooms.api.spec.ts',
+    description: 'API Lấy danh sách phòng chiếu (Rooms)',
+  },
+  get_room_by_id: {
+    prefix: 'GRI',
+    file: 'test/api/rooms/get-room-by-id.api.spec.ts',
+    description: 'API Lấy phòng chiếu theo ID (Rooms)',
+  },
+  update_room: {
+    prefix: 'URM',
+    file: 'test/api/rooms/update-room.api.spec.ts',
+    description: 'API Cập nhật phòng chiếu (Rooms)',
+  },
+  delete_room: {
+    prefix: 'DRM',
+    file: 'test/api/rooms/delete-room.api.spec.ts',
+    description: 'API Xoá phòng chiếu (Rooms)',
+  },
 };
 
 console.log('\n╔════════════════════════════════════════════════╗');

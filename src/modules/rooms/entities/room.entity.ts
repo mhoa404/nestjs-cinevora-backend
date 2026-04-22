@@ -2,29 +2,21 @@ import {
   Column,
   CreateDateColumn,
   Entity,
-  JoinColumn,
-  ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
 import { Showtime } from '../../showtimes/entities/showtime.entity';
-import { Cinema } from '../../cinemas/entities/cinema.entity';
 import { Seat } from '../../seats/entities/seat.entity';
+import { UpdateDateColumn } from 'typeorm';
 
 @Entity('rooms')
 export class Room {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @Column({ name: 'cinema_id' })
-  cinemaId!: number;
-
-  @Column({ length: 20 })
+  @Column({ length: 20, unique: true })
   name!: string;
-
-  @Column({ name: 'total_seats', type: 'int' })
-  totalSeats!: number;
 
   @CreateDateColumn({
     name: 'created_at',
@@ -33,10 +25,13 @@ export class Room {
   })
   createdAt!: Date;
 
-  //relation
-  @ManyToOne(() => Cinema, (cinema) => cinema.rooms)
-  @JoinColumn({ name: 'cinema_id' })
-  cinema!: Cinema;
+  @UpdateDateColumn({
+    name: 'updated_at',
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+    onUpdate: 'CURRENT_TIMESTAMP',
+  })
+  updatedAt!: Date;
 
   @OneToMany(() => Showtime, (showtime) => showtime.room)
   showtimes!: Showtime[];

@@ -5,6 +5,7 @@ import {
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 
 import { Showtime } from '../../showtimes/entities/showtime.entity';
@@ -56,12 +57,32 @@ export class Booking {
   })
   status!: BookingStatus;
 
+  @Column({ name: 'snapshot_movie_title', length: 255 })
+  snapshotMovieTitle!: string;
+
+  @Column({ name: 'snapshot_cinema_name', length: 100 })
+  snapshotCinemaName!: string;
+
+  @Column({ name: 'snapshot_room_name', length: 20 })
+  snapshotRoomName!: string;
+
+  @Column({ name: 'snapshot_showtime_start', type: 'timestamp' })
+  snapshotShowtimeStart!: Date;
+
   @Column({
     name: 'created_at',
     type: 'timestamp',
     default: () => 'CURRENT_TIMESTAMP',
   })
   createdAt!: Date;
+
+  @UpdateDateColumn({
+    name: 'updated_at',
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+    onUpdate: 'CURRENT_TIMESTAMP',
+  })
+  updatedAt!: Date;
 
   //Relation
   @ManyToOne(() => User, (user) => user.bookings)
