@@ -6,7 +6,6 @@ import { Module } from '@nestjs/common';
 import { PromotionsModule } from './modules/promotions/promotions.module';
 import { ShowtimesModule } from './modules/showtimes/showtimes.module';
 import { BookingsModule } from './modules/bookings/bookings.module';
-import { CinemasModule } from './modules/cinemas/cinemas.module';
 import { MoviesModule } from './modules/movies/movies.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { GenresModule } from './modules/genres/genres.module';
@@ -33,7 +32,6 @@ import jwtConfig from './config/jwt.config';
     UsersModule,
     GenresModule,
     MoviesModule,
-    CinemasModule,
     RoomsModule,
     SeatsModule,
     ShowtimesModule,

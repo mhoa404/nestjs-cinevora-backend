@@ -5,33 +5,13 @@ export class CreateCinemasRoomsSeats1710000000002 implements MigrationInterface 
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
-      CREATE TABLE \`cinemas\` (
-        \`id\`          INT             NOT NULL AUTO_INCREMENT,
-        \`name\`        VARCHAR(150)    NOT NULL,
-        \`address\`     VARCHAR(255)    NOT NULL,
-        \`city\`        VARCHAR(50)     NOT NULL,
-        \`district\`    VARCHAR(50),
-        \`phone\`       VARCHAR(15),
-        \`created_at\`  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        CONSTRAINT \`PK_cinemas\` PRIMARY KEY (\`id\`)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    `);
-
-    await queryRunner.query(
-      `CREATE INDEX \`IDX_cinemas_city\` ON \`cinemas\`(\`city\`)`,
-    );
-
-    await queryRunner.query(`
       CREATE TABLE \`rooms\` (
         \`id\`          INT             NOT NULL AUTO_INCREMENT,
-        \`cinema_id\`   INT             NOT NULL,
         \`name\`        VARCHAR(20)     NOT NULL,
-        \`total_seats\` INT             NOT NULL,
         \`room_type\`   ENUM('2D', '3D', 'IMAX', '4DX') NOT NULL DEFAULT '2D',
         \`created_at\`  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        CONSTRAINT \`PK_rooms\` PRIMARY KEY (\`id\`),
-        CONSTRAINT \`FK_rooms_cinema\` FOREIGN KEY (\`cinema_id\`)
-          REFERENCES \`cinemas\`(\`id\`) ON DELETE CASCADE
+        \`updated_at\`  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        CONSTRAINT \`PK_rooms\` PRIMARY KEY (\`id\`)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
 
@@ -54,7 +34,5 @@ export class CreateCinemasRoomsSeats1710000000002 implements MigrationInterface 
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`DROP TABLE \`seats\``);
     await queryRunner.query(`DROP TABLE \`rooms\``);
-    await queryRunner.query(`DROP INDEX \`IDX_cinemas_city\` ON \`cinemas\``);
-    await queryRunner.query(`DROP TABLE \`cinemas\``);
   }
 }

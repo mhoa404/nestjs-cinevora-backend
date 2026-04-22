@@ -1,0 +1,127 @@
+{
+  "project": "cinevora-backend",
+  "type": "nestjs-backend",
+  "entrypoints": [
+    "src/main.ts",
+    "src/app.module.ts"
+  ],
+  "stack": {
+    "framework": "nestjs",
+    "orm": "typeorm",
+    "database": "mysql",
+    "packageManager": "pnpm",
+    "testing": ["jest", "supertest"],
+    "deployment": ["docker", "docker-compose", "jenkins"]
+  },
+  "globalPatterns": {
+    "auth": "JWT with refresh token rotation",
+    "webAuth": "refresh token in httpOnly cookie",
+    "mobileAuth": "refresh token in response/body",
+    "validation": "ValidationPipe + class-validator",
+    "databaseStrategy": "migrations instead of synchronize"
+  },
+  "modules": [
+    {
+      "name": "auth",
+      "status": "implemented",
+      "priority": "high",
+      "keyFiles": [
+        "src/modules/auth/auth.controller.ts",
+        "src/modules/auth/auth.service.ts",
+        "src/modules/auth/services/auth-cookie.service.ts",
+        "src/modules/auth/services/auth-token.service.ts",
+        "src/modules/auth/services/refresh-token.service.ts",
+        "src/modules/auth/strategies/jwt.strategy.ts"
+      ],
+      "tests": [
+        "test/api/auth/login.api.spec.ts",
+        "test/api/auth/logout.api.spec.ts",
+        "test/api/auth/refresh.api.spec.ts",
+        "test/api/auth/register.api.spec.ts"
+      ]
+    },
+    {
+      "name": "genres",
+      "status": "implemented",
+      "priority": "high",
+      "keyFiles": [
+        "src/modules/genres/genres.controller.ts",
+        "src/modules/genres/genres.service.ts",
+        "src/modules/genres/utils/genre-input.util.ts"
+      ],
+      "tests": [
+        "test/api/genres/create-genre.api.spec.ts",
+        "test/api/genres/update-genre.api.spec.ts",
+        "test/api/genres/delete-genre.api.spec.ts"
+      ]
+    },
+    {
+      "name": "movies",
+      "status": "implemented",
+      "priority": "high",
+      "keyFiles": [
+        "src/modules/movies/movies.controller.ts",
+        "src/modules/movies/movies.service.ts",
+        "src/modules/movies/utils/movie-input.util.ts"
+      ],
+      "tests": [
+        "test/api/movies/create-movie.api.spec.ts",
+        "test/api/movies/update-movie.api.spec.ts",
+        "test/api/movies/delete-movie.api.spec.ts"
+      ]
+    },
+    {
+      "name": "rooms",
+      "status": "implemented",
+      "priority": "medium",
+      "keyFiles": [
+        "src/modules/rooms/rooms.controller.ts",
+        "src/modules/rooms/rooms.service.ts"
+      ],
+      "tests": [
+        "test/api/rooms/create-room.api.spec.ts",
+        "test/api/rooms/update-room.api.spec.ts",
+        "test/api/rooms/delete-room.api.spec.ts",
+        "test/api/rooms/get-room-by-id.api.spec.ts",
+        "test/api/rooms/get-rooms.api.spec.ts"
+      ]
+    },
+    {
+      "name": "bookings",
+      "status": "stub",
+      "priority": "low"
+    },
+    {
+      "name": "payments",
+      "status": "stub",
+      "priority": "low"
+    },
+    {
+      "name": "promotions",
+      "status": "partial",
+      "priority": "low"
+    },
+    {
+      "name": "seats",
+      "status": "stub",
+      "priority": "low"
+    },
+    {
+      "name": "showtimes",
+      "status": "stub",
+      "priority": "low"
+    },
+    {
+      "name": "users",
+      "status": "partial",
+      "priority": "medium"
+    }
+  ],
+  "importantInfraFiles": [
+    "docker-compose.yml",
+    "Dockerfile",
+    "Dockerfile.jenkins",
+    "Jenkinsfile",
+    "src/database/typeorm.datasource.ts"
+  ]
+}

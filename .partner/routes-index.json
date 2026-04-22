@@ -1,0 +1,195 @@
+{
+  "routes": [
+    {
+      "method": "POST",
+      "path": "/auth/register",
+      "module": "auth",
+      "handler": "register",
+      "access": "public",
+      "inputDto": "RegisterDto",
+      "output": "{ message, user }"
+    },
+    {
+      "method": "POST",
+      "path": "/auth/login",
+      "module": "auth",
+      "handler": "loginWeb",
+      "access": "public",
+      "inputDto": "LoginDto",
+      "output": "{ accessToken, expiresIn, user }",
+      "notes": ["refreshToken set in cookie"]
+    },
+    {
+      "method": "POST",
+      "path": "/auth/refresh",
+      "module": "auth",
+      "handler": "refreshWeb",
+      "access": "public",
+      "inputDto": "cookie(refreshToken)",
+      "output": "{ accessToken, expiresIn, user }",
+      "notes": ["refreshToken read from cookie", "new refreshToken set in cookie"]
+    },
+    {
+      "method": "POST",
+      "path": "/auth/logout",
+      "module": "auth",
+      "handler": "logoutWeb",
+      "access": "public",
+      "inputDto": "cookie(refreshToken)",
+      "output": "{ message }"
+    },
+    {
+      "method": "POST",
+      "path": "/auth/mobile/login",
+      "module": "auth",
+      "handler": "loginMobile",
+      "access": "public",
+      "inputDto": "LoginDto",
+      "output": "AuthResponseDto"
+    },
+    {
+      "method": "POST",
+      "path": "/auth/mobile/refresh",
+      "module": "auth",
+      "handler": "refreshMobile",
+      "access": "public",
+      "inputDto": "RefreshTokenDto",
+      "output": "AuthResponseDto"
+    },
+    {
+      "method": "POST",
+      "path": "/auth/mobile/logout",
+      "module": "auth",
+      "handler": "logoutMobile",
+      "access": "public",
+      "inputDto": "LogoutDto",
+      "output": "{ message }"
+    },
+    {
+      "method": "GET",
+      "path": "/genres",
+      "module": "genres",
+      "handler": "findAll",
+      "access": "public",
+      "output": "GenreResponseDto[]"
+    },
+    {
+      "method": "GET",
+      "path": "/genres/:id",
+      "module": "genres",
+      "handler": "findOne",
+      "access": "public",
+      "output": "GenreResponseDto"
+    },
+    {
+      "method": "POST",
+      "path": "/genres",
+      "module": "genres",
+      "handler": "create",
+      "access": "admin|super_admin",
+      "inputDto": "CreateGenreDto",
+      "output": "GenreResponseDto"
+    },
+    {
+      "method": "PATCH",
+      "path": "/genres/:id",
+      "module": "genres",
+      "handler": "update",
+      "access": "admin|super_admin",
+      "inputDto": "UpdateGenreDto",
+      "output": "GenreResponseDto"
+    },
+    {
+      "method": "DELETE",
+      "path": "/genres/:id",
+      "module": "genres",
+      "handler": "remove",
+      "access": "admin|super_admin",
+      "output": "void"
+    },
+    {
+      "method": "POST",
+      "path": "/movies",
+      "module": "movies",
+      "handler": "create",
+      "access": "admin|super_admin",
+      "inputDto": "CreateMovieDto",
+      "output": "MovieResponseDto"
+    },
+    {
+      "method": "GET",
+      "path": "/movies",
+      "module": "movies",
+      "handler": "findAll",
+      "access": "public",
+      "output": "MovieResponseDto[]"
+    },
+    {
+      "method": "GET",
+      "path": "/movies/:slugOrId",
+      "module": "movies",
+      "handler": "findOne",
+      "access": "public",
+      "output": "MovieResponseDto"
+    },
+    {
+      "method": "PUT",
+      "path": "/movies/:id",
+      "module": "movies",
+      "handler": "update",
+      "access": "admin|super_admin",
+      "inputDto": "UpdateMovieDto",
+      "output": "MovieResponseDto"
+    },
+    {
+      "method": "DELETE",
+      "path": "/movies/:id",
+      "module": "movies",
+      "handler": "remove",
+      "access": "admin|super_admin",
+      "output": "void"
+    },
+    {
+      "method": "GET",
+      "path": "/rooms",
+      "module": "rooms",
+      "handler": "findAll",
+      "access": "admin|super_admin",
+      "output": "RoomResponseDto[]"
+    },
+    {
+      "method": "GET",
+      "path": "/rooms/:id",
+      "module": "rooms",
+      "handler": "findOne",
+      "access": "admin|super_admin",
+      "output": "RoomResponseDto"
+    },
+    {
+      "method": "POST",
+      "path": "/rooms",
+      "module": "rooms",
+      "handler": "create",
+      "access": "admin|super_admin",
+      "inputDto": "CreateRoomDto",
+      "output": "RoomResponseDto"
+    },
+    {
+      "method": "PATCH",
+      "path": "/rooms/:id",
+      "module": "rooms",
+      "handler": "update",
+      "access": "admin|super_admin",
+      "inputDto": "UpdateRoomDto",
+      "output": "RoomResponseDto"
+    },
+    {
+      "method": "DELETE",
+      "path": "/rooms/:id",
+      "module": "rooms",
+      "handler": "remove",
+      "access": "admin|super_admin",
+      "output": "void"
+    }
+  ]
+}

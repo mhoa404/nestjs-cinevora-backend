@@ -1,0 +1,47 @@
+{
+  "testSuites": [
+    {
+      "module": "auth",
+      "coverage": ["register", "login", "refresh", "logout"],
+      "files": [
+        "test/api/auth/register.api.spec.ts",
+        "test/api/auth/login.api.spec.ts",
+        "test/api/auth/refresh.api.spec.ts",
+        "test/api/auth/logout.api.spec.ts"
+      ]
+    },
+    {
+      "module": "genres",
+      "coverage": ["create", "update", "delete"],
+      "files": [
+        "test/api/genres/create-genre.api.spec.ts",
+        "test/api/genres/update-genre.api.spec.ts",
+        "test/api/genres/delete-genre.api.spec.ts"
+      ]
+    },
+    {
+      "module": "movies",
+      "coverage": ["create", "update", "delete"],
+      "files": [
+        "test/api/movies/create-movie.api.spec.ts",
+        "test/api/movies/update-movie.api.spec.ts",
+        "test/api/movies/delete-movie.api.spec.ts"
+      ]
+    },
+    {
+      "module": "rooms",
+      "coverage": ["create", "update", "delete", "findAll", "findOne"],
+      "files": [
+        "test/api/rooms/create-room.api.spec.ts",
+        "test/api/rooms/update-room.api.spec.ts",
+        "test/api/rooms/delete-room.api.spec.ts",
+        "test/api/rooms/get-rooms.api.spec.ts",
+        "test/api/rooms/get-room-by-id.api.spec.ts"
+      ]
+    }
+  ],
+  "helpers": [
+    "test/helpers/http-test.helper.ts",
+    "test/helpers/excel-reporter.ts"
+  ]
+}

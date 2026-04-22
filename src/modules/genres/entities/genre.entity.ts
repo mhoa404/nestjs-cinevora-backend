@@ -4,6 +4,7 @@ import {
   Entity,
   ManyToMany,
   PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 
 import { Movie } from '../../movies/entities/movie.entity';
@@ -25,6 +26,14 @@ export class Genre {
     default: () => 'CURRENT_TIMESTAMP',
   })
   createdAt!: Date;
+
+  @UpdateDateColumn({
+    name: 'updated_at',
+    type: 'datetime',
+    default: () => 'CURRENT_TIMESTAMP',
+    onUpdate: 'CURRENT_TIMESTAMP',
+  })
+  updatedAt!: Date;
 
   @ManyToMany(() => Movie, (movie) => movie.genres)
   movies!: Movie[];

@@ -4,10 +4,13 @@ import {
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 
 import { Seat } from '../../seats/entities/seat.entity';
 import { Booking } from './booking.entity';
+import { SeatType } from '../../../common/constants/seat-type.constant';
 
 @Entity('booking_seats')
 export class BookingSeat {
@@ -25,6 +28,29 @@ export class BookingSeat {
 
   @Column({ name: 'price', type: 'decimal', precision: 10, scale: 0 })
   price!: number;
+
+  @Column({
+    name: 'snapshot_seat_type',
+    type: 'enum',
+    enum: SeatType,
+    default: SeatType.STANDARD,
+  })
+  snapshotSeatType!: SeatType;
+
+  @CreateDateColumn({
+    name: 'created_at',
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
+  createdAt!: Date;
+
+  @UpdateDateColumn({
+    name: 'updated_at',
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+    onUpdate: 'CURRENT_TIMESTAMP',
+  })
+  updatedAt!: Date;
 
   //Relation
   @ManyToOne(() => Booking, (booking) => booking.bookingSeats)

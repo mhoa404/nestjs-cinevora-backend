@@ -1,0 +1,68 @@
+{
+  "stubs": [
+    {
+      "module": "bookings",
+      "files": [
+        "src/modules/bookings/bookings.controller.ts",
+        "src/modules/bookings/bookings.service.ts",
+        "src/modules/bookings/dto/booking-response.dto.ts",
+        "src/modules/bookings/dto/create-booking.dto.ts"
+      ],
+      "status": "controller/service mostly empty"
+    },
+    {
+      "module": "payments",
+      "files": [
+        "src/modules/payments/payments.controller.ts",
+        "src/modules/payments/payments.service.ts",
+        "src/modules/payments/dto/create-payment.dto.ts",
+        "src/modules/payments/dto/payment-callback.dto.ts",
+        "src/modules/payments/entities/payment.entity.ts",
+        "src/modules/payments/interfaces/momo-response.interface.ts",
+        "src/modules/payments/interfaces/payment-gateway.interface.ts",
+        "src/modules/payments/providers/momo/momo.config.ts",
+        "src/modules/payments/providers/momo/momo.provider.ts"
+      ],
+      "status": "mostly empty"
+    },
+    {
+      "module": "promotions",
+      "files": [
+        "src/modules/promotions/promotions.controller.ts",
+        "src/modules/promotions/promotions.service.ts",
+        "src/modules/promotions/dto/create-promotion.dto.ts",
+        "src/modules/promotions/dto/update-promotion.dto.ts"
+      ],
+      "status": "entity exists, business logic still thin"
+    },
+    {
+      "module": "seats",
+      "files": [
+        "src/modules/seats/seats.controller.ts",
+        "src/modules/seats/seats.service.ts",
+        "src/modules/seats/dto/seat-availability.dto.ts"
+      ],
+      "status": "mostly empty"
+    },
+    {
+      "module": "showtimes",
+      "files": [
+        "src/modules/showtimes/showtimes.controller.ts",
+        "src/modules/showtimes/showtimes.service.ts",
+        "src/modules/showtimes/dto/create-showtime.dto.ts",
+        "src/modules/showtimes/dto/showtime-query.dto.ts",
+        "src/modules/showtimes/dto/update-showtime.dto.ts"
+      ],
+      "status": "mostly empty"
+    },
+    {
+      "module": "users",
+      "files": [
+        "src/modules/users/users.controller.ts",
+        "src/modules/users/dto/update-user.dto.ts",
+        "src/modules/users/dto/user-response.dto.ts"
+      ],
+      "status": "service/entity usable, controller/dto still minimal"
+    }
+  ]
+}

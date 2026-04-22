@@ -1,0 +1,2033 @@
+{
+  "generatedAt": "2026-04-22T14:51:09.723Z",
+  "total": 152,
+  "files": [
+    {
+      "path": ".env",
+      "chunk": ".ai/chunks/.env.md",
+      "module": "root",
+      "kind": "file",
+      "language": "bash",
+      "lineCount": 16,
+      "sizeBytes": 323,
+      "sha256": "9b769b5b34a0c44a3aa50fd0d1897f26ecc1b6d8c62eee8b06756932a6f85ee0",
+      "updatedAt": "2026-04-09T13:02:52.019Z",
+      "symbols": []
+    },
+    {
+      "path": ".env.production",
+      "chunk": ".ai/chunks/.env.production.md",
+      "module": "root",
+      "kind": "file",
+      "language": "bash",
+      "lineCount": 16,
+      "sizeBytes": 332,
+      "sha256": "009863f061a8ff50224e1c502ac956681e5fb9e6e4b92b7b85d70a7ac00ea705",
+      "updatedAt": "2026-04-13T14:46:09.216Z",
+      "symbols": []
+    },
+    {
+      "path": "docker-compose.yml",
+      "chunk": ".ai/chunks/docker-compose.yml.md",
+      "module": "root",
+      "kind": "file",
+      "language": "yaml",
+      "lineCount": 71,
+      "sizeBytes": 1645,
+      "sha256": "0fae4f8ad6d0f1d434d246c0719c002e63482a43dbc90274635835682531b480",
+      "updatedAt": "2026-04-14T14:32:33.391Z",
+      "symbols": []
+    },
+    {
+      "path": "Dockerfile",
+      "chunk": ".ai/chunks/Dockerfile.md",
+      "module": "root",
+      "kind": "file",
+      "language": "dockerfile",
+      "lineCount": 38,
+      "sizeBytes": 725,
+      "sha256": "b504f66c50ebb067ee3730c124acbb8f1ea7e0f1226f18f816eb45a8fc548284",
+      "updatedAt": "2026-04-08T04:57:37.324Z",
+      "symbols": []
+    },
+    {
+      "path": "Dockerfile.jenkins",
+      "chunk": ".ai/chunks/Dockerfile.jenkins.md",
+      "module": "root",
+      "kind": "file",
+      "language": "dockerfile",
+      "lineCount": 16,
+      "sizeBytes": 425,
+      "sha256": "2960c1d4fe0384fa94114fddd1b4f8e9f7c0cd7b4192fd63196097dc9ba56dae",
+      "updatedAt": "2026-04-08T04:57:37.334Z",
+      "symbols": []
+    },
+    {
+      "path": "dump-project.js",
+      "chunk": ".ai/chunks/dump-project.js.md",
+      "module": "root",
+      "kind": "file",
+      "language": "js",
+      "lineCount": 233,
+      "sizeBytes": 6076,
+      "sha256": "2f9719db33c45e67b3dd9b4a4e0d72522a95858aa89892e9b007ff6756e0e488",
+      "updatedAt": "2026-04-08T01:42:54.601Z",
+      "symbols": [
+        "divider",
+        "safeReadFile",
+        "appendLine",
+        "appendHeader",
+        "shouldIgnoreFile",
+        "shouldIgnoreDir",
+        "getProjectEntries",
+        "buildTreeLines",
+        "collectFiles",
+        "appendFileBlock",
+        "appendProjectTree",
+        "appendPackageJson",
+        "appendRootConfigs",
+        "appendDirectoryFiles",
+        "generateDumpContent",
+        "main"
+      ]
+    },
+    {
+      "path": "Jenkinsfile",
+      "chunk": ".ai/chunks/Jenkinsfile.md",
+      "module": "root",
+      "kind": "file",
+      "language": "groovy",
+      "lineCount": 49,
+      "sizeBytes": 814,
+      "sha256": "d565bd37be5f9749ac1ad6fc88e6aca66f409d3701a681a249cc9f55a5cf6cd7",
+      "updatedAt": "2026-04-08T04:57:37.334Z",
+      "symbols": []
+    },
+    {
+      "path": "nest-cli.json",
+      "chunk": ".ai/chunks/nest-cli.json.md",
+      "module": "root",
+      "kind": "file",
+      "language": "json",
+      "lineCount": 9,
+      "sizeBytes": 179,
+      "sha256": "84dc81177a0db2270bd71242b910f07982c56eec68285694c9cbffc3911912ba",
+      "updatedAt": "2026-03-22T08:37:56.655Z",
+      "symbols": []
+    },
+    {
+      "path": "package.json",
+      "chunk": ".ai/chunks/package.json.md",
+      "module": "root",
+      "kind": "file",
+      "language": "json",
+      "lineCount": 101,
+      "sizeBytes": 3344,
+      "sha256": "6faa09e14b403a84d2fa8acc19f5458ab0e17a9c3aaebd61ba0c12433055c302",
+      "updatedAt": "2026-04-08T04:57:37.337Z",
+      "symbols": []
+    },
+    {
+      "path": "README.md",
+      "chunk": ".ai/chunks/README.md.md",
+      "module": "root",
+      "kind": "file",
+      "language": "md",
+      "lineCount": 77,
+      "sizeBytes": 2064,
+      "sha256": "791de90c5405899f4f7f9740864e3591fb93c7f185e97c959778c63e222adb21",
+      "updatedAt": "2026-04-02T08:59:54.770Z",
+      "symbols": []
+    },
+    {
+      "path": "src/app.module.ts",
+      "chunk": ".ai/chunks/src__app.module.ts.md",
+      "module": "root",
+      "kind": "module",
+      "language": "ts",
+      "lineCount": 49,
+      "sizeBytes": 1568,
+      "sha256": "cd8321292be2d4cb7b302e9b8e0cbca12c4b29104acf0d55287624590cfd1a67",
+      "updatedAt": "2026-04-21T08:17:02.942Z",
+      "symbols": [
+        "AppModule"
+      ]
+    },
+    {
+      "path": "src/common/constants/role.constant.ts",
+      "chunk": ".ai/chunks/src__common__constants__role.constant.ts.md",
+      "module": "common",
+      "kind": "file",
+      "language": "ts",
+      "lineCount": 14,
+      "sizeBytes": 294,
+      "sha256": "18d44a5f5f1b23fb114aaa85cf6a522526e147b1385479460f7aafe55f4f84fe",
+      "updatedAt": "2026-04-08T04:57:37.341Z",
+      "symbols": [
+        "ROLE_LEVEL"
+      ]
+    },
+    {
+      "path": "src/common/constants/seat-type.constant.ts",
+      "chunk": ".ai/chunks/src__common__constants__seat-type.constant.ts.md",
+      "module": "common",
+      "kind": "file",
+      "language": "ts",
+      "lineCount": 7,
+      "sizeBytes": 115,
+      "sha256": "3b53c9f407996963e7bbce0c5bb447d337279a25ae03d0c13c7f103da5c1a3c3",
+      "updatedAt": "2026-04-08T04:57:37.341Z",
+      "symbols": []
+    },
+    {
+      "path": "src/common/decorators/public.decorator.ts",
+      "chunk": ".ai/chunks/src__common__decorators__public.decorator.ts.md",
+      "module": "common",
+      "kind": "decorator",
+      "language": "ts",
+      "lineCount": 5,
+      "sizeBytes": 154,
+      "sha256": "67d2c26dd0b30f371d271ee05b43630d5f29f525c06d4319bbee1eb99cbb11b9",
+      "updatedAt": "2026-04-07T01:21:24.543Z",
+      "symbols": [
+        "IS_PUBLIC_KEY",
+        "Public"
+      ]
+    },
+    {
+      "path": "src/common/decorators/roles.decorator.ts",
+      "chunk": ".ai/chunks/src__common__decorators__roles.decorator.ts.md",
+      "module": "common",
+      "kind": "decorator",
+      "language": "ts",
+      "lineCount": 6,
+      "sizeBytes": 214,
+      "sha256": "d63d2113eb18e5409604f476f7f464c8af90ded012d2a0c72e306aced277858a",
+      "updatedAt": "2026-04-09T11:54:23.326Z",
+      "symbols": [
+        "ROLES_KEY",
+        "Roles"
+      ]
+    },
+    {
+      "path": "src/common/filters/http-exception.filter.ts",
+      "chunk": ".ai/chunks/src__common__filters__http-exception.filter.ts.md",
+      "module": "common",
+      "kind": "filter",
+      "language": "ts",
+      "lineCount": 53,
+      "sizeBytes": 1291,
+      "sha256": "9bbd648cd2e2b5fe87fadd4c07e06b9b4c89d116234d2b73d8b255e720132c93",
+      "updatedAt": "2026-04-08T04:57:37.341Z",
+      "symbols": [
+        "HttpExceptionFilter"
+      ]
+    },
+    {
+      "path": "src/common/guards/jwt-auth.guard.ts",
+      "chunk": ".ai/chunks/src__common__guards__jwt-auth.guard.ts.md",
+      "module": "common",
+      "kind": "guard",
+      "language": "ts",
+      "lineCount": 21,
+      "sizeBytes": 628,
+      "sha256": "08cebe6699037e35de7235a378299762564d9c75f172d4e62393c09326535da1",
+      "updatedAt": "2026-04-02T08:59:54.773Z",
+      "symbols": [
+        "JwtAuthGuard"
+      ]
+    },
+    {
+      "path": "src/common/guards/roles.guard.ts",
+      "chunk": ".ai/chunks/src__common__guards__roles.guard.ts.md",
+      "module": "common",
+      "kind": "guard",
+      "language": "ts",
+      "lineCount": 54,
+      "sizeBytes": 1362,
+      "sha256": "18d4ef205d40fbe57b65d3b5ab0839e7ac952de6672c0dd97bfa1b6325419296",
+      "updatedAt": "2026-04-15T13:14:54.026Z",
+      "symbols": [
+        "RolesGuard"
+      ]
+    },
+    {
+      "path": "src/common/types/jwt-payload.type.ts",
+      "chunk": ".ai/chunks/src__common__types__jwt-payload.type.ts.md",
+      "module": "common",
+      "kind": "type",
+      "language": "ts",
+      "lineCount": 11,
+      "sizeBytes": 218,
+      "sha256": "38cfef611850b62dd60fbdf13edb7349ea0411f182a65d1cac9f235a4e46f699",
+      "updatedAt": "2026-04-08T04:57:37.341Z",
+      "symbols": []
+    },
+    {
+      "path": "src/common/types/request-user.type.ts",
+      "chunk": ".ai/chunks/src__common__types__request-user.type.ts.md",
+      "module": "common",
+      "kind": "type",
+      "language": "ts",
+      "lineCount": 7,
+      "sizeBytes": 174,
+      "sha256": "489ab39d3e82206d357fb1cd93d827818d0fd697fc42112b3fb36299a880bab2",
+      "updatedAt": "2026-04-08T04:57:37.341Z",
+      "symbols": []
+    },
+    {
+      "path": "src/common/utils/slug.util.ts",
+      "chunk": ".ai/chunks/src__common__utils__slug.util.ts.md",
+      "module": "common",
+      "kind": "file",
+      "language": "ts",
+      "lineCount": 13,
+      "sizeBytes": 309,
+      "sha256": "6ac71fc24081a3723a945278ce672dbc4b799136af512e74f11a7183d1d05452",
+      "updatedAt": "2026-04-08T04:57:37.341Z",
+      "symbols": [
+        "generateSlug"
+      ]
+    },
+    {
+      "path": "src/common/utils/token-hash.util.ts",
+      "chunk": ".ai/chunks/src__common__utils__token-hash.util.ts.md",
+      "module": "common",
+      "kind": "file",
+      "language": "ts",
+      "lineCount": 12,
+      "sizeBytes": 413,
+      "sha256": "0a2b1bddeef84516c39055a774f4ef69bd89a5680ae3291861554f30cc018b06",
+      "updatedAt": "2026-04-08T04:57:37.341Z",
+      "symbols": [
+        "hashRefreshToken"
+      ]
+    },
+    {
+      "path": "src/config/app.config.ts",
+      "chunk": ".ai/chunks/src__config__app.config.ts.md",
+      "module": "config",
+      "kind": "config",
+      "language": "ts",
+      "lineCount": 7,
+      "sizeBytes": 217,
+      "sha256": "d7e767935ea206da3ece22787805c10b7f0645d5bc9ca5c0cb1aa73cd8f60130",
+      "updatedAt": "2026-04-08T04:57:37.349Z",
+      "symbols": []
+    },
+    {
+      "path": "src/config/database.config.ts",
+      "chunk": ".ai/chunks/src__config__database.config.ts.md",
+      "module": "config",
+      "kind": "config",
+      "language": "ts",
+      "lineCount": 13,
+      "sizeBytes": 375,
+      "sha256": "616a4f1e63942566d918d58a980972ba3d6a1ef3603de4415360b1c8d7844ef9",
+      "updatedAt": "2026-03-22T08:37:56.689Z",
+      "symbols": []
+    },
+    {
+      "path": "src/config/jwt.config.ts",
+      "chunk": ".ai/chunks/src__config__jwt.config.ts.md",
+      "module": "config",
+      "kind": "config",
+      "language": "ts",
+      "lineCount": 9,
+      "sizeBytes": 276,
+      "sha256": "935c1f2c390d9d77dc86fc53538334c23a8e3a941e4f38f5df6c171caf280574",
+      "updatedAt": "2026-04-08T04:57:37.349Z",
+      "symbols": []
+    },
+    {
+      "path": "src/database/migrations/1710000000000-CreateUsers.ts",
+      "chunk": ".ai/chunks/src__database__migrations__1710000000000-CreateUsers.ts.md",
+      "module": "database",
+      "kind": "migration",
+      "language": "ts",
+      "lineCount": 48,
+      "sizeBytes": 2286,
+      "sha256": "0ecbe81b523856ff56b1d0e30a2353093c01f0ebd11efdf28ed17d3356ab42a4",
+      "updatedAt": "2026-04-08T04:56:34.031Z",
+      "symbols": [
+        "CreateUsers1710000000000"
+      ]
+    },
+    {
+      "path": "src/database/migrations/1710000000001-CreateMovies.ts",
+      "chunk": ".ai/chunks/src__database__migrations__1710000000001-CreateMovies.ts.md",
+      "module": "database",
+      "kind": "migration",
+      "language": "ts",
+      "lineCount": 53,
+      "sizeBytes": 2051,
+      "sha256": "997efd20d546cdf8aa5e9937c96a7e03244ec9f9ed20cf286b672653409135eb",
+      "updatedAt": "2026-04-15T12:51:26.435Z",
+      "symbols": [
+        "CreateMovies1710000000001"
+      ]
+    },
+    {
+      "path": "src/database/migrations/1710000000002-CreateCinemasRoomsSeats.ts",
+      "chunk": ".ai/chunks/src__database__migrations__1710000000002-CreateCinemasRoomsSeats.ts.md",
+      "module": "database",
+      "kind": "migration",
+      "language": "ts",
+      "lineCount": 39,
+      "sizeBytes": 1780,
+      "sha256": "7fc74f0d32d9b0e66156836696f514d8990871025eb06bb04217edb7ab66e5d9",
+      "updatedAt": "2026-04-15T15:01:57.991Z",
+      "symbols": [
+        "CreateCinemasRoomsSeats1710000000002"
+      ]
+    },
+    {
+      "path": "src/database/migrations/1710000000003-CreateShowtimes.ts",
+      "chunk": ".ai/chunks/src__database__migrations__1710000000003-CreateShowtimes.ts.md",
+      "module": "database",
+      "kind": "migration",
+      "language": "ts",
+      "lineCount": 45,
+      "sizeBytes": 2019,
+      "sha256": "cfc916830dcb513aa7b95c9122976bbf695e7baea25d1e561687be528b2f86d5",
+      "updatedAt": "2026-04-08T04:56:34.037Z",
+      "symbols": [
+        "CreateShowtimes1710000000003"
+      ]
+    },
+    {
+      "path": "src/database/migrations/1710000000004-CreateBookings.ts",
+      "chunk": ".ai/chunks/src__database__migrations__1710000000004-CreateBookings.ts.md",
+      "module": "database",
+      "kind": "migration",
+      "language": "ts",
+      "lineCount": 65,
+      "sizeBytes": 3233,
+      "sha256": "95117c9eadb0e57ed79f0034b3c7426b29566e946f5f9be8af4b7949083ac396",
+      "updatedAt": "2026-04-08T04:56:34.037Z",
+      "symbols": [
+        "CreateBookings1710000000004"
+      ]
+    },
+    {
+      "path": "src/database/migrations/1710000000005-CreatePromotions.ts",
+      "chunk": ".ai/chunks/src__database__migrations__1710000000005-CreatePromotions.ts.md",
+      "module": "database",
+      "kind": "migration",
+      "language": "ts",
+      "lineCount": 28,
+      "sizeBytes": 1248,
+      "sha256": "019e38e760a9c9d37ac436aedee5c223eb3aab1330bd0ede3bc8743cea017cda",
+      "updatedAt": "2026-04-08T04:56:34.037Z",
+      "symbols": [
+        "CreatePromotions1710000000005"
+      ]
+    },
+    {
+      "path": "src/database/migrations/1710000000006.CreateRefreshTokens.ts",
+      "chunk": ".ai/chunks/src__database__migrations__1710000000006.CreateRefreshTokens.ts.md",
+      "module": "database",
+      "kind": "migration",
+      "language": "ts",
+      "lineCount": 40,
+      "sizeBytes": 1642,
+      "sha256": "60e5d0c64032fba84c5fec137a55087075845f80ac0330003a890808137994b0",
+      "updatedAt": "2026-04-08T04:56:34.037Z",
+      "symbols": [
+        "CreateRefreshTokens1710000000006"
+      ]
+    },
+    {
+      "path": "src/database/migrations/1710000000007-CreateGenres.ts",
+      "chunk": ".ai/chunks/src__database__migrations__1710000000007-CreateGenres.ts.md",
+      "module": "database",
+      "kind": "migration",
+      "language": "ts",
+      "lineCount": 478,
+      "sizeBytes": 19145,
+      "sha256": "e9ccd6f7e98baac7a1441fcba90cb2d50af472d4f20ae4d3ee71ced33cff77a5",
+      "updatedAt": "2026-04-15T12:49:16.109Z",
+      "symbols": [
+        "CreateGenres1710000000007"
+      ]
+    },
+    {
+      "path": "src/database/migrations/1776785591792-AddRoomNameUnique.ts",
+      "chunk": ".ai/chunks/src__database__migrations__1776785591792-AddRoomNameUnique.ts.md",
+      "module": "database",
+      "kind": "migration",
+      "language": "ts",
+      "lineCount": 492,
+      "sizeBytes": 22135,
+      "sha256": "6d517f58c011e695c59659eada216e4662b1f456f53f663894741f7263a548f7",
+      "updatedAt": "2026-04-22T03:40:41.123Z",
+      "symbols": [
+        "AddRoomNameUnique1776785591792"
+      ]
+    },
+    {
+      "path": "src/database/migrations/1776829727986-UpdateSchemaToMatchERD.ts",
+      "chunk": ".ai/chunks/src__database__migrations__1776829727986-UpdateSchemaToMatchERD.ts.md",
+      "module": "database",
+      "kind": "migration",
+      "language": "ts",
+      "lineCount": 540,
+      "sizeBytes": 24346,
+      "sha256": "b5c5b576954971f92e2d30ad39974d43bfce61d97e361ed377a783bf0180951a",
+      "updatedAt": "2026-04-22T03:49:04.215Z",
+      "symbols": [
+        "UpdateSchemaToMatchERD1776829727986"
+      ]
+    },
+    {
+      "path": "src/database/typeorm.datasource.ts",
+      "chunk": ".ai/chunks/src__database__typeorm.datasource.ts.md",
+      "module": "database",
+      "kind": "file",
+      "language": "ts",
+      "lineCount": 29,
+      "sizeBytes": 804,
+      "sha256": "37fe30dbdaa6c86397a37c5e54c5a0591eedf8516c833753c44d82d616a49bab",
+      "updatedAt": "2026-04-08T04:57:37.352Z",
+      "symbols": [
+        "AppDataSource"
+      ]
+    },
+    {
+      "path": "src/main.ts",
+      "chunk": ".ai/chunks/src__main.ts.md",
+      "module": "root",
+      "kind": "file",
+      "language": "ts",
+      "lineCount": 40,
+      "sizeBytes": 1039,
+      "sha256": "d25ad8b0c6d9c99e0a62a79d1e1d1562514c0d53fc883583b4e02c66cfa1e49b",
+      "updatedAt": "2026-04-13T15:21:46.252Z",
+      "symbols": [
+        "bootstrap"
+      ]
+    },
+    {
+      "path": "src/modules/auth/auth.controller.ts",
+      "chunk": ".ai/chunks/src__modules__auth__auth.controller.ts.md",
+      "module": "auth",
+      "kind": "controller",
+      "language": "ts",
+      "lineCount": 112,
+      "sizeBytes": 3087,
+      "sha256": "4946753643dd19777783ea266d045fc32d932f026274b2005b414639c5c3991f",
+      "updatedAt": "2026-04-08T04:57:37.352Z",
+      "symbols": [
+        "AuthController"
+      ]
+    },
+    {
+      "path": "src/modules/auth/auth.module.ts",
+      "chunk": ".ai/chunks/src__modules__auth__auth.module.ts.md",
+      "module": "auth",
+      "kind": "module",
+      "language": "ts",
+      "lineCount": 37,
+      "sizeBytes": 1202,
+      "sha256": "58fe6d71a96f3eca8196430078cb58c71c89420ff6d5bb8f588a404b3406af7d",
+      "updatedAt": "2026-04-08T04:57:37.352Z",
+      "symbols": [
+        "AuthModule"
+      ]
+    },
+    {
+      "path": "src/modules/auth/auth.service.ts",
+      "chunk": ".ai/chunks/src__modules__auth__auth.service.ts.md",
+      "module": "auth",
+      "kind": "service",
+      "language": "ts",
+      "lineCount": 160,
+      "sizeBytes": 4763,
+      "sha256": "3ca288905a7e11e5d9012683b42ede3187c543bd23d6fc9eed87fb15492b75cf",
+      "updatedAt": "2026-04-15T11:46:49.967Z",
+      "symbols": [
+        "AuthService"
+      ]
+    },
+    {
+      "path": "src/modules/auth/dto/auth-response.dto.ts",
+      "chunk": ".ai/chunks/src__modules__auth__dto__auth-response.dto.ts.md",
+      "module": "auth",
+      "kind": "dto",
+      "language": "ts",
+      "lineCount": 20,
+      "sizeBytes": 391,
+      "sha256": "8f0e8eb609e4f0bec0b544ad83e35fd09d498cc9e77ad5866a99a2019500a7e5",
+      "updatedAt": "2026-04-06T15:48:15.368Z",
+      "symbols": [
+        "AuthUserDto",
+        "AuthResponseDto"
+      ]
+    },
+    {
+      "path": "src/modules/auth/dto/login.dto.ts",
+      "chunk": ".ai/chunks/src__modules__auth__dto__login.dto.ts.md",
+      "module": "auth",
+      "kind": "dto",
+      "language": "ts",
+      "lineCount": 12,
+      "sizeBytes": 399,
+      "sha256": "91a0a86c42796022a511fcfd9c46bf601080f108b4e70bc9a34b6328869385e2",
+      "updatedAt": "2026-04-02T08:59:54.787Z",
+      "symbols": [
+        "LoginDto"
+      ]
+    },
+    {
+      "path": "src/modules/auth/dto/logout.dto.ts",
+      "chunk": ".ai/chunks/src__modules__auth__dto__logout.dto.ts.md",
+      "module": "auth",
+      "kind": "dto",
+      "language": "ts",
+      "lineCount": 8,
+      "sizeBytes": 257,
+      "sha256": "167b0ec2eda43643c70e1f8448d8568c0de7fcd713a109933e49887668b4b304",
+      "updatedAt": "2026-04-08T04:57:37.352Z",
+      "symbols": [
+        "LogoutDto"
+      ]
+    },
+    {
+      "path": "src/modules/auth/dto/refresh-token.dto.ts",
+      "chunk": ".ai/chunks/src__modules__auth__dto__refresh-token.dto.ts.md",
+      "module": "auth",
+      "kind": "dto",
+      "language": "ts",
+      "lineCount": 8,
+      "sizeBytes": 263,
+      "sha256": "d32de02dab7aa51a948952626d77d8acaa50beacee69117e04dba41cbda2bf53",
+      "updatedAt": "2026-04-08T04:57:37.352Z",
+      "symbols": [
+        "RefreshTokenDto"
+      ]
+    },
+    {
+      "path": "src/modules/auth/dto/register.dto.ts",
+      "chunk": ".ai/chunks/src__modules__auth__dto__register.dto.ts.md",
+      "module": "auth",
+      "kind": "dto",
+      "language": "ts",
+      "lineCount": 76,
+      "sizeBytes": 1952,
+      "sha256": "e1697b99ce0e03e3258702ee475884b5821a86b313a4fe8c4f81da27eebf3cbd",
+      "updatedAt": "2026-04-15T13:28:30.631Z",
+      "symbols": [
+        "RegisterDto"
+      ]
+    },
+    {
+      "path": "src/modules/auth/entities/refresh-token.entity.ts",
+      "chunk": ".ai/chunks/src__modules__auth__entities__refresh-token.entity.ts.md",
+      "module": "auth",
+      "kind": "entity",
+      "language": "ts",
+      "lineCount": 41,
+      "sizeBytes": 886,
+      "sha256": "93e29534046cde34f1f745ddd3744cce6ac7dba4ba09095141cd40133a70a833",
+      "updatedAt": "2026-04-08T04:57:37.352Z",
+      "symbols": [
+        "RefreshToken"
+      ]
+    },
+    {
+      "path": "src/modules/auth/interfaces/auth-tokens.interface.ts",
+      "chunk": ".ai/chunks/src__modules__auth__interfaces__auth-tokens.interface.ts.md",
+      "module": "auth",
+      "kind": "interface",
+      "language": "ts",
+      "lineCount": 6,
+      "sizeBytes": 105,
+      "sha256": "cdeea1f30a536b889944f3273c0deeceef6f1121e5ae29a1620f95883305bd6d",
+      "updatedAt": "2026-03-23T10:41:25.773Z",
+      "symbols": []
+    },
+    {
+      "path": "src/modules/auth/services/auth-cookie.service.ts",
+      "chunk": ".ai/chunks/src__modules__auth__services__auth-cookie.service.ts.md",
+      "module": "auth",
+      "kind": "service",
+      "language": "ts",
+      "lineCount": 62,
+      "sizeBytes": 1675,
+      "sha256": "91e0b31a7988910574e25d0b6e9f4eb55f8ce09572b722f79ba9a9c035bf172f",
+      "updatedAt": "2026-04-08T04:57:37.360Z",
+      "symbols": [
+        "AuthCookieService"
+      ]
+    },
+    {
+      "path": "src/modules/auth/services/auth-token.service.ts",
+      "chunk": ".ai/chunks/src__modules__auth__services__auth-token.service.ts.md",
+      "module": "auth",
+      "kind": "service",
+      "language": "ts",
+      "lineCount": 98,
+      "sizeBytes": 2846,
+      "sha256": "0c5e193e7dea8c5ddb9ae843aafba8e76e2dbb443129e08c226d469e2bd5510c",
+      "updatedAt": "2026-04-15T13:19:51.209Z",
+      "symbols": [
+        "AuthTokenService"
+      ]
+    },
+    {
+      "path": "src/modules/auth/services/recaptcha.service.ts",
+      "chunk": ".ai/chunks/src__modules__auth__services__recaptcha.service.ts.md",
+      "module": "auth",
+      "kind": "service",
+      "language": "ts",
+      "lineCount": 52,
+      "sizeBytes": 1310,
+      "sha256": "a3464f005721fad2c74302cc2d966fac116475b4cf78c48036fd3db7303534b0",
+      "updatedAt": "2026-04-08T04:57:37.360Z",
+      "symbols": [
+        "RecaptchaService"
+      ]
+    },
+    {
+      "path": "src/modules/auth/services/refresh-token.service.ts",
+      "chunk": ".ai/chunks/src__modules__auth__services__refresh-token.service.ts.md",
+      "module": "auth",
+      "kind": "service",
+      "language": "ts",
+      "lineCount": 80,
+      "sizeBytes": 2042,
+      "sha256": "97e82557f9cc902ac346b0b13620c48f620d601fe3f5077cd4c685bd0ba4ebcf",
+      "updatedAt": "2026-04-08T04:57:37.366Z",
+      "symbols": [
+        "RefreshTokenService"
+      ]
+    },
+    {
+      "path": "src/modules/auth/strategies/jwt.strategy.ts",
+      "chunk": ".ai/chunks/src__modules__auth__strategies__jwt.strategy.ts.md",
+      "module": "auth",
+      "kind": "strategy",
+      "language": "ts",
+      "lineCount": 42,
+      "sizeBytes": 1219,
+      "sha256": "39d8dc082612d5e9b70560a8e6cb93b93f602a14cf159066a29fbb10bc4af960",
+      "updatedAt": "2026-04-08T04:57:37.366Z",
+      "symbols": [
+        "JwTStrategy"
+      ]
+    },
+    {
+      "path": "src/modules/bookings/bookings.controller.spec.ts",
+      "chunk": ".ai/chunks/src__modules__bookings__bookings.controller.spec.ts.md",
+      "module": "bookings",
+      "kind": "spec",
+      "language": "ts",
+      "lineCount": 19,
+      "sizeBytes": 524,
+      "sha256": "216c0525a9c592a86dd33713c00264219aac17ccab7fdddb06091b6bac7c708c",
+      "updatedAt": "2026-03-22T08:37:56.722Z",
+      "symbols": []
+    },
+    {
+      "path": "src/modules/bookings/bookings.controller.ts",
+      "chunk": ".ai/chunks/src__modules__bookings__bookings.controller.ts.md",
+      "module": "bookings",
+      "kind": "controller",
+      "language": "ts",
+      "lineCount": 5,
+      "sizeBytes": 109,
+      "sha256": "c081814b043b3bbe497380ee2f130c0606a49045c08329a245c11adfdef40f6f",
+      "updatedAt": "2026-03-22T08:37:56.722Z",
+      "symbols": [
+        "BookingsController"
+      ]
+    },
+    {
+      "path": "src/modules/bookings/bookings.module.ts",
+      "chunk": ".ai/chunks/src__modules__bookings__bookings.module.ts.md",
+      "module": "bookings",
+      "kind": "module",
+      "language": "ts",
+      "lineCount": 16,
+      "sizeBytes": 557,
+      "sha256": "2b6635b078033c6e3cfb02f34fa15a13bc1d868e4bd0886ad90bf7b8e201f0a0",
+      "updatedAt": "2026-04-02T08:59:54.793Z",
+      "symbols": [
+        "BookingsModule"
+      ]
+    },
+    {
+      "path": "src/modules/bookings/bookings.service.spec.ts",
+      "chunk": ".ai/chunks/src__modules__bookings__bookings.service.spec.ts.md",
+      "module": "bookings",
+      "kind": "spec",
+      "language": "ts",
+      "lineCount": 19,
+      "sizeBytes": 492,
+      "sha256": "cb6ff962c74ad69bb486985ad53b2095f5500f1a222f6037dd02426832fce684",
+      "updatedAt": "2026-03-22T08:37:56.724Z",
+      "symbols": []
+    },
+    {
+      "path": "src/modules/bookings/bookings.service.ts",
+      "chunk": ".ai/chunks/src__modules__bookings__bookings.service.ts.md",
+      "module": "bookings",
+      "kind": "service",
+      "language": "ts",
+      "lineCount": 5,
+      "sizeBytes": 96,
+      "sha256": "da5a4de8676d006334bc93de27798f0946e1f67a3cc847f5353bf3a9fc48d2e3",
+      "updatedAt": "2026-03-22T08:37:56.724Z",
+      "symbols": [
+        "BookingsService"
+      ]
+    },
+    {
+      "path": "src/modules/bookings/dto/booking-response.dto.ts",
+      "chunk": ".ai/chunks/src__modules__bookings__dto__booking-response.dto.ts.md",
+      "module": "bookings",
+      "kind": "dto",
+      "language": "ts",
+      "lineCount": 0,
+      "sizeBytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "updatedAt": "2026-03-22T08:37:56.725Z",
+      "symbols": []
+    },
+    {
+      "path": "src/modules/bookings/dto/create-booking.dto.ts",
+      "chunk": ".ai/chunks/src__modules__bookings__dto__create-booking.dto.ts.md",
+      "module": "bookings",
+      "kind": "dto",
+      "language": "ts",
+      "lineCount": 0,
+      "sizeBytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "updatedAt": "2026-03-22T08:37:56.726Z",
+      "symbols": []
+    },
+    {
+      "path": "src/modules/bookings/entities/booking-seat.entity.ts",
+      "chunk": ".ai/chunks/src__modules__bookings__entities__booking-seat.entity.ts.md",
+      "module": "bookings",
+      "kind": "entity",
+      "language": "ts",
+      "lineCount": 64,
+      "sizeBytes": 1436,
+      "sha256": "f72173d0ae55263c9cf7eb65e0d2ad7234ee64a44b9ed64ba9f12c80ceb99ca5",
+      "updatedAt": "2026-04-22T03:38:30.482Z",
+      "symbols": [
+        "BookingSeat"
+      ]
+    },
+    {
+      "path": "src/modules/bookings/entities/booking.entity.ts",
+      "chunk": ".ai/chunks/src__modules__bookings__entities__booking.entity.ts.md",
+      "module": "bookings",
+      "kind": "entity",
+      "language": "ts",
+      "lineCount": 99,
+      "sizeBytes": 2349,
+      "sha256": "3865f218e18a166959d334effcb27b585e19890382bae1017d05fd61e8586e99",
+      "updatedAt": "2026-04-22T03:38:28.271Z",
+      "symbols": [
+        "Booking"
+      ]
+    },
+    {
+      "path": "src/modules/bookings/interfaces/booking-seat-input.interface.ts",
+      "chunk": ".ai/chunks/src__modules__bookings__interfaces__booking-seat-input.interface.ts.md",
+      "module": "bookings",
+      "kind": "interface",
+      "language": "ts",
+      "lineCount": 6,
+      "sizeBytes": 97,
+      "sha256": "b4652d92f5db961264bbca6f1b88b414591f238d2b2e27681264f4e4455ebb3b",
+      "updatedAt": "2026-03-22T08:37:56.731Z",
+      "symbols": []
+    },
+    {
+      "path": "src/modules/genres/dto/create-genre.dto.ts",
+      "chunk": ".ai/chunks/src__modules__genres__dto__create-genre.dto.ts.md",
+      "module": "genres",
+      "kind": "dto",
+      "language": "ts",
+      "lineCount": 9,
+      "sizeBytes": 332,
+      "sha256": "d5547a80197d072321a1623062ac02dac33971b8420be063197963c7747efe41",
+      "updatedAt": "2026-04-08T04:56:34.037Z",
+      "symbols": [
+        "CreateGenreDto"
+      ]
+    },
+    {
+      "path": "src/modules/genres/dto/genre-response.dto.ts",
+      "chunk": ".ai/chunks/src__modules__genres__dto__genre-response.dto.ts.md",
+      "module": "genres",
+      "kind": "dto",
+      "language": "ts",
+      "lineCount": 18,
+      "sizeBytes": 400,
+      "sha256": "151274a1e32c01e39e906e58d84aed4641ecaa934ddb9c47d8c8ad13945ed555",
+      "updatedAt": "2026-04-08T04:56:34.037Z",
+      "symbols": [
+        "GenreResponseDto"
+      ]
+    },
+    {
+      "path": "src/modules/genres/dto/update-genre.dto.ts",
+      "chunk": ".ai/chunks/src__modules__genres__dto__update-genre.dto.ts.md",
+      "module": "genres",
+      "kind": "dto",
+      "language": "ts",
+      "lineCount": 4,
+      "sizeBytes": 111,
+      "sha256": "3eb63713f4874b5d3bea75fdfe83eb6f96451508be4dbf4dc36fd384f3486e6f",
+      "updatedAt": "2026-04-08T04:56:34.037Z",
+      "symbols": [
+        "UpdateGenreDto"
+      ]
+    },
+    {
+      "path": "src/modules/genres/entities/genre.entity.ts",
+      "chunk": ".ai/chunks/src__modules__genres__entities__genre.entity.ts.md",
+      "module": "genres",
+      "kind": "entity",
+      "language": "ts",
+      "lineCount": 41,
+      "sizeBytes": 807,
+      "sha256": "8423cb0f8eacee6a4529791ac20e589a2ff187f9ff3fbe5ff3d9d45c9a3691df",
+      "updatedAt": "2026-04-22T03:38:04.076Z",
+      "symbols": [
+        "Genre"
+      ]
+    },
+    {
+      "path": "src/modules/genres/genres.controller.ts",
+      "chunk": ".ai/chunks/src__modules__genres__genres.controller.ts.md",
+      "module": "genres",
+      "kind": "controller",
+      "language": "ts",
+      "lineCount": 66,
+      "sizeBytes": 1746,
+      "sha256": "2cfab1602316bc4562b5a8ef98e8c327603de1f4f2e499956adf016351c27ea5",
+      "updatedAt": "2026-04-15T13:14:54.026Z",
+      "symbols": [
+        "GenresController"
+      ]
+    },
+    {
+      "path": "src/modules/genres/genres.module.ts",
+      "chunk": ".ai/chunks/src__modules__genres__genres.module.ts.md",
+      "module": "genres",
+      "kind": "module",
+      "language": "ts",
+      "lineCount": 15,
+      "sizeBytes": 459,
+      "sha256": "83dd16d35a3eeeb99a365b62ea427e0c58ff4a6b1cad1039b1b061e72b26c123",
+      "updatedAt": "2026-04-08T04:56:34.037Z",
+      "symbols": [
+        "GenresModule"
+      ]
+    },
+    {
+      "path": "src/modules/genres/genres.service.ts",
+      "chunk": ".ai/chunks/src__modules__genres__genres.service.ts.md",
+      "module": "genres",
+      "kind": "service",
+      "language": "ts",
+      "lineCount": 133,
+      "sizeBytes": 3750,
+      "sha256": "6209870fda90886ba8ba8fba132f78425196bfac0d4dabb3c2462bf0fd4ad055",
+      "updatedAt": "2026-04-09T11:54:23.357Z",
+      "symbols": [
+        "GenresService"
+      ]
+    },
+    {
+      "path": "src/modules/genres/utils/genre-input.util.ts",
+      "chunk": ".ai/chunks/src__modules__genres__utils__genre-input.util.ts.md",
+      "module": "genres",
+      "kind": "file",
+      "language": "ts",
+      "lineCount": 24,
+      "sizeBytes": 564,
+      "sha256": "9c6e45802724c8ab4ac2cb3599e4313ef10ba3d674d62f378af06cedaa2f5ca1",
+      "updatedAt": "2026-04-08T04:57:37.370Z",
+      "symbols": [
+        "prepareGenreInput"
+      ]
+    },
+    {
+      "path": "src/modules/movies/dto/create-movie.dto.ts",
+      "chunk": ".ai/chunks/src__modules__movies__dto__create-movie.dto.ts.md",
+      "module": "movies",
+      "kind": "dto",
+      "language": "ts",
+      "lineCount": 86,
+      "sizeBytes": 2531,
+      "sha256": "346ea956a473aff213c28aa6e697338316567cc11f11e27edfff0c8efdc5ff86",
+      "updatedAt": "2026-04-15T12:35:54.477Z",
+      "symbols": [
+        "CreateMovieDto"
+      ]
+    },
+    {
+      "path": "src/modules/movies/dto/movie-response.dto.ts",
+      "chunk": ".ai/chunks/src__modules__movies__dto__movie-response.dto.ts.md",
+      "module": "movies",
+      "kind": "dto",
+      "language": "ts",
+      "lineCount": 53,
+      "sizeBytes": 1536,
+      "sha256": "6219d000b98b68e46dcdf704c971820729e355317bd63a8ea45d286dda5f51f1",
+      "updatedAt": "2026-04-15T13:33:05.774Z",
+      "symbols": [
+        "MovieResponseDto"
+      ]
+    },
+    {
+      "path": "src/modules/movies/dto/update-movie.dto.ts",
+      "chunk": ".ai/chunks/src__modules__movies__dto__update-movie.dto.ts.md",
+      "module": "movies",
+      "kind": "dto",
+      "language": "ts",
+      "lineCount": 4,
+      "sizeBytes": 108,
+      "sha256": "02d2a6a9e3676f446da0bea128a0aac02e74064ca97f8292b6b99305f18406c5",
+      "updatedAt": "2026-04-09T11:54:23.368Z",
+      "symbols": [
+        "UpdateMovieDto"
+      ]
+    },
+    {
+      "path": "src/modules/movies/entities/movie.entity.ts",
+      "chunk": ".ai/chunks/src__modules__movies__entities__movie.entity.ts.md",
+      "module": "movies",
+      "kind": "entity",
+      "language": "ts",
+      "lineCount": 117,
+      "sizeBytes": 2592,
+      "sha256": "dc89f31eaf32d2806d9b8594518c3fb73a82fd4a577c653c94c0e4ee592f98a8",
+      "updatedAt": "2026-04-22T03:38:01.508Z",
+      "symbols": [
+        "Movie"
+      ]
+    },
+    {
+      "path": "src/modules/movies/movies.controller.ts",
+      "chunk": ".ai/chunks/src__modules__movies__movies.controller.ts.md",
+      "module": "movies",
+      "kind": "controller",
+      "language": "ts",
+      "lineCount": 66,
+      "sizeBytes": 1762,
+      "sha256": "6ee4f4531ac0814eabc3d7be82c7f19c77fe448a92bfb579d60d80104fd0876e",
+      "updatedAt": "2026-04-15T13:14:54.026Z",
+      "symbols": [
+        "MoviesController"
+      ]
+    },
+    {
+      "path": "src/modules/movies/movies.module.ts",
+      "chunk": ".ai/chunks/src__modules__movies__movies.module.ts.md",
+      "module": "movies",
+      "kind": "module",
+      "language": "ts",
+      "lineCount": 15,
+      "sizeBytes": 507,
+      "sha256": "ef0367d7c6cddfc657aec3626e5538b17f09f6cd3814075ea862f617f8f71816",
+      "updatedAt": "2026-04-08T04:56:34.037Z",
+      "symbols": [
+        "MoviesModule"
+      ]
+    },
+    {
+      "path": "src/modules/movies/movies.service.ts",
+      "chunk": ".ai/chunks/src__modules__movies__movies.service.ts.md",
+      "module": "movies",
+      "kind": "service",
+      "language": "ts",
+      "lineCount": 218,
+      "sizeBytes": 6526,
+      "sha256": "b71e10c87181b40c5bbd92d54e1bd4b04b8c016a19e9162bbf81bbeb65c73340",
+      "updatedAt": "2026-04-15T12:41:48.624Z",
+      "symbols": [
+        "MoviesService"
+      ]
+    },
+    {
+      "path": "src/modules/movies/utils/movie-input.util.ts",
+      "chunk": ".ai/chunks/src__modules__movies__utils__movie-input.util.ts.md",
+      "module": "movies",
+      "kind": "file",
+      "language": "ts",
+      "lineCount": 71,
+      "sizeBytes": 1996,
+      "sha256": "5cda385954ec92852a525fef7bda7a8524d600e8d04608ae57d96e919f5d09b1",
+      "updatedAt": "2026-04-15T12:42:21.294Z",
+      "symbols": [
+        "prepareMovieInput",
+        "normalizeRequiredText",
+        "normalizeOptionalText"
+      ]
+    },
+    {
+      "path": "src/modules/payments/dto/create-payment.dto.ts",
+      "chunk": ".ai/chunks/src__modules__payments__dto__create-payment.dto.ts.md",
+      "module": "payments",
+      "kind": "dto",
+      "language": "ts",
+      "lineCount": 0,
+      "sizeBytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "updatedAt": "2026-03-22T08:37:56.754Z",
+      "symbols": []
+    },
+    {
+      "path": "src/modules/payments/dto/payment-callback.dto.ts",
+      "chunk": ".ai/chunks/src__modules__payments__dto__payment-callback.dto.ts.md",
+      "module": "payments",
+      "kind": "dto",
+      "language": "ts",
+      "lineCount": 0,
+      "sizeBytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "updatedAt": "2026-03-22T08:37:56.755Z",
+      "symbols": []
+    },
+    {
+      "path": "src/modules/payments/entities/payment.entity.ts",
+      "chunk": ".ai/chunks/src__modules__payments__entities__payment.entity.ts.md",
+      "module": "payments",
+      "kind": "entity",
+      "language": "ts",
+      "lineCount": 0,
+      "sizeBytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "updatedAt": "2026-03-23T19:13:17.606Z",
+      "symbols": []
+    },
+    {
+      "path": "src/modules/payments/interfaces/momo-response.interface.ts",
+      "chunk": ".ai/chunks/src__modules__payments__interfaces__momo-response.interface.ts.md",
+      "module": "payments",
+      "kind": "interface",
+      "language": "ts",
+      "lineCount": 0,
+      "sizeBytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "updatedAt": "2026-03-22T08:37:56.759Z",
+      "symbols": []
+    },
+    {
+      "path": "src/modules/payments/interfaces/payment-gateway.interface.ts",
+      "chunk": ".ai/chunks/src__modules__payments__interfaces__payment-gateway.interface.ts.md",
+      "module": "payments",
+      "kind": "interface",
+      "language": "ts",
+      "lineCount": 0,
+      "sizeBytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "updatedAt": "2026-03-22T08:37:56.761Z",
+      "symbols": []
+    },
+    {
+      "path": "src/modules/payments/payments.controller.spec.ts",
+      "chunk": ".ai/chunks/src__modules__payments__payments.controller.spec.ts.md",
+      "module": "payments",
+      "kind": "spec",
+      "language": "ts",
+      "lineCount": 19,
+      "sizeBytes": 524,
+      "sha256": "cc9ec69963d7010b2917280132048951f486b3ce352398393c410a3e6f876b0e",
+      "updatedAt": "2026-03-22T08:37:56.763Z",
+      "symbols": []
+    },
+    {
+      "path": "src/modules/payments/payments.controller.ts",
+      "chunk": ".ai/chunks/src__modules__payments__payments.controller.ts.md",
+      "module": "payments",
+      "kind": "controller",
+      "language": "ts",
+      "lineCount": 5,
+      "sizeBytes": 109,
+      "sha256": "3a81aaa10dde33097c621ec87fa257f704076be17048c54c38d5b1723451bb99",
+      "updatedAt": "2026-03-22T08:37:56.763Z",
+      "symbols": [
+        "PaymentsController"
+      ]
+    },
+    {
+      "path": "src/modules/payments/payments.module.ts",
+      "chunk": ".ai/chunks/src__modules__payments__payments.module.ts.md",
+      "module": "payments",
+      "kind": "module",
+      "language": "ts",
+      "lineCount": 12,
+      "sizeBytes": 311,
+      "sha256": "c5c5086e7f20fe9518cb959060fe324d7df8f321515522d152f77d30d4efe64d",
+      "updatedAt": "2026-04-02T08:59:54.811Z",
+      "symbols": [
+        "PaymentsModule"
+      ]
+    },
+    {
+      "path": "src/modules/payments/payments.service.spec.ts",
+      "chunk": ".ai/chunks/src__modules__payments__payments.service.spec.ts.md",
+      "module": "payments",
+      "kind": "spec",
+      "language": "ts",
+      "lineCount": 19,
+      "sizeBytes": 492,
+      "sha256": "2cc61b338f508c3b2e375b95405cf34f7f1bb8cbe8d1ae383b69dcf26887ad3e",
+      "updatedAt": "2026-03-22T08:37:56.767Z",
+      "symbols": []
+    },
+    {
+      "path": "src/modules/payments/payments.service.ts",
+      "chunk": ".ai/chunks/src__modules__payments__payments.service.ts.md",
+      "module": "payments",
+      "kind": "service",
+      "language": "ts",
+      "lineCount": 5,
+      "sizeBytes": 96,
+      "sha256": "76ada8a76e38e3eda8a25ea27e6806b16b4426f2d6626400c09a8bf04134b9d1",
+      "updatedAt": "2026-03-22T08:37:56.768Z",
+      "symbols": [
+        "PaymentsService"
+      ]
+    },
+    {
+      "path": "src/modules/payments/providers/momo/momo.config.ts",
+      "chunk": ".ai/chunks/src__modules__payments__providers__momo__momo.config.ts.md",
+      "module": "payments",
+      "kind": "config",
+      "language": "ts",
+      "lineCount": 0,
+      "sizeBytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "updatedAt": "2026-03-22T08:37:56.769Z",
+      "symbols": []
+    },
+    {
+      "path": "src/modules/payments/providers/momo/momo.provider.ts",
+      "chunk": ".ai/chunks/src__modules__payments__providers__momo__momo.provider.ts.md",
+      "module": "payments",
+      "kind": "file",
+      "language": "ts",
+      "lineCount": 0,
+      "sizeBytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "updatedAt": "2026-03-22T08:37:56.770Z",
+      "symbols": []
+    },
+    {
+      "path": "src/modules/promotions/dto/create-promotion.dto.ts",
+      "chunk": ".ai/chunks/src__modules__promotions__dto__create-promotion.dto.ts.md",
+      "module": "promotions",
+      "kind": "dto",
+      "language": "ts",
+      "lineCount": 0,
+      "sizeBytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "updatedAt": "2026-03-22T08:37:56.771Z",
+      "symbols": []
+    },
+    {
+      "path": "src/modules/promotions/dto/update-promotion.dto.ts",
+      "chunk": ".ai/chunks/src__modules__promotions__dto__update-promotion.dto.ts.md",
+      "module": "promotions",
+      "kind": "dto",
+      "language": "ts",
+      "lineCount": 0,
+      "sizeBytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "updatedAt": "2026-03-22T08:37:56.771Z",
+      "symbols": []
+    },
+    {
+      "path": "src/modules/promotions/entities/promotion.entity.ts",
+      "chunk": ".ai/chunks/src__modules__promotions__entities__promotion.entity.ts.md",
+      "module": "promotions",
+      "kind": "entity",
+      "language": "ts",
+      "lineCount": 68,
+      "sizeBytes": 1280,
+      "sha256": "1f34d0e3cb891eacf16a9af050e3bc9e8460dc33186a8947cc7909fa79b3d459",
+      "updatedAt": "2026-04-02T08:59:54.811Z",
+      "symbols": [
+        "Promotion"
+      ]
+    },
+    {
+      "path": "src/modules/promotions/promotions.controller.spec.ts",
+      "chunk": ".ai/chunks/src__modules__promotions__promotions.controller.spec.ts.md",
+      "module": "promotions",
+      "kind": "spec",
+      "language": "ts",
+      "lineCount": 19,
+      "sizeBytes": 538,
+      "sha256": "b6291b8d565e4fe37871fe41f6381c66456b9e59e2d92dd54efa1ebfde5f549b",
+      "updatedAt": "2026-03-22T08:37:56.772Z",
+      "symbols": []
+    },
+    {
+      "path": "src/modules/promotions/promotions.controller.ts",
+      "chunk": ".ai/chunks/src__modules__promotions__promotions.controller.ts.md",
+      "module": "promotions",
+      "kind": "controller",
+      "language": "ts",
+      "lineCount": 5,
+      "sizeBytes": 113,
+      "sha256": "ea909e750876d7b2680cf50e5e283fc891c8dd18d2d18fe93d6be02a3ee52755",
+      "updatedAt": "2026-03-22T08:37:56.773Z",
+      "symbols": [
+        "PromotionsController"
+      ]
+    },
+    {
+      "path": "src/modules/promotions/promotions.module.ts",
+      "chunk": ".ai/chunks/src__modules__promotions__promotions.module.ts.md",
+      "module": "promotions",
+      "kind": "module",
+      "language": "ts",
+      "lineCount": 15,
+      "sizeBytes": 503,
+      "sha256": "13199586635a3aa7a302a43352f011a01dbba6da149f86174a75341faf66bb00",
+      "updatedAt": "2026-04-02T08:59:54.811Z",
+      "symbols": [
+        "PromotionsModule"
+      ]
+    },
+    {
+      "path": "src/modules/promotions/promotions.service.spec.ts",
+      "chunk": ".ai/chunks/src__modules__promotions__promotions.service.spec.ts.md",
+      "module": "promotions",
+      "kind": "spec",
+      "language": "ts",
+      "lineCount": 19,
+      "sizeBytes": 506,
+      "sha256": "f7348951b885cc15660c900da3fcc65be1b96641b3f2cf187277c802f889fb25",
+      "updatedAt": "2026-03-22T08:37:56.774Z",
+      "symbols": []
+    },
+    {
+      "path": "src/modules/promotions/promotions.service.ts",
+      "chunk": ".ai/chunks/src__modules__promotions__promotions.service.ts.md",
+      "module": "promotions",
+      "kind": "service",
+      "language": "ts",
+      "lineCount": 5,
+      "sizeBytes": 98,
+      "sha256": "7a9091e45708d8121290e7e1eec6e83ab5dfceb251ffcef4b4102b50bb99dd4b",
+      "updatedAt": "2026-03-22T08:37:56.775Z",
+      "symbols": [
+        "PromotionsService"
+      ]
+    },
+    {
+      "path": "src/modules/rooms/dto/create-room.dto.ts",
+      "chunk": ".ai/chunks/src__modules__rooms__dto__create-room.dto.ts.md",
+      "module": "rooms",
+      "kind": "dto",
+      "language": "ts",
+      "lineCount": 12,
+      "sizeBytes": 458,
+      "sha256": "d070f857fbd3e2d5e73f91c87a2625f3103b97118c94252b6426848e996a0b09",
+      "updatedAt": "2026-04-15T15:02:49.490Z",
+      "symbols": [
+        "CreateRoomDto"
+      ]
+    },
+    {
+      "path": "src/modules/rooms/dto/room-response.dto.ts",
+      "chunk": ".ai/chunks/src__modules__rooms__dto__room-response.dto.ts.md",
+      "module": "rooms",
+      "kind": "dto",
+      "language": "ts",
+      "lineCount": 20,
+      "sizeBytes": 489,
+      "sha256": "aa4db01061f221aa867bb0f1ac13636757cd6aadafcd8a217d5f920c9345c463",
+      "updatedAt": "2026-04-21T15:43:06.409Z",
+      "symbols": [
+        "RoomResponseDto"
+      ]
+    },
+    {
+      "path": "src/modules/rooms/dto/update-room.dto.ts",
+      "chunk": ".ai/chunks/src__modules__rooms__dto__update-room.dto.ts.md",
+      "module": "rooms",
+      "kind": "dto",
+      "language": "ts",
+      "lineCount": 4,
+      "sizeBytes": 104,
+      "sha256": "1dfd9330e30a9979caa098814b73f8e1441b35043e7066e2c7dc826813922865",
+      "updatedAt": "2026-04-21T09:48:06.273Z",
+      "symbols": [
+        "UpdateRoomDto"
+      ]
+    },
+    {
+      "path": "src/modules/rooms/entities/room.entity.ts",
+      "chunk": ".ai/chunks/src__modules__rooms__entities__room.entity.ts.md",
+      "module": "rooms",
+      "kind": "entity",
+      "language": "ts",
+      "lineCount": 42,
+      "sizeBytes": 914,
+      "sha256": "bea7240c16f5a1edba8eda97920a78caf100b8306e154ae707f870075ed322d5",
+      "updatedAt": "2026-04-21T14:16:18.363Z",
+      "symbols": [
+        "Room"
+      ]
+    },
+    {
+      "path": "src/modules/rooms/rooms.controller.ts",
+      "chunk": ".ai/chunks/src__modules__rooms__rooms.controller.ts.md",
+      "module": "rooms",
+      "kind": "controller",
+      "language": "ts",
+      "lineCount": 59,
+      "sizeBytes": 1484,
+      "sha256": "baab5c4dca2b565d2b718a43e82350c5814cd8c076a7ae4d1810a7b60f1a0d88",
+      "updatedAt": "2026-04-15T15:03:36.728Z",
+      "symbols": [
+        "RoomsController"
+      ]
+    },
+    {
+      "path": "src/modules/rooms/rooms.module.ts",
+      "chunk": ".ai/chunks/src__modules__rooms__rooms.module.ts.md",
+      "module": "rooms",
+      "kind": "module",
+      "language": "ts",
+      "lineCount": 15,
+      "sizeBytes": 448,
+      "sha256": "5156443a68b4bb409644dbcfcce515bc2af8fad3530f01f653fea361dc858261",
+      "updatedAt": "2026-04-02T08:59:54.817Z",
+      "symbols": [
+        "RoomsModule"
+      ]
+    },
+    {
+      "path": "src/modules/rooms/rooms.service.ts",
+      "chunk": ".ai/chunks/src__modules__rooms__rooms.service.ts.md",
+      "module": "rooms",
+      "kind": "service",
+      "language": "ts",
+      "lineCount": 107,
+      "sizeBytes": 2994,
+      "sha256": "736ba650493c7b07b90c8c2f0eafd2e89d4b83fabe8464df252f237027c8978d",
+      "updatedAt": "2026-04-21T15:34:55.857Z",
+      "symbols": [
+        "RoomsService"
+      ]
+    },
+    {
+      "path": "src/modules/seats/dto/seat-availability.dto.ts",
+      "chunk": ".ai/chunks/src__modules__seats__dto__seat-availability.dto.ts.md",
+      "module": "seats",
+      "kind": "dto",
+      "language": "ts",
+      "lineCount": 0,
+      "sizeBytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "updatedAt": "2026-03-22T08:37:56.804Z",
+      "symbols": []
+    },
+    {
+      "path": "src/modules/seats/entities/seat.entity.ts",
+      "chunk": ".ai/chunks/src__modules__seats__entities__seat.entity.ts.md",
+      "module": "seats",
+      "kind": "entity",
+      "language": "ts",
+      "lineCount": 66,
+      "sizeBytes": 1500,
+      "sha256": "b265512a6d6b297ac378c73692d083e445496d6cd5bc349f13432d81ca3eaa98",
+      "updatedAt": "2026-04-22T03:38:06.276Z",
+      "symbols": [
+        "Seat"
+      ]
+    },
+    {
+      "path": "src/modules/seats/interfaces/seat-status.interface.ts",
+      "chunk": ".ai/chunks/src__modules__seats__interfaces__seat-status.interface.ts.md",
+      "module": "seats",
+      "kind": "interface",
+      "language": "ts",
+      "lineCount": 11,
+      "sizeBytes": 261,
+      "sha256": "95b7b80c07ee5f6d6d045946270a9e6e6e1dbfeb7cd52afcb03024cd2740b602",
+      "updatedAt": "2026-04-08T04:57:37.376Z",
+      "symbols": []
+    },
+    {
+      "path": "src/modules/seats/seats.controller.spec.ts",
+      "chunk": ".ai/chunks/src__modules__seats__seats.controller.spec.ts.md",
+      "module": "seats",
+      "kind": "spec",
+      "language": "ts",
+      "lineCount": 19,
+      "sizeBytes": 503,
+      "sha256": "96d6dd2927be722edf9e83f4ddcef11df57414b38b4668832708ea231973ffbf",
+      "updatedAt": "2026-03-22T08:37:56.807Z",
+      "symbols": []
+    },
+    {
+      "path": "src/modules/seats/seats.controller.ts",
+      "chunk": ".ai/chunks/src__modules__seats__seats.controller.ts.md",
+      "module": "seats",
+      "kind": "controller",
+      "language": "ts",
+      "lineCount": 5,
+      "sizeBytes": 103,
+      "sha256": "350a77174dab371cb1d253cdd1c464febe72292a38c8f59d3f6b3f809b2a97dc",
+      "updatedAt": "2026-03-22T08:37:56.807Z",
+      "symbols": [
+        "SeatsController"
+      ]
+    },
+    {
+      "path": "src/modules/seats/seats.module.ts",
+      "chunk": ".ai/chunks/src__modules__seats__seats.module.ts.md",
+      "module": "seats",
+      "kind": "module",
+      "language": "ts",
+      "lineCount": 15,
+      "sizeBytes": 448,
+      "sha256": "b88383d8924892ee8ec7380141f172cc3b8d6aae8aa46a9cdd5cba1ab8d5f20b",
+      "updatedAt": "2026-04-02T08:59:54.818Z",
+      "symbols": [
+        "SeatsModule"
+      ]
+    },
+    {
+      "path": "src/modules/seats/seats.service.spec.ts",
+      "chunk": ".ai/chunks/src__modules__seats__seats.service.spec.ts.md",
+      "module": "seats",
+      "kind": "spec",
+      "language": "ts",
+      "lineCount": 19,
+      "sizeBytes": 471,
+      "sha256": "4ff52957cd91cd3fe825e2ed5e2ca5cb3c101ba022d4be49ce001caa6c7a702a",
+      "updatedAt": "2026-03-22T08:37:56.819Z",
+      "symbols": []
+    },
+    {
+      "path": "src/modules/seats/seats.service.ts",
+      "chunk": ".ai/chunks/src__modules__seats__seats.service.ts.md",
+      "module": "seats",
+      "kind": "service",
+      "language": "ts",
+      "lineCount": 5,
+      "sizeBytes": 93,
+      "sha256": "fa74c593777e6fd69fd4e847a292a20e4976f7937524b26e32f7633fdf938bdd",
+      "updatedAt": "2026-03-22T08:37:56.819Z",
+      "symbols": [
+        "SeatsService"
+      ]
+    },
+    {
+      "path": "src/modules/showtimes/dto/create-showtime.dto.ts",
+      "chunk": ".ai/chunks/src__modules__showtimes__dto__create-showtime.dto.ts.md",
+      "module": "showtimes",
+      "kind": "dto",
+      "language": "ts",
+      "lineCount": 54,
+      "sizeBytes": 1670,
+      "sha256": "95f22a394cc87716f5f4054d421e0e5af1c2e697cec11e8180681e1fcde6c11e",
+      "updatedAt": "2026-04-22T13:29:45.161Z",
+      "symbols": [
+        "ShowtimeItemDto",
+        "CreateShowtimeDto"
+      ]
+    },
+    {
+      "path": "src/modules/showtimes/dto/showtime-query.dto.ts",
+      "chunk": ".ai/chunks/src__modules__showtimes__dto__showtime-query.dto.ts.md",
+      "module": "showtimes",
+      "kind": "dto",
+      "language": "ts",
+      "lineCount": 19,
+      "sizeBytes": 489,
+      "sha256": "57cde02687a98d9ac710c226481973e96aa9f9e8f5b80b5a8aeb31941fdfc3a7",
+      "updatedAt": "2026-04-22T13:29:53.877Z",
+      "symbols": [
+        "ShowtimeQueryDto"
+      ]
+    },
+    {
+      "path": "src/modules/showtimes/dto/showtime-response.dto.ts",
+      "chunk": ".ai/chunks/src__modules__showtimes__dto__showtime-response.dto.ts.md",
+      "module": "showtimes",
+      "kind": "dto",
+      "language": "ts",
+      "lineCount": 40,
+      "sizeBytes": 1122,
+      "sha256": "24fe6f69425bbacb46144453b2d1707a1fac4dc604ecbe023a5f96137211603f",
+      "updatedAt": "2026-04-22T14:34:51.349Z",
+      "symbols": [
+        "ShowtimeResponseDto"
+      ]
+    },
+    {
+      "path": "src/modules/showtimes/dto/update-showtime.dto.ts",
+      "chunk": ".ai/chunks/src__modules__showtimes__dto__update-showtime.dto.ts.md",
+      "module": "showtimes",
+      "kind": "dto",
+      "language": "ts",
+      "lineCount": 33,
+      "sizeBytes": 1015,
+      "sha256": "5231c717ea4e6d4a38718072eb64c9dd9135499aaae81e0df12953865e776e04",
+      "updatedAt": "2026-04-22T13:29:49.009Z",
+      "symbols": [
+        "UpdateShowtimeDto"
+      ]
+    },
+    {
+      "path": "src/modules/showtimes/entities/showtime.entity.ts",
+      "chunk": ".ai/chunks/src__modules__showtimes__entities__showtime.entity.ts.md",
+      "module": "showtimes",
+      "kind": "entity",
+      "language": "ts",
+      "lineCount": 84,
+      "sizeBytes": 1875,
+      "sha256": "6c17a7eab9b62f7a73bee62fafd35102cc798808e1f17b838b0d5cb74f8a24d5",
+      "updatedAt": "2026-04-22T13:29:40.198Z",
+      "symbols": [
+        "Showtime"
+      ]
+    },
+    {
+      "path": "src/modules/showtimes/showtimes.controller.ts",
+      "chunk": ".ai/chunks/src__modules__showtimes__showtimes.controller.ts.md",
+      "module": "showtimes",
+      "kind": "controller",
+      "language": "ts",
+      "lineCount": 66,
+      "sizeBytes": 1872,
+      "sha256": "b687945a82c52e79f6ca0b0f0d91652dc4e2368551e192f95264860dba2e1887",
+      "updatedAt": "2026-04-22T13:41:58.564Z",
+      "symbols": [
+        "ShowtimesController"
+      ]
+    },
+    {
+      "path": "src/modules/showtimes/showtimes.module.ts",
+      "chunk": ".ai/chunks/src__modules__showtimes__showtimes.module.ts.md",
+      "module": "showtimes",
+      "kind": "module",
+      "language": "ts",
+      "lineCount": 17,
+      "sizeBytes": 614,
+      "sha256": "c227c8defccc468b78717abd3b2fefb2acf91c08bee9205669d6b6d0600cbb24",
+      "updatedAt": "2026-04-22T14:33:51.771Z",
+      "symbols": [
+        "ShowtimesModule"
+      ]
+    },
+    {
+      "path": "src/modules/showtimes/showtimes.service.ts",
+      "chunk": ".ai/chunks/src__modules__showtimes__showtimes.service.ts.md",
+      "module": "showtimes",
+      "kind": "service",
+      "language": "ts",
+      "lineCount": 273,
+      "sizeBytes": 8820,
+      "sha256": "59323e6bd52f8c9e687a853181f2da0e78322fa55bbd06bc85c4bf77d4f0628a",
+      "updatedAt": "2026-04-22T14:34:51.334Z",
+      "symbols": [
+        "ShowtimesService"
+      ]
+    },
+    {
+      "path": "src/modules/users/dto/create-user.dto.ts",
+      "chunk": ".ai/chunks/src__modules__users__dto__create-user.dto.ts.md",
+      "module": "users",
+      "kind": "dto",
+      "language": "ts",
+      "lineCount": 15,
+      "sizeBytes": 298,
+      "sha256": "d862fcdefc890b3247d4bf40ebc6cb6a00d0f2eed20da3ce10face63d03d341e",
+      "updatedAt": "2026-04-15T11:45:47.298Z",
+      "symbols": []
+    },
+    {
+      "path": "src/modules/users/dto/update-user.dto.ts",
+      "chunk": ".ai/chunks/src__modules__users__dto__update-user.dto.ts.md",
+      "module": "users",
+      "kind": "dto",
+      "language": "ts",
+      "lineCount": 0,
+      "sizeBytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "updatedAt": "2026-03-22T08:37:56.830Z",
+      "symbols": []
+    },
+    {
+      "path": "src/modules/users/dto/user-response.dto.ts",
+      "chunk": ".ai/chunks/src__modules__users__dto__user-response.dto.ts.md",
+      "module": "users",
+      "kind": "dto",
+      "language": "ts",
+      "lineCount": 0,
+      "sizeBytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "updatedAt": "2026-03-22T08:37:56.830Z",
+      "symbols": []
+    },
+    {
+      "path": "src/modules/users/entities/user.entity.ts",
+      "chunk": ".ai/chunks/src__modules__users__entities__user.entity.ts.md",
+      "module": "users",
+      "kind": "entity",
+      "language": "ts",
+      "lineCount": 88,
+      "sizeBytes": 1979,
+      "sha256": "2bdbc81bf4d26a5ec3f0b573a2a672338a8dc125278e479cc165c2fb86739b4e",
+      "updatedAt": "2026-04-22T03:48:03.782Z",
+      "symbols": [
+        "User"
+      ]
+    },
+    {
+      "path": "src/modules/users/users.controller.spec.ts",
+      "chunk": ".ai/chunks/src__modules__users__users.controller.spec.ts.md",
+      "module": "users",
+      "kind": "spec",
+      "language": "ts",
+      "lineCount": 19,
+      "sizeBytes": 503,
+      "sha256": "f380514928c606010527ad1caca38218c17ff8ec7d87b0afce970d2b5482684f",
+      "updatedAt": "2026-03-22T08:37:56.832Z",
+      "symbols": []
+    },
+    {
+      "path": "src/modules/users/users.controller.ts",
+      "chunk": ".ai/chunks/src__modules__users__users.controller.ts.md",
+      "module": "users",
+      "kind": "controller",
+      "language": "ts",
+      "lineCount": 5,
+      "sizeBytes": 103,
+      "sha256": "b252613cbddc2ec759c7ce0fb69a250288cde82ab913eee7c5ae06f5dd1543dd",
+      "updatedAt": "2026-03-22T08:37:56.832Z",
+      "symbols": [
+        "UsersController"
+      ]
+    },
+    {
+      "path": "src/modules/users/users.module.ts",
+      "chunk": ".ai/chunks/src__modules__users__users.module.ts.md",
+      "module": "users",
+      "kind": "module",
+      "language": "ts",
+      "lineCount": 15,
+      "sizeBytes": 433,
+      "sha256": "d9d06c5a0f9d4b1cf9a665b7103491e671b74d34fd51f4b171194363943ee106",
+      "updatedAt": "2026-04-02T08:59:54.821Z",
+      "symbols": [
+        "UsersModule"
+      ]
+    },
+    {
+      "path": "src/modules/users/users.service.spec.ts",
+      "chunk": ".ai/chunks/src__modules__users__users.service.spec.ts.md",
+      "module": "users",
+      "kind": "spec",
+      "language": "ts",
+      "lineCount": 28,
+      "sizeBytes": 689,
+      "sha256": "273f54ce8e2398361b05c3b4debedaf2367435ab94453f411bd81755913cb2cc",
+      "updatedAt": "2026-04-15T11:49:06.573Z",
+      "symbols": []
+    },
+    {
+      "path": "src/modules/users/users.service.ts",
+      "chunk": ".ai/chunks/src__modules__users__users.service.ts.md",
+      "module": "users",
+      "kind": "service",
+      "language": "ts",
+      "lineCount": 70,
+      "sizeBytes": 2090,
+      "sha256": "d6040c54d36dcc40790d4308240a3d9e5da127c505139926700b99f19c3988e9",
+      "updatedAt": "2026-04-15T11:47:15.256Z",
+      "symbols": [
+        "UsersService"
+      ]
+    },
+    {
+      "path": "test/api/auth/login.api.spec.ts",
+      "chunk": ".ai/chunks/test__api__auth__login.api.spec.ts.md",
+      "module": "test",
+      "kind": "spec",
+      "language": "ts",
+      "lineCount": 456,
+      "sizeBytes": 14317,
+      "sha256": "8468cfd75c644f37f25288d1744113064138c88188c60971ff8eb577ae06e754",
+      "updatedAt": "2026-04-08T04:56:34.064Z",
+      "symbols": []
+    },
+    {
+      "path": "test/api/auth/logout.api.spec.ts",
+      "chunk": ".ai/chunks/test__api__auth__logout.api.spec.ts.md",
+      "module": "test",
+      "kind": "spec",
+      "language": "ts",
+      "lineCount": 380,
+      "sizeBytes": 11571,
+      "sha256": "9125ceba156f52fb097207b7538100ae4623390db21ef64dfa3455d4b5714981",
+      "updatedAt": "2026-04-08T04:57:37.376Z",
+      "symbols": []
+    },
+    {
+      "path": "test/api/auth/refresh.api.spec.ts",
+      "chunk": ".ai/chunks/test__api__auth__refresh.api.spec.ts.md",
+      "module": "test",
+      "kind": "spec",
+      "language": "ts",
+      "lineCount": 481,
+      "sizeBytes": 14843,
+      "sha256": "d73fb5d7b9e030ebb55f34a9a11338542b3a31945ee1162be3f5d4f8638925d3",
+      "updatedAt": "2026-04-08T04:57:37.376Z",
+      "symbols": []
+    },
+    {
+      "path": "test/api/auth/register.api.spec.ts",
+      "chunk": ".ai/chunks/test__api__auth__register.api.spec.ts.md",
+      "module": "test",
+      "kind": "spec",
+      "language": "ts",
+      "lineCount": 797,
+      "sizeBytes": 24300,
+      "sha256": "4103f9495b78987f7d4bb82a15c3ee18d4f8cfb10b400d7e8a9ec2797248c716",
+      "updatedAt": "2026-04-15T13:28:30.628Z",
+      "symbols": []
+    },
+    {
+      "path": "test/api/genres/create-genre.api.spec.ts",
+      "chunk": ".ai/chunks/test__api__genres__create-genre.api.spec.ts.md",
+      "module": "test",
+      "kind": "spec",
+      "language": "ts",
+      "lineCount": 504,
+      "sizeBytes": 15251,
+      "sha256": "c5d0319fb3dd094818d97f7a25b22d2b929f2e18a4e12652f187006d7b1a83ce",
+      "updatedAt": "2026-04-13T14:24:34.338Z",
+      "symbols": []
+    },
+    {
+      "path": "test/api/genres/delete-genre.api.spec.ts",
+      "chunk": ".ai/chunks/test__api__genres__delete-genre.api.spec.ts.md",
+      "module": "test",
+      "kind": "spec",
+      "language": "ts",
+      "lineCount": 357,
+      "sizeBytes": 11053,
+      "sha256": "9f77a742e72ea84f49bceea4d3696e927d76c804fb70a2b4963808e36f44b5f4",
+      "updatedAt": "2026-04-13T14:24:39.880Z",
+      "symbols": []
+    },
+    {
+      "path": "test/api/genres/update-genre.api.spec.ts",
+      "chunk": ".ai/chunks/test__api__genres__update-genre.api.spec.ts.md",
+      "module": "test",
+      "kind": "spec",
+      "language": "ts",
+      "lineCount": 494,
+      "sizeBytes": 15384,
+      "sha256": "b4743c75229d4be9e8e9637d07bbc0f5ca9c5525f95b4dd950f1e41ef466013f",
+      "updatedAt": "2026-04-09T13:20:14.226Z",
+      "symbols": []
+    },
+    {
+      "path": "test/api/movies/create-movie.api.spec.ts",
+      "chunk": ".ai/chunks/test__api__movies__create-movie.api.spec.ts.md",
+      "module": "test",
+      "kind": "spec",
+      "language": "ts",
+      "lineCount": 536,
+      "sizeBytes": 16057,
+      "sha256": "3615123d959a9f03048e75e9a9cd26f070692226c50d045e61515c2d3f62b610",
+      "updatedAt": "2026-04-09T13:26:08.862Z",
+      "symbols": []
+    },
+    {
+      "path": "test/api/movies/delete-movie.api.spec.ts",
+      "chunk": ".ai/chunks/test__api__movies__delete-movie.api.spec.ts.md",
+      "module": "test",
+      "kind": "spec",
+      "language": "ts",
+      "lineCount": 298,
+      "sizeBytes": 9111,
+      "sha256": "62734562912febfba96b5cff66a66b4aadaeff7d2cbd146f6d82934357a0e026",
+      "updatedAt": "2026-04-09T13:13:34.828Z",
+      "symbols": []
+    },
+    {
+      "path": "test/api/movies/update-movie.api.spec.ts",
+      "chunk": ".ai/chunks/test__api__movies__update-movie.api.spec.ts.md",
+      "module": "test",
+      "kind": "spec",
+      "language": "ts",
+      "lineCount": 599,
+      "sizeBytes": 18442,
+      "sha256": "cf956b57e9a1c3ce73c12e27a10e0226d35d729d6e75988f0d32acd65c253f6c",
+      "updatedAt": "2026-04-13T14:24:42.159Z",
+      "symbols": []
+    },
+    {
+      "path": "test/api/rooms/create-room.api.spec.ts",
+      "chunk": ".ai/chunks/test__api__rooms__create-room.api.spec.ts.md",
+      "module": "test",
+      "kind": "spec",
+      "language": "ts",
+      "lineCount": 424,
+      "sizeBytes": 13366,
+      "sha256": "73d16203561b71f51a0475bd10c1910f2a874223a3123e1328b2690c718a8477",
+      "updatedAt": "2026-04-21T09:19:06.992Z",
+      "symbols": []
+    },
+    {
+      "path": "test/api/rooms/delete-room.api.spec.ts",
+      "chunk": ".ai/chunks/test__api__rooms__delete-room.api.spec.ts.md",
+      "module": "test",
+      "kind": "spec",
+      "language": "ts",
+      "lineCount": 343,
+      "sizeBytes": 11175,
+      "sha256": "f7d70eee94ffbaa808d2343191c02d9c3a6b84133947da695937e80a8a316b80",
+      "updatedAt": "2026-04-21T09:16:38.626Z",
+      "symbols": []
+    },
+    {
+      "path": "test/api/rooms/get-room-by-id.api.spec.ts",
+      "chunk": ".ai/chunks/test__api__rooms__get-room-by-id.api.spec.ts.md",
+      "module": "test",
+      "kind": "spec",
+      "language": "ts",
+      "lineCount": 253,
+      "sizeBytes": 8111,
+      "sha256": "598680a981f3178986747edf20cb9ce066b6abcbc63600c36c1045d307772e0d",
+      "updatedAt": "2026-04-21T09:14:38.630Z",
+      "symbols": []
+    },
+    {
+      "path": "test/api/rooms/get-rooms.api.spec.ts",
+      "chunk": ".ai/chunks/test__api__rooms__get-rooms.api.spec.ts.md",
+      "module": "test",
+      "kind": "spec",
+      "language": "ts",
+      "lineCount": 212,
+      "sizeBytes": 7022,
+      "sha256": "0cafc02a9420fd9d9c5076c6d775e1ba8e627784d3ad893ea5f52e9788a9a0b3",
+      "updatedAt": "2026-04-21T09:14:46.776Z",
+      "symbols": []
+    },
+    {
+      "path": "test/api/rooms/update-room.api.spec.ts",
+      "chunk": ".ai/chunks/test__api__rooms__update-room.api.spec.ts.md",
+      "module": "test",
+      "kind": "spec",
+      "language": "ts",
+      "lineCount": 410,
+      "sizeBytes": 13307,
+      "sha256": "f0b02a281d3f7bd63647cdca861381c0a9b32f3a53ee3d5a346a50809804e5af",
+      "updatedAt": "2026-04-21T12:38:42.245Z",
+      "symbols": []
+    },
+    {
+      "path": "test/helpers/excel-reporter.ts",
+      "chunk": ".ai/chunks/test__helpers__excel-reporter.ts.md",
+      "module": "test",
+      "kind": "file",
+      "language": "ts",
+      "lineCount": 71,
+      "sizeBytes": 2231,
+      "sha256": "3c00731c3070a4f26f4caf4b685052abfabb3fb7cb3419685ac72e5fa7bd8c9b",
+      "updatedAt": "2026-04-02T08:59:54.827Z",
+      "symbols": [
+        "exportTestReport"
+      ]
+    },
+    {
+      "path": "test/helpers/http-test.helper.ts",
+      "chunk": ".ai/chunks/test__helpers__http-test.helper.ts.md",
+      "module": "test",
+      "kind": "helper",
+      "language": "ts",
+      "lineCount": 88,
+      "sizeBytes": 2154,
+      "sha256": "db3f68164625249722f7d8016323d5d1b6c5d5ecf975e1cefadf201158126a44",
+      "updatedAt": "2026-04-02T08:59:54.828Z",
+      "symbols": [
+        "getActualStatus",
+        "parseApiError",
+        "parseApiData",
+        "expectErrorMessage",
+        "isObject"
+      ]
+    },
+    {
+      "path": "test/jest-e2e.json",
+      "chunk": ".ai/chunks/test__jest-e2e.json.md",
+      "module": "test",
+      "kind": "file",
+      "language": "json",
+      "lineCount": 9,
+      "sizeBytes": 193,
+      "sha256": "794b79193b875629c9a84b0ffad7df228cb857b4e75090de89841ca2f288c188",
+      "updatedAt": "2026-04-02T08:59:54.828Z",
+      "symbols": []
+    },
+    {
+      "path": "test/run-test.ts",
+      "chunk": ".ai/chunks/test__run-test.ts.md",
+      "module": "test",
+      "kind": "file",
+      "language": "ts",
+      "lineCount": 179,
+      "sizeBytes": 4887,
+      "sha256": "04a82eb79106c59a32f8321b101aac8649b4f2ee9848633b0d5d6f11c8272ae2",
+      "updatedAt": "2026-04-21T09:16:52.175Z",
+      "symbols": []
+    },
+    {
+      "path": "test/types/auth-user.type.ts",
+      "chunk": ".ai/chunks/test__types__auth-user.type.ts.md",
+      "module": "test",
+      "kind": "type",
+      "language": "ts",
+      "lineCount": 20,
+      "sizeBytes": 381,
+      "sha256": "7d9987598a9f50d4351e4171207556bae4ffda429750d238dfd82ba69fc18784",
+      "updatedAt": "2026-04-02T08:59:54.830Z",
+      "symbols": []
+    },
+    {
+      "path": "tsconfig.build.json",
+      "chunk": ".ai/chunks/tsconfig.build.json.md",
+      "module": "root",
+      "kind": "config",
+      "language": "json",
+      "lineCount": 5,
+      "sizeBytes": 101,
+      "sha256": "ef5be6c06c3ac6c3eca6c81885a12d03e33059086b4b275cf39f6e9359965378",
+      "updatedAt": "2026-03-22T08:37:56.846Z",
+      "symbols": []
+    },
+    {
+      "path": "tsconfig.json",
+      "chunk": ".ai/chunks/tsconfig.json.md",
+      "module": "root",
+      "kind": "config",
+      "language": "json",
+      "lineCount": 24,
+      "sizeBytes": 683,
+      "sha256": "814df1918b53fdfcd0d2a54ddc7eced5f493c79a584a80d7baed920724e7f8a4",
+      "updatedAt": "2026-04-07T00:36:44.313Z",
+      "symbols": []
+    }
+  ]
+}
