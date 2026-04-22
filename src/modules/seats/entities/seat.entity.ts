@@ -5,6 +5,8 @@ import {
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { BookingSeat } from '../../bookings/entities/booking-seat.entity';
 import { SeatType } from '../../../common/constants/seat-type.constant';
@@ -37,6 +39,21 @@ export class Seat {
 
   @Column({ name: 'is_active', type: 'boolean', default: true })
   isActive!: boolean;
+
+  @CreateDateColumn({
+    name: 'created_at',
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
+  createdAt!: Date;
+
+  @UpdateDateColumn({
+    name: 'updated_at',
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+    onUpdate: 'CURRENT_TIMESTAMP',
+  })
+  updatedAt!: Date;
 
   //Realation
   @ManyToOne(() => Room, (room) => room.seats)

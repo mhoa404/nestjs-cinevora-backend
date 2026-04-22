@@ -6,6 +6,7 @@ import {
   ManyToMany,
   OneToMany,
   PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { Showtime } from '../../showtimes/entities/showtime.entity';
 import { Genre } from '../../genres/entities/genre.entity';
@@ -94,12 +95,20 @@ export class Movie {
   })
   createdAt!: Date;
 
+  @UpdateDateColumn({
+    name: 'updated_at',
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+    onUpdate: 'CURRENT_TIMESTAMP',
+  })
+  updatedAt!: Date;
+
   @OneToMany(() => Showtime, (showtime) => showtime.movie)
   showtimes!: Showtime[];
 
   @ManyToMany(() => Genre, (genre) => genre.movies)
   @JoinTable({
-    name: 'movie_genres',
+    name: 'movie_genre',
     joinColumn: { name: 'movie_id', referencedColumnName: 'id' },
     inverseJoinColumn: { name: 'genre_id', referencedColumnName: 'id' },
   })

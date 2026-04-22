@@ -5,6 +5,8 @@ import {
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 
 import { Booking } from '../../bookings/entities/booking.entity';
@@ -17,7 +19,7 @@ export class Showtime {
   id!: number;
 
   @Column({ name: 'movie_id' })
-  movieId!: string;
+  movieId!: number;
 
   @Column({ name: 'room_id' })
   roomId!: number;
@@ -52,12 +54,20 @@ export class Showtime {
   })
   priceCouple!: number | null;
 
-  @Column({
+  @CreateDateColumn({
     name: 'created_at',
     type: 'timestamp',
     default: () => 'CURRENT_TIMESTAMP',
   })
   createdAt!: Date;
+
+  @UpdateDateColumn({
+    name: 'updated_at',
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+    onUpdate: 'CURRENT_TIMESTAMP',
+  })
+  updatedAt!: Date;
 
   //Relation
   @ManyToOne(() => Movie, (movie) => movie.showtimes)
