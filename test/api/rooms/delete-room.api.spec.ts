@@ -143,7 +143,6 @@ describe('[API] DELETE /rooms/:id', () => {
         endTime: later,
         priceStandard: 90000,
         priceVip: 120000,
-        pricePremium: null,
         priceCouple: null,
       }),
     );

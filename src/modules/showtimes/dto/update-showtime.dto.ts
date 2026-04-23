@@ -1,4 +1,5 @@
-import { IsDateString, IsInt, IsOptional, Min } from 'class-validator';
+import { IsDateString, IsEnum, IsInt, IsOptional, Min } from 'class-validator';
+import { ShowtimeStatus } from '../entities/showtime.entity';
 
 export class UpdateShowtimeDto {
   @IsOptional()
@@ -10,6 +11,10 @@ export class UpdateShowtimeDto {
   startTime?: string;
 
   @IsOptional()
+  @IsEnum(ShowtimeStatus, { message: 'status phải là open hoặc sold_out.' })
+  status?: ShowtimeStatus;
+
+  @IsOptional()
   @Min(0, { message: 'Giá vé standard phải >= 0.' })
   @IsInt({ message: 'Giá vé standard phải là số nguyên.' })
   priceStandard?: number;
@@ -18,11 +23,6 @@ export class UpdateShowtimeDto {
   @Min(0, { message: 'Giá vé VIP phải >= 0.' })
   @IsInt({ message: 'Giá vé VIP phải là số nguyên.' })
   priceVip?: number;
-
-  @IsOptional()
-  @Min(0, { message: 'Giá vé premium phải >= 0.' })
-  @IsInt({ message: 'Giá vé premium phải là số nguyên.' })
-  pricePremium?: number;
 
   @IsOptional()
   @Min(0, { message: 'Giá vé couple phải >= 0.' })
