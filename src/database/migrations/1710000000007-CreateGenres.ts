@@ -4,41 +4,40 @@ export class CreateGenres1710000000007 implements MigrationInterface {
   name = 'CreateGenres1710000000007';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    // ─────────────────────────────────────────────
     // 1. TẠO BẢNG genres
-    // ─────────────────────────────────────────────
+
     await queryRunner.query(`
       CREATE TABLE \`genres\` (
         \`id\`          INT             NOT NULL AUTO_INCREMENT,
         \`name\`        VARCHAR(100)    NOT NULL,
         \`slug\`        VARCHAR(100)    NOT NULL,
         \`created_at\`  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        \`updated_at\`  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         CONSTRAINT \`PK_genres\` PRIMARY KEY (\`id\`),
         CONSTRAINT \`UQ_genres_name\` UNIQUE (\`name\`),
         CONSTRAINT \`UQ_genres_slug\` UNIQUE (\`slug\`)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
 
-    // ─────────────────────────────────────────────
-    // 2. TẠO BẢNG movie_genres (join table)
-    // ─────────────────────────────────────────────
+    // 2. TẠO BẢNG movie_genre (join table)
+
     await queryRunner.query(`
-      CREATE TABLE \`movie_genres\` (
+      CREATE TABLE \`movie_genre\` (
         \`movie_id\`    INT             NOT NULL,
         \`genre_id\`    INT             NOT NULL,
-        CONSTRAINT \`PK_movie_genres\` PRIMARY KEY (\`movie_id\`, \`genre_id\`),
-        CONSTRAINT \`FK_movie_genres_movie\` FOREIGN KEY (\`movie_id\`)
+        CONSTRAINT \`PK_movie_genre\` PRIMARY KEY (\`movie_id\`, \`genre_id\`),
+        CONSTRAINT \`FK_movie_genres_movi\` FOREIGN KEY (\`movie_id\`)
           REFERENCES \`movies\`(\`id\`) ON DELETE CASCADE,
-        CONSTRAINT \`FK_movie_genres_genre\` FOREIGN KEY (\`genre_id\`)
+        CONSTRAINT \`FK_movie_genres_genr\` FOREIGN KEY (\`genre_id\`)
           REFERENCES \`genres\`(\`id\`) ON DELETE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
 
     await queryRunner.query(
-      `CREATE INDEX \`IDX_movie_genres_movie_id\` ON \`movie_genres\`(\`movie_id\`)`,
+      `CREATE INDEX \`IDX_movie_genre_movie_id\` ON \`movie_genre\`(\`movie_id\`)`,
     );
     await queryRunner.query(
-      `CREATE INDEX \`IDX_movie_genres_genre_id\` ON \`movie_genres\`(\`genre_id\`)`,
+      `CREATE INDEX \`IDX_movie_genre_genre_id\` ON \`movie_genre\`(\`genre_id\`)`,
     );
 
     await queryRunner.query(`
@@ -354,111 +353,111 @@ export class CreateGenres1710000000007 implements MigrationInterface {
     `);
 
     // ─────────────────────────────────────────────
-    // 5. SEED BẢNG movie_genres
+    // 5. SEED BẢNG movie_genre
     //    Dùng subquery để lấy id theo slug/name → tránh hardcode ID
     // ─────────────────────────────────────────────
 
     // Thiên Đường Máu → Tội phạm, Giật gân, Tâm lý
     await queryRunner.query(`
-      INSERT INTO \`movie_genres\` (\`movie_id\`, \`genre_id\`)
+      INSERT INTO \`movie_genre\` (\`movie_id\`, \`genre_id\`)
       SELECT m.id, g.id FROM \`movies\` m, \`genres\` g
       WHERE m.slug = 'thien-duong-mau' AND g.slug IN ('toi-pham', 'giat-gan', 'tam-ly')
     `);
 
     // Avatar 3 → Khoa học viễn tưởng, Phiêu lưu, Hành động
     await queryRunner.query(`
-      INSERT INTO \`movie_genres\` (\`movie_id\`, \`genre_id\`)
+      INSERT INTO \`movie_genre\` (\`movie_id\`, \`genre_id\`)
       SELECT m.id, g.id FROM \`movies\` m, \`genres\` g
       WHERE m.slug = 'avatar-3-fire-and-ash' AND g.slug IN ('khoa-hoc-vien-tuong', 'phieu-luu', 'hanh-dong')
     `);
 
     // Ai Thương Ai Mến → Hài kịch, Gia đình, Tình cảm
     await queryRunner.query(`
-      INSERT INTO \`movie_genres\` (\`movie_id\`, \`genre_id\`)
+      INSERT INTO \`movie_genre\` (\`movie_id\`, \`genre_id\`)
       SELECT m.id, g.id FROM \`movies\` m, \`genres\` g
       WHERE m.slug = 'ai-thuong-ai-men' AND g.slug IN ('hai-kich', 'gia-dinh', 'tinh-cam')
     `);
 
     // Gia Đình Khủng Long → Hoạt hình, Phiêu lưu, Gia đình
     await queryRunner.query(`
-      INSERT INTO \`movie_genres\` (\`movie_id\`, \`genre_id\`)
+      INSERT INTO \`movie_genre\` (\`movie_id\`, \`genre_id\`)
       SELECT m.id, g.id FROM \`movies\` m, \`genres\` g
       WHERE m.slug = 'dino-family-jurassic' AND g.slug IN ('hoat-hinh', 'phieu-luu', 'gia-dinh')
     `);
 
     // Tom and Jerry → Hoạt hình, Hài kịch, Phiêu lưu
     await queryRunner.query(`
-      INSERT INTO \`movie_genres\` (\`movie_id\`, \`genre_id\`)
+      INSERT INTO \`movie_genre\` (\`movie_id\`, \`genre_id\`)
       SELECT m.id, g.id FROM \`movies\` m, \`genres\` g
       WHERE m.slug = 'tom-jerry-magic-compass' AND g.slug IN ('hoat-hinh', 'hai-kich', 'phieu-luu')
     `);
 
     // Đại Thoại Tây Du → Hài kịch, Giả tưởng, Phiêu lưu
     await queryRunner.query(`
-      INSERT INTO \`movie_genres\` (\`movie_id\`, \`genre_id\`)
+      INSERT INTO \`movie_genre\` (\`movie_id\`, \`genre_id\`)
       SELECT m.id, g.id FROM \`movies\` m, \`genres\` g
       WHERE m.slug = 'journey-to-the-west-comedy' AND g.slug IN ('hai-kich', 'gia-tuong', 'phieu-luu')
     `);
 
     // Godzilla x Kong → Hành động, Khoa học viễn tưởng, Quái vật
     await queryRunner.query(`
-      INSERT INTO \`movie_genres\` (\`movie_id\`, \`genre_id\`)
+      INSERT INTO \`movie_genre\` (\`movie_id\`, \`genre_id\`)
       SELECT m.id, g.id FROM \`movies\` m, \`genres\` g
       WHERE m.slug = 'godzilla-x-kong-new-empire' AND g.slug IN ('hanh-dong', 'khoa-hoc-vien-tuong', 'quai-vat')
     `);
 
     // Mai → Tình cảm, Tâm lý, Gia đình
     await queryRunner.query(`
-      INSERT INTO \`movie_genres\` (\`movie_id\`, \`genre_id\`)
+      INSERT INTO \`movie_genre\` (\`movie_id\`, \`genre_id\`)
       SELECT m.id, g.id FROM \`movies\` m, \`genres\` g
       WHERE m.slug = 'mai' AND g.slug IN ('tinh-cam', 'tam-ly', 'gia-dinh')
     `);
 
     // Lạc Phàm Trần → Hài kịch, Tình cảm
     await queryRunner.query(`
-      INSERT INTO \`movie_genres\` (\`movie_id\`, \`genre_id\`)
+      INSERT INTO \`movie_genre\` (\`movie_id\`, \`genre_id\`)
       SELECT m.id, g.id FROM \`movies\` m, \`genres\` g
       WHERE m.slug = 'lac-pham-tran' AND g.slug IN ('hai-kich', 'tinh-cam')
     `);
 
     // Nhà Hai Chủ → Hài kịch, Gia đình
     await queryRunner.query(`
-      INSERT INTO \`movie_genres\` (\`movie_id\`, \`genre_id\`)
+      INSERT INTO \`movie_genre\` (\`movie_id\`, \`genre_id\`)
       SELECT m.id, g.id FROM \`movies\` m, \`genres\` g
       WHERE m.slug = 'nha-hai-chu' AND g.slug IN ('hai-kich', 'gia-dinh')
     `);
 
     // Mission: Impossible 8 → Hành động, Gián điệp
     await queryRunner.query(`
-      INSERT INTO \`movie_genres\` (\`movie_id\`, \`genre_id\`)
+      INSERT INTO \`movie_genre\` (\`movie_id\`, \`genre_id\`)
       SELECT m.id, g.id FROM \`movies\` m, \`genres\` g
       WHERE m.slug = 'mission-impossible-8' AND g.slug IN ('hanh-dong', 'gian-diep')
     `);
 
     // Inside Out 2 → Hoạt hình, Gia đình
     await queryRunner.query(`
-      INSERT INTO \`movie_genres\` (\`movie_id\`, \`genre_id\`)
+      INSERT INTO \`movie_genre\` (\`movie_id\`, \`genre_id\`)
       SELECT m.id, g.id FROM \`movies\` m, \`genres\` g
       WHERE m.slug = 'inside-out-2' AND g.slug IN ('hoat-hinh', 'gia-dinh')
     `);
 
     // Transformers One → Hoạt hình, Khoa học viễn tưởng
     await queryRunner.query(`
-      INSERT INTO \`movie_genres\` (\`movie_id\`, \`genre_id\`)
+      INSERT INTO \`movie_genre\` (\`movie_id\`, \`genre_id\`)
       SELECT m.id, g.id FROM \`movies\` m, \`genres\` g
       WHERE m.slug = 'transformers-one' AND g.slug IN ('hoat-hinh', 'khoa-hoc-vien-tuong')
     `);
 
     // Joker: Folie à Deux → Tội phạm, Tâm lý
     await queryRunner.query(`
-      INSERT INTO \`movie_genres\` (\`movie_id\`, \`genre_id\`)
+      INSERT INTO \`movie_genre\` (\`movie_id\`, \`genre_id\`)
       SELECT m.id, g.id FROM \`movies\` m, \`genres\` g
       WHERE m.slug = 'joker-folie-a-deux' AND g.slug IN ('toi-pham', 'tam-ly')
     `);
 
     // Batman: The Dark Knight Rises → Hành động, Tội phạm, Chính kịch
     await queryRunner.query(`
-      INSERT INTO \`movie_genres\` (\`movie_id\`, \`genre_id\`)
+      INSERT INTO \`movie_genre\` (\`movie_id\`, \`genre_id\`)
       SELECT m.id, g.id FROM \`movies\` m, \`genres\` g
       WHERE m.slug = 'batman-the-dark-knight-rises' AND g.slug IN ('hanh-dong', 'toi-pham', 'chinh-kich')
     `);
@@ -466,12 +465,12 @@ export class CreateGenres1710000000007 implements MigrationInterface {
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(
-      `DROP INDEX \`IDX_movie_genres_genre_id\` ON \`movie_genres\``,
+      `DROP INDEX \`IDX_movie_genre_genre_id\` ON \`movie_genre\``,
     );
     await queryRunner.query(
-      `DROP INDEX \`IDX_movie_genres_movie_id\` ON \`movie_genres\``,
+      `DROP INDEX \`IDX_movie_genre_movie_id\` ON \`movie_genre\``,
     );
-    await queryRunner.query(`DROP TABLE \`movie_genres\``);
+    await queryRunner.query(`DROP TABLE \`movie_genre\``);
     await queryRunner.query(`DROP TABLE \`genres\``);
   }
 }

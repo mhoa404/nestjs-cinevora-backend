@@ -8,10 +8,10 @@ export class CreateCinemasRoomsSeats1710000000002 implements MigrationInterface 
       CREATE TABLE \`rooms\` (
         \`id\`          INT             NOT NULL AUTO_INCREMENT,
         \`name\`        VARCHAR(20)     NOT NULL,
-        \`room_type\`   ENUM('2D', '3D', 'IMAX', '4DX') NOT NULL DEFAULT '2D',
-        \`created_at\`  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        \`updated_at\`  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        CONSTRAINT \`PK_rooms\` PRIMARY KEY (\`id\`)
+        \`created_at\`  TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        \`updated_at\`  TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        CONSTRAINT \`PK_rooms\` PRIMARY KEY (\`id\`),
+        CONSTRAINT \`UQ_rooms_name\` UNIQUE (\`name\`)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
 
