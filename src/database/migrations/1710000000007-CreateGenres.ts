@@ -352,10 +352,7 @@ export class CreateGenres1710000000007 implements MigrationInterface {
       )
     `);
 
-    // ─────────────────────────────────────────────
-    // 5. SEED BẢNG movie_genre
-    //    Dùng subquery để lấy id theo slug/name → tránh hardcode ID
-    // ─────────────────────────────────────────────
+    // 5. SEED BẢNG movie_genres
 
     // Thiên Đường Máu → Tội phạm, Giật gân, Tâm lý
     await queryRunner.query(`
@@ -460,6 +457,51 @@ export class CreateGenres1710000000007 implements MigrationInterface {
       INSERT INTO \`movie_genre\` (\`movie_id\`, \`genre_id\`)
       SELECT m.id, g.id FROM \`movies\` m, \`genres\` g
       WHERE m.slug = 'batman-the-dark-knight-rises' AND g.slug IN ('hanh-dong', 'toi-pham', 'chinh-kich')
+    `);
+
+    await queryRunner.query(`
+      INSERT INTO \`showtimes\` (
+        \`movie_id\`,
+        \`room_id\`,
+        \`start_time\`,
+        \`end_time\`,
+        \`status\`,
+        \`price_standard\`,
+        \`price_vip\`,
+        \`price_couple\`
+      )
+      SELECT
+        m.id,
+        r.id,
+        s.start_time,
+        s.end_time,
+        s.status,
+        s.price_standard,
+        s.price_vip,
+        s.price_couple
+      FROM (
+        SELECT 'thien-duong-mau' AS movie_slug, '01' AS room_name, '2026-05-01 08:00:00' AS start_time, '2026-05-01 10:46:00' AS end_time, 'open' AS status, 70000 AS price_standard, 85000 AS price_vip, 140000 AS price_couple
+        UNION ALL
+        SELECT 'avatar-3-fire-and-ash', '02', '2026-05-01 08:30:00', '2026-05-01 11:16:00', 'open', 90000, 110000, 180000
+        UNION ALL
+        SELECT 'ai-thuong-ai-men', '03', '2026-05-01 09:00:00', '2026-05-01 11:46:00', 'sold_out', 65000, 80000, 130000
+        UNION ALL
+        SELECT 'dino-family-jurassic', '04', '2026-05-01 09:30:00', '2026-05-01 12:15:00', 'open', 60000, 75000, 120000
+        UNION ALL
+        SELECT 'tom-jerry-magic-compass', '05', '2026-05-01 10:00:00', '2026-05-01 12:14:00', 'open', 55000, 70000, 110000
+        UNION ALL
+        SELECT 'thien-duong-mau', '01', '2026-05-01 11:20:00', '2026-05-01 14:06:00', 'open', 75000, 90000, 150000
+        UNION ALL
+        SELECT 'avatar-3-fire-and-ash', '02', '2026-05-01 11:50:00', '2026-05-01 14:36:00', 'sold_out', 95000, 115000, 190000
+        UNION ALL
+        SELECT 'ai-thuong-ai-men', '03', '2026-05-01 12:20:00', '2026-05-01 15:06:00', 'open', 68000, 82000, 135000
+        UNION ALL
+        SELECT 'dino-family-jurassic', '04', '2026-05-01 12:50:00', '2026-05-01 15:35:00', 'open', 62000, 77000, 125000
+        UNION ALL
+        SELECT 'tom-jerry-magic-compass', '05', '2026-05-01 13:20:00', '2026-05-01 15:34:00', 'open', 58000, 72000, 115000
+      ) s
+      INNER JOIN \`movies\` m ON m.slug = s.movie_slug
+      INNER JOIN \`rooms\` r ON r.name = s.room_name
     `);
   }
 
