@@ -14,6 +14,7 @@ import { UpdateShowtimeDto } from './dto/update-showtime.dto';
 import { ShowtimeQueryDto } from './dto/showtime-query.dto';
 import { ShowtimeResponseDto } from './dto/showtime-response.dto';
 
+const BUFFER_MINUTES = 30;
 @Injectable()
 export class ShowtimesService {
   constructor(
@@ -101,7 +102,7 @@ export class ShowtimesService {
 
         const occupiedStart = startTime;
         const occupiedEnd = new Date(endTime.getTime());
-        occupiedEnd.setMinutes(occupiedEnd.getMinutes() + 30);
+        occupiedEnd.setMinutes(occupiedEnd.getMinutes() + BUFFER_MINUTES);
 
         const overlapCount = await queryRunner.manager
           .createQueryBuilder(Showtime, 'showtime')
@@ -125,9 +126,9 @@ export class ShowtimesService {
           roomId: item.roomId,
           startTime,
           endTime,
+          status: item.status,
           priceStandard: item.priceStandard,
           priceVip: item.priceVip,
-          pricePremium: item.pricePremium ?? null,
           priceCouple: item.priceCouple ?? null,
         });
 
@@ -260,7 +261,7 @@ export class ShowtimesService {
 
   private calculateEndTime(startTime: Date, duration: number): Date {
     const endTime = new Date(startTime.getTime());
-    endTime.setMinutes(endTime.getMinutes() + duration + 15);
+    endTime.setMinutes(endTime.getMinutes() + duration);
     return endTime;
   }
 
@@ -273,12 +274,12 @@ export class ShowtimesService {
       showtime.priceVip = dto.priceVip;
     }
 
-    if (dto.pricePremium !== undefined) {
-      showtime.pricePremium = dto.pricePremium;
-    }
-
     if (dto.priceCouple !== undefined) {
       showtime.priceCouple = dto.priceCouple;
+    }
+
+    if (dto.status !== undefined) {
+      showtime.status = dto.status;
     }
   }
 }

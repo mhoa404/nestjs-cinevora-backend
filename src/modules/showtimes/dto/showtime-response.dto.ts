@@ -1,4 +1,4 @@
-import { Showtime } from '../entities/showtime.entity';
+import { Showtime, ShowtimeStatus } from '../entities/showtime.entity';
 
 export class ShowtimeResponseDto {
   id!: number;
@@ -8,9 +8,9 @@ export class ShowtimeResponseDto {
   roomName!: string;
   startTime!: Date;
   endTime!: Date;
+  status!: ShowtimeStatus;
   priceStandard!: number;
   priceVip!: number;
-  pricePremium!: number | null;
   priceCouple!: number | null;
   createdAt!: Date;
   updatedAt!: Date;
@@ -25,10 +25,9 @@ export class ShowtimeResponseDto {
     dto.roomName = entity.room?.name ?? '';
     dto.startTime = entity.startTime;
     dto.endTime = entity.endTime;
+    dto.status = entity.status;
     dto.priceStandard = Number(entity.priceStandard);
     dto.priceVip = Number(entity.priceVip);
-    dto.pricePremium =
-      entity.pricePremium != null ? Number(entity.pricePremium) : null;
     dto.priceCouple =
       entity.priceCouple != null ? Number(entity.priceCouple) : null;
     dto.createdAt = entity.createdAt;

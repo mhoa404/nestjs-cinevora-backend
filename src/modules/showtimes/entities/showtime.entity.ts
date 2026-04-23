@@ -13,6 +13,11 @@ import { Booking } from '../../bookings/entities/booking.entity';
 import { Movie } from '../../movies/entities/movie.entity';
 import { Room } from '../../rooms/entities/room.entity';
 
+export enum ShowtimeStatus {
+  OPEN = 'open',
+  SOLD_OUT = 'sold_out',
+}
+
 @Entity('showtimes')
 export class Showtime {
   @PrimaryGeneratedColumn()
@@ -30,20 +35,18 @@ export class Showtime {
   @Column({ name: 'end_time', type: 'timestamp' })
   endTime!: Date;
 
+  @Column({
+    type: 'enum',
+    enum: ShowtimeStatus,
+    default: ShowtimeStatus.OPEN,
+  })
+  status!: ShowtimeStatus;
+
   @Column({ name: 'price_standard', type: 'decimal', precision: 10, scale: 0 })
   priceStandard!: number;
 
   @Column({ name: 'price_vip', type: 'decimal', precision: 10, scale: 0 })
   priceVip!: number;
-
-  @Column({
-    name: 'price_premium',
-    type: 'decimal',
-    precision: 10,
-    scale: 0,
-    nullable: true,
-  })
-  pricePremium!: number | null;
 
   @Column({
     name: 'price_couple',
@@ -69,7 +72,6 @@ export class Showtime {
   })
   updatedAt!: Date;
 
-  //Relation
   @ManyToOne(() => Movie, (movie) => movie.showtimes)
   @JoinColumn({ name: 'movie_id' })
   movie!: Movie;

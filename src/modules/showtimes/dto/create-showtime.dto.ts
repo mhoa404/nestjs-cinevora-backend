@@ -3,12 +3,14 @@ import {
   ArrayMinSize,
   IsArray,
   IsDateString,
+  IsEnum,
   IsInt,
   IsNotEmpty,
   IsOptional,
   Min,
   ValidateNested,
 } from 'class-validator';
+import { ShowtimeStatus } from '../entities/showtime.entity';
 
 export class ShowtimeItemDto {
   @IsInt({ message: 'roomId phải là số nguyên.' })
@@ -19,6 +21,10 @@ export class ShowtimeItemDto {
   @IsNotEmpty({ message: 'Vui lòng nhập thời gian bắt đầu.' })
   startTime!: string;
 
+  @IsOptional()
+  @IsEnum(ShowtimeStatus, { message: 'status phải là open hoặc sold_out.' })
+  status?: ShowtimeStatus;
+
   @Min(0, { message: 'Giá vé standard phải >= 0.' })
   @IsInt({ message: 'Giá vé standard phải là số nguyên.' })
   @IsNotEmpty({ message: 'Vui lòng nhập giá vé standard.' })
@@ -28,11 +34,6 @@ export class ShowtimeItemDto {
   @IsInt({ message: 'Giá vé VIP phải là số nguyên.' })
   @IsNotEmpty({ message: 'Vui lòng nhập giá vé VIP.' })
   priceVip!: number;
-
-  @IsOptional()
-  @Min(0, { message: 'Giá vé premium phải >= 0.' })
-  @IsInt({ message: 'Giá vé premium phải là số nguyên.' })
-  pricePremium?: number;
 
   @IsOptional()
   @Min(0, { message: 'Giá vé couple phải >= 0.' })
