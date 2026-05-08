@@ -6,14 +6,14 @@ export class ShowtimeResponseDto {
   movieTitle!: string;
   roomId!: number;
   roomName!: string;
-  startTime!: Date;
-  endTime!: Date;
+  startTime!: string;
+  endTime!: string;
   status!: ShowtimeStatus;
   priceStandard!: number;
   priceVip!: number;
   priceCouple!: number | null;
-  createdAt!: Date;
-  updatedAt!: Date;
+  createdAt!: string;
+  updatedAt!: string;
 
   static fromEntity(entity: Showtime): ShowtimeResponseDto {
     const dto = new ShowtimeResponseDto();
@@ -23,15 +23,15 @@ export class ShowtimeResponseDto {
     dto.movieTitle = entity.movie?.title ?? '';
     dto.roomId = entity.roomId;
     dto.roomName = entity.room?.name ?? '';
-    dto.startTime = entity.startTime;
-    dto.endTime = entity.endTime;
+    dto.startTime = entity.startTime.toISOString();
+    dto.endTime = entity.endTime.toISOString();
     dto.status = entity.status;
     dto.priceStandard = Number(entity.priceStandard);
     dto.priceVip = Number(entity.priceVip);
     dto.priceCouple =
       entity.priceCouple != null ? Number(entity.priceCouple) : null;
-    dto.createdAt = entity.createdAt;
-    dto.updatedAt = entity.updatedAt;
+    dto.createdAt = entity.createdAt.toISOString();
+    dto.updatedAt = entity.updatedAt.toISOString();
 
     return dto;
   }

@@ -24,6 +24,8 @@ export class CreateCinemasRoomsSeats1710000000002 implements MigrationInterface 
         \`seat_number\` INT             NOT NULL,
         \`seat_type\`   ENUM('standard', 'vip', 'couple') NOT NULL DEFAULT 'standard',
         \`is_active\`   TINYINT(1)      NOT NULL DEFAULT 1,
+        \`created_at\`  TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        \`updated_at\`  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         CONSTRAINT \`PK_seats\` PRIMARY KEY (\`id\`),
         CONSTRAINT \`FK_seats_room\` FOREIGN KEY (\`room_id\`)
           REFERENCES \`rooms\`(\`id\`) ON DELETE CASCADE

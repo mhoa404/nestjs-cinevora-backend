@@ -14,7 +14,12 @@ export class CreateBookings1710000000004 implements MigrationInterface {
                 \`payment_method\`  ENUM('cash', 'momo', 'zalopay', 'credit_card'),
                 \`booked_at\`       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 \`status\`          ENUM('pending', 'confirmed', 'cancelled', 'used') NOT NULL DEFAULT 'pending',
+                \`snapshot_movie_title\` VARCHAR(255) NOT NULL,
+                \`snapshot_cinema_name\` VARCHAR(100) NOT NULL,
+                \`snapshot_room_name\` VARCHAR(20) NOT NULL,
+                \`snapshot_showtime_start\` TIMESTAMP NOT NULL,
                 \`created_at\`      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                \`updated_at\` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 CONSTRAINT \`PK_bookings\` PRIMARY KEY (\`id\`),
                 CONSTRAINT \`FK_bookings_user\` FOREIGN KEY (\`user_id\`)
                     REFERENCES \`users\`(\`id\`) ON DELETE RESTRICT,
@@ -33,6 +38,9 @@ export class CreateBookings1710000000004 implements MigrationInterface {
                 \`seat_id\`     INT             NOT NULL,
                 \`seat_key\`    VARCHAR(10)     NOT NULL,
                 \`price\`       DECIMAL(10,0)   NOT NULL,
+                \`snapshot_seat_type\` ENUM('standard', 'vip', 'couple') NOT NULL DEFAULT 'standard',
+                \`created_a\` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                \`updated_at\` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 CONSTRAINT \`PK_booking_seats\` PRIMARY KEY (\`id\`),
                 CONSTRAINT \`FK_booking_seats_booking\` FOREIGN KEY (\`booking_id\`)
                     REFERENCES \`bookings\`(\`id\`) ON DELETE CASCADE,
