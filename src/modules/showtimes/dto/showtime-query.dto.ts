@@ -13,6 +13,6 @@ export class ShowtimeQueryDto {
   roomId?: number;
 
   @IsOptional()
-  @IsDateString({}, { message: 'date phải theo định dạng YYYY-MM-DD.' })
+  @IsDateString({}, { message: 'date sai định dạng.' })
   date?: string;
 }

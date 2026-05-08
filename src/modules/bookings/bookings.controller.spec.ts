@@ -11,6 +11,8 @@ describe('BookingsController', () => {
 
     controller = module.get<BookingsController>(BookingsController);
   });
+  
+  afterEach
 
   it('should be defined', () => {
     expect(controller).toBeDefined();

@@ -81,6 +81,21 @@ const TEST_SUITES: Record<
     file: 'test/api/rooms/delete-room.api.spec.ts',
     description: 'API Xoá phòng chiếu (Rooms)',
   },
+  create_showtime: {
+    prefix: 'CST',
+    file: 'test/api/showtimes/create-showtime.api.spec.ts',
+    description: 'API Tạo suất chiếu (Showtimes)',
+  },
+  update_showtime: {
+    prefix: 'UST',
+    file: 'test/api/showtimes/update-showtime.api.spec.ts',
+    description: 'API Cập nhật suất chiếu (Showtimes)',
+  },
+  delete_showtime: {
+    prefix: 'DST',
+    file: 'test/api/showtimes/delete-showtime.api.spec.ts',
+    description: 'API Xoá suất chiếu (Showtimes)',
+  },
 };
 
 console.log('\n╔════════════════════════════════════════════════╗');

@@ -4,11 +4,11 @@ import {
   Entity,
   OneToMany,
   PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 
-import { Showtime } from '../../showtimes/entities/showtime.entity';
 import { Seat } from '../../seats/entities/seat.entity';
-import { UpdateDateColumn } from 'typeorm';
+import { Showtime } from '../../showtimes/entities/showtime.entity';
 
 @Entity('rooms')
 export class Room {
