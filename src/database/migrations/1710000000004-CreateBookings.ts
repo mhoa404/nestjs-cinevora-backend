@@ -11,7 +11,6 @@ export class CreateBookings1710000000004 implements MigrationInterface {
                 \`showtime_id\`     INT             NOT NULL,
                 \`ticket_count\`    INT             NOT NULL,
                 \`total_price\`     DECIMAL(12,0)   NOT NULL,
-                \`payment_method\`  ENUM('cash', 'momo', 'zalopay', 'credit_card'),
                 \`booked_at\`       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 \`status\`          ENUM('pending', 'confirmed', 'cancelled', 'used') NOT NULL DEFAULT 'pending',
                 \`snapshot_movie_title\` VARCHAR(255) NOT NULL,
@@ -29,6 +28,26 @@ export class CreateBookings1710000000004 implements MigrationInterface {
         `);
     await queryRunner.query(
       `CREATE INDEX \`IDX_bookings_user_id\` ON \`bookings\`(\`user_id\`)`,
+    );
+
+    await queryRunner.query(`
+            CREATE TABLE \`payments\` (
+                \`id\`                INT             NOT NULL AUTO_INCREMENT,
+                \`booking_id\`        INT             NOT NULL,
+                \`transaction_id\`    VARCHAR(255)    NULL,
+                \`payment_method\`    ENUM('momo', 'zalopay', 'vnpay') NOT NULL,
+                \`amount\`            DECIMAL(10,0)   NOT NULL,
+                \`status\`            ENUM('pending', 'success', 'failed') NOT NULL DEFAULT 'pending',
+                \`provider_response\` JSON            NULL,
+                \`created_at\`        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                \`updated_at\`        TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                CONSTRAINT \`PK_payments\` PRIMARY KEY (\`id\`),
+                CONSTRAINT \`FK_payments_booking\` FOREIGN KEY (\`booking_id\`)
+                    REFERENCES \`bookings\`(\`id\`) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        `);
+    await queryRunner.query(
+      `CREATE INDEX \`IDX_payments_booking_id\` ON \`payments\`(\`booking_id\`)`,
     );
 
     await queryRunner.query(`
@@ -57,6 +76,10 @@ export class CreateBookings1710000000004 implements MigrationInterface {
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(
+      `DROP INDEX \`IDX_payments_booking_id\` ON \`payments\``,
+    );
+    await queryRunner.query(`DROP TABLE \`payments\``);
     await queryRunner.query(
       `DROP INDEX \`IDX_booking_seats_seat_id\` ON \`booking_seats\``,
     );

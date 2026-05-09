@@ -4,6 +4,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { Module } from '@nestjs/common';
 
 import { PromotionsModule } from './modules/promotions/promotions.module';
+import { PaymentsModule } from './modules/payments/payments.module';
 import { ShowtimesModule } from './modules/showtimes/showtimes.module';
 import { BookingsModule } from './modules/bookings/bookings.module';
 import { MoviesModule } from './modules/movies/movies.module';
@@ -36,6 +37,7 @@ import jwtConfig from './config/jwt.config';
     SeatsModule,
     ShowtimesModule,
     BookingsModule,
+    PaymentsModule,
     PromotionsModule,
   ],
   providers: [
