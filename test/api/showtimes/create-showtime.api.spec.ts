@@ -8,7 +8,6 @@ import { Server } from 'http';
 import {
   parseApiError,
   expectErrorMessage,
-  getActualStatus,
   parseApiData,
 } from '../../helpers/http-test.helper';
 import { AppModule } from '../../../src/app.module';
@@ -37,11 +36,19 @@ describe('[API] POST /showtimes', () => {
   let room2: Room;
 
   const createdShowtimeIds: number[] = [];
+  const createdMovieIds: number[] = [];
   const results: TestCaseRecord[] = [];
   const PREFIX = 'CST';
   let counter = 0;
 
   const nextId = () => `${PREFIX}${String(++counter).padStart(2, '0')}`;
+
+  const stringifyProcedure = (payload: unknown): string =>
+    JSON.stringify(payload, null, 2);
+
+  const getActualResult = (response?: Response): number => {
+    return response?.status ?? 0;
+  };
 
   const addHours = (h: number): string =>
     new Date(Date.now() + h * 60 * 60 * 1000)
@@ -69,21 +76,26 @@ describe('[API] POST /showtimes', () => {
 
   const record = async (
     meta: Omit<TestCaseRecord, 'passed' | 'testDate' | 'actualResult'>,
-    executor: () => Promise<Response>,
-  ) => {
+    action: () => Promise<Response>,
+    assertion: (response: Response) => void | Promise<void>,
+  ): Promise<Response> => {
     const testDate = new Date();
+    let response: Response | undefined;
     let passed = false;
-    let actualResult: number | null = null;
+
     try {
-      const res = await executor();
-      actualResult = res.status;
+      response = await action();
+      await assertion(response);
       passed = true;
-    } catch (e: unknown) {
-      actualResult = getActualStatus(e);
-      passed = false;
-      throw e;
+
+      return response;
     } finally {
-      results.push({ ...meta, actualResult, passed, testDate });
+      results.push({
+        ...meta,
+        actualResult: getActualResult(response),
+        passed,
+        testDate,
+      });
     }
   };
 
@@ -119,7 +131,6 @@ describe('[API] POST /showtimes', () => {
       .send({ email: 'api_client@gmail.com', password: 'Api_client_123' });
     customerToken = parseApiData<AuthResponseDto>(customerRes).accessToken;
 
-    // Seed movies
     const movieRepo = dataSource.getRepository(Movie);
     const roomRepo = dataSource.getRepository(Room);
 
@@ -155,432 +166,475 @@ describe('[API] POST /showtimes', () => {
     if (createdShowtimeIds.length > 0) {
       await dataSource.getRepository(Showtime).delete(createdShowtimeIds);
     }
-    await dataSource
-      .getRepository(Movie)
-      .delete([movieActive.id, movieEnded.id]);
-    await dataSource.getRepository(Room).delete([room1.id, room2.id]);
+
+    const movieIds = [
+      movieActive?.id,
+      movieEnded?.id,
+      ...createdMovieIds,
+    ].filter(Boolean);
+
+    if (movieIds.length > 0) {
+      await dataSource.getRepository(Movie).delete(movieIds);
+    }
+
+    if (room1?.id && room2?.id) {
+      await dataSource.getRepository(Room).delete([room1.id, room2.id]);
+    }
+
     await exportTestReport(results, PREFIX, 'Create_Showtime');
     await app.close();
   });
 
-  // ─── Phân quyền ─────────────────────────────────────────────────────────────
+  describe('Kiểm tra dữ liệu đầu vào', () => {
+    it('Tạo showtime thất bại – Thiếu movieId', async () => {
+      const body = {
+        showtimes: [
+          {
+            roomId: room1.id,
+            startTime: addHours(48),
+            priceStandard: 80000,
+            priceVip: 120000,
+          },
+        ],
+      };
 
-  describe('Phân quyền', () => {
-    it('CST – Không truyền token → 401', async () => {
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Security: Missing Token',
-          description: 'Gọi POST /showtimes không có Authorization header.',
-          procedure: 'No token',
-          expectedResult: 401,
-          preconditions: 'Không có token.',
-        },
-        async () => {
-          const res = await request(server)
-            .post('/showtimes')
-            .send(buildValidBody());
-          expect(res.status).toBe(401);
-          return res;
-        },
-      );
-    });
-
-    it('CST – Fake token → 401', async () => {
-      await record(
-        {
-          id: nextId(),
-          scope: 'All',
-          testCase: 'Security: Fake Token',
-          description: 'Gửi Bearer token không hợp lệ.',
-          procedure: 'fake.jwt.token',
-          expectedResult: 401,
-          preconditions: 'Token giả.',
-        },
-        async () => {
-          const res = await request(server)
-            .post('/showtimes')
-            .set('Authorization', 'Bearer fake.jwt.token')
-            .send(buildValidBody());
-          expect(res.status).toBe(401);
-          return res;
-        },
-      );
-    });
-
-    it('CST – Customer token → 403', async () => {
-      await record(
-        {
-          id: nextId(),
-          scope: 'All',
-          testCase: 'Security: Customer Forbidden',
-          description: 'Tài khoản Customer không được tạo showtime.',
-          procedure: 'customerToken',
-          expectedResult: 403,
-          preconditions: 'Dùng token Customer.',
-        },
-        async () => {
-          const res = await request(server)
-            .post('/showtimes')
-            .set('Authorization', `Bearer ${customerToken}`)
-            .send(buildValidBody());
-          expect(res.status).toBe(403);
-          return res;
-        },
-      );
-    });
-  });
-
-  // ─── Validation DTO ──────────────────────────────────────────────────────────
-
-  describe('Validation DTO', () => {
-    it('CST – Thiếu movieId → 400', async () => {
-      await record(
-        {
-          id: nextId(),
-          scope: 'All',
-          testCase: 'Validation: Missing movieId',
-          description: 'Không truyền movieId.',
-          procedure: '{}',
+          testCase: 'Tạo showtime thất bại do thiếu mã phim',
+          description: 'Tạo showtime khi không gửi mã phim trong request.',
+          procedure: stringifyProcedure(body),
           expectedResult: 400,
-          preconditions: 'Admin token.',
+          preconditions: 'Tài khoản admin đã đăng nhập thành công.',
         },
-        async () => {
-          const res = await request(server)
+        () =>
+          request(server)
             .post('/showtimes')
             .set('Authorization', `Bearer ${adminToken}`)
-            .send({
-              showtimes: [
-                {
-                  roomId: room1.id,
-                  startTime: addHours(48),
-                  priceStandard: 80000,
-                  priceVip: 120000,
-                },
-              ],
-            });
+            .send(body),
+        (res) => {
           expect(res.status).toBe(400);
           parseApiError(res);
-          return res;
         },
       );
     });
 
-    it('CST – Thiếu showtimes → 400', async () => {
+    it('Tạo showtime thất bại – Thiếu showtimes', async () => {
+      const body = {
+        movieId: movieActive.id,
+      };
+
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Validation: Missing showtimes',
-          description: 'Không truyền mảng showtimes.',
-          procedure: '{ movieId }',
+          testCase: 'Tạo showtime thất bại do thiếu danh sách suất chiếu',
+          description:
+            'Tạo showtime khi không gửi danh sách suất chiếu trong request.',
+          procedure: stringifyProcedure(body),
           expectedResult: 400,
-          preconditions: 'Admin token.',
+          preconditions: 'Tài khoản admin đã đăng nhập thành công.',
         },
-        async () => {
-          const res = await request(server)
+        () =>
+          request(server)
             .post('/showtimes')
             .set('Authorization', `Bearer ${adminToken}`)
-            .send({ movieId: movieActive.id });
+            .send(body),
+        (res) => {
           expect(res.status).toBe(400);
           parseApiError(res);
-          return res;
         },
       );
     });
 
-    it('CST – showtimes là mảng rỗng → 400', async () => {
+    it('Tạo showtime thất bại – Showtimes là mảng rỗng', async () => {
+      const body = {
+        movieId: movieActive.id,
+        showtimes: [],
+      };
+
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Validation: Empty showtimes array',
-          description: 'Gửi showtimes = [].',
-          procedure: 'showtimes: []',
+          testCase: 'Tạo showtime thất bại do không có suất chiếu',
+          description: 'Tạo showtime với danh sách suất chiếu rỗng.',
+          procedure: stringifyProcedure(body),
           expectedResult: 400,
-          preconditions: 'Admin token.',
+          preconditions: 'Tài khoản admin đã đăng nhập thành công.',
         },
-        async () => {
-          const res = await request(server)
+        () =>
+          request(server)
             .post('/showtimes')
             .set('Authorization', `Bearer ${adminToken}`)
-            .send({ movieId: movieActive.id, showtimes: [] });
+            .send(body),
+        (res) => {
           expect(res.status).toBe(400);
           parseApiError(res);
-          return res;
         },
       );
     });
 
-    it('CST – startTime sai format (không phải UTC ISO) → 400', async () => {
+    it('Tạo showtime thất bại – Sai định dạng startTime', async () => {
+      const body = {
+        movieId: movieActive.id,
+        showtimes: [
+          {
+            roomId: room1.id,
+            startTime: '2026-05-10 09:00:00',
+            priceStandard: 80000,
+            priceVip: 120000,
+          },
+        ],
+      };
+
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Validation: Wrong startTime format',
-          description: 'startTime không đúng UTC ISO 8601.',
-          procedure: 'startTime: "2026-05-10 09:00:00"',
+          testCase: 'Tạo showtime thất bại do sai định dạng thời gian',
+          description:
+            'Tạo showtime với thời gian bắt đầu không đúng định dạng UTC ISO 8601.',
+          procedure: stringifyProcedure(body),
           expectedResult: 400,
-          preconditions: 'Admin token.',
+          preconditions: 'Tài khoản admin đã đăng nhập thành công.',
         },
-        async () => {
-          const res = await request(server)
+        () =>
+          request(server)
             .post('/showtimes')
             .set('Authorization', `Bearer ${adminToken}`)
-            .send({
-              movieId: movieActive.id,
-              showtimes: [
-                {
-                  roomId: room1.id,
-                  startTime: '2026-05-10 09:00:00',
-                  priceStandard: 80000,
-                  priceVip: 120000,
-                },
-              ],
-            });
+            .send(body),
+        (res) => {
           expect(res.status).toBe(400);
           const err = parseApiError(res);
           expectErrorMessage(err, 400, 'startTime');
-          return res;
         },
       );
     });
 
-    it('CST – priceStandard âm → 400', async () => {
+    it('Tạo showtime thất bại – Giá vé tiêu chuẩn là số âm', async () => {
+      const body = {
+        movieId: movieActive.id,
+        showtimes: [
+          {
+            roomId: room1.id,
+            startTime: addHours(48),
+            priceStandard: -1,
+            priceVip: 120000,
+          },
+        ],
+      };
+
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Validation: Negative priceStandard',
-          description: 'priceStandard < 0.',
-          procedure: 'priceStandard: -1',
+          testCase: 'Tạo showtime thất bại do giá vé tiêu chuẩn không hợp lệ',
+          description: 'Tạo showtime với giá vé tiêu chuẩn là số âm.',
+          procedure: stringifyProcedure(body),
           expectedResult: 400,
-          preconditions: 'Admin token.',
+          preconditions: 'Tài khoản admin đã đăng nhập thành công.',
         },
-        async () => {
-          const res = await request(server)
+        () =>
+          request(server)
             .post('/showtimes')
             .set('Authorization', `Bearer ${adminToken}`)
-            .send({
-              movieId: movieActive.id,
-              showtimes: [
-                {
-                  roomId: room1.id,
-                  startTime: addHours(48),
-                  priceStandard: -1,
-                  priceVip: 120000,
-                },
-              ],
-            });
+            .send(body),
+        (res) => {
           expect(res.status).toBe(400);
           const err = parseApiError(res);
           expectErrorMessage(err, 400, 'standard');
-          return res;
         },
       );
     });
 
-    it('CST – status không hợp lệ → 400', async () => {
+    it('Tạo showtime thất bại – Trạng thái không hợp lệ', async () => {
+      const body = {
+        movieId: movieActive.id,
+        showtimes: [
+          {
+            roomId: room1.id,
+            startTime: addHours(48),
+            priceStandard: 80000,
+            priceVip: 120000,
+            status: 'invalid',
+          },
+        ],
+      };
+
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Validation: Invalid status enum',
-          description: 'status không thuộc open | sold_out.',
-          procedure: 'status: "invalid"',
+          testCase: 'Tạo showtime thất bại do trạng thái không hợp lệ',
+          description:
+            'Tạo showtime với trạng thái suất chiếu không nằm trong danh sách cho phép.',
+          procedure: stringifyProcedure(body),
           expectedResult: 400,
-          preconditions: 'Admin token.',
+          preconditions: 'Tài khoản admin đã đăng nhập thành công.',
         },
-        async () => {
-          const res = await request(server)
+        () =>
+          request(server)
             .post('/showtimes')
             .set('Authorization', `Bearer ${adminToken}`)
-            .send({
-              movieId: movieActive.id,
-              showtimes: [
-                {
-                  roomId: room1.id,
-                  startTime: addHours(48),
-                  priceStandard: 80000,
-                  priceVip: 120000,
-                  status: 'invalid',
-                },
-              ],
-            });
+            .send(body),
+        (res) => {
           expect(res.status).toBe(400);
           const err = parseApiError(res);
           expectErrorMessage(err, 400, 'status');
-          return res;
         },
       );
     });
 
-    it('CST – Gửi field lạ → 400 (forbidNonWhitelisted)', async () => {
+    it('Tạo showtime thất bại – Gửi field không hợp lệ', async () => {
+      const body = {
+        ...buildValidBody(),
+        extraField: 'hack',
+      };
+
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Validation: Extra Fields',
-          description: 'Gửi field không có trong DTO.',
-          procedure: 'extraField: "hack"',
+          testCase: 'Tạo showtime thất bại do gửi field không hợp lệ',
+          description: 'Tạo showtime với field không được khai báo trong DTO.',
+          procedure: stringifyProcedure(body),
           expectedResult: 400,
-          preconditions: 'ValidationPipe forbidNonWhitelisted.',
+          preconditions: 'ValidationPipe đang bật forbidNonWhitelisted.',
         },
-        async () => {
-          const res = await request(server)
+        () =>
+          request(server)
             .post('/showtimes')
             .set('Authorization', `Bearer ${adminToken}`)
-            .send({ ...buildValidBody(), extraField: 'hack' });
+            .send(body),
+        (res) => {
           expect(res.status).toBe(400);
           parseApiError(res);
-          return res;
         },
       );
     });
   });
 
-  // ─── Business Rules ──────────────────────────────────────────────────────────
+  describe('Phân quyền', () => {
+    it('Tạo showtime thất bại – Thiếu token', async () => {
+      const body = buildValidBody();
+
+      await record(
+        {
+          id: nextId(),
+          scope: 'All',
+          testCase: 'Tạo showtime thất bại do thiếu token',
+          description: 'Tạo showtime khi chưa đăng nhập bằng tài khoản admin.',
+          procedure: stringifyProcedure(body),
+          expectedResult: 401,
+          preconditions: 'Không gửi access token trong request.',
+        },
+        () => request(server).post('/showtimes').send(body),
+        (res) => {
+          expect(res.status).toBe(401);
+        },
+      );
+    });
+
+    it('Tạo showtime thất bại – Token không hợp lệ', async () => {
+      const body = buildValidBody();
+
+      await record(
+        {
+          id: nextId(),
+          scope: 'All',
+          testCase: 'Tạo showtime thất bại do token không hợp lệ',
+          description: 'Tạo showtime với access token không hợp lệ.',
+          procedure: stringifyProcedure(body),
+          expectedResult: 401,
+          preconditions: 'Request gửi kèm Bearer token giả.',
+        },
+        () =>
+          request(server)
+            .post('/showtimes')
+            .set('Authorization', 'Bearer fake.jwt.token')
+            .send(body),
+        (res) => {
+          expect(res.status).toBe(401);
+        },
+      );
+    });
+
+    it('Tạo showtime thất bại – Tài khoản không đủ quyền', async () => {
+      const body = buildValidBody();
+
+      await record(
+        {
+          id: nextId(),
+          scope: 'All',
+          testCase: 'Tạo showtime thất bại do không đủ quyền',
+          description: 'Tạo showtime bằng tài khoản khách hàng thông thường.',
+          procedure: stringifyProcedure(body),
+          expectedResult: 403,
+          preconditions: 'Tài khoản customer đã đăng nhập thành công.',
+        },
+        () =>
+          request(server)
+            .post('/showtimes')
+            .set('Authorization', `Bearer ${customerToken}`)
+            .send(body),
+        (res) => {
+          expect(res.status).toBe(403);
+        },
+      );
+    });
+  });
 
   describe('Ràng buộc nghiệp vụ', () => {
-    it('CST – movieId không tồn tại → 404', async () => {
+    it('Tạo showtime thất bại – Phim không tồn tại', async () => {
+      const body = {
+        movieId: 999999,
+        showtimes: [
+          {
+            roomId: room1.id,
+            startTime: addHours(48),
+            priceStandard: 80000,
+            priceVip: 120000,
+          },
+        ],
+      };
+
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Business: Movie Not Found',
-          description: 'movieId trỏ đến phim không tồn tại.',
-          procedure: 'movieId: 999999',
+          testCase: 'Tạo showtime thất bại do phim không tồn tại',
+          description: 'Tạo showtime với mã phim không tồn tại trong hệ thống.',
+          procedure: stringifyProcedure(body),
           expectedResult: 404,
-          preconditions: 'Admin token.',
+          preconditions: 'Tài khoản admin đã đăng nhập thành công.',
         },
-        async () => {
-          const res = await request(server)
+        () =>
+          request(server)
             .post('/showtimes')
             .set('Authorization', `Bearer ${adminToken}`)
-            .send({
-              movieId: 999999,
-              showtimes: [
-                {
-                  roomId: room1.id,
-                  startTime: addHours(48),
-                  priceStandard: 80000,
-                  priceVip: 120000,
-                },
-              ],
-            });
+            .send(body),
+        (res) => {
           expect(res.status).toBe(404);
-          return res;
         },
       );
     });
 
-    it('CST – roomId không tồn tại → 404', async () => {
+    it('Tạo showtime thất bại – Phòng chiếu không tồn tại', async () => {
+      const body = {
+        movieId: movieActive.id,
+        showtimes: [
+          {
+            roomId: 999999,
+            startTime: addHours(48),
+            priceStandard: 80000,
+            priceVip: 120000,
+          },
+        ],
+      };
+
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Business: Room Not Found',
-          description: 'roomId trỏ đến phòng không tồn tại.',
-          procedure: 'roomId: 999999',
+          testCase: 'Tạo showtime thất bại do phòng chiếu không tồn tại',
+          description:
+            'Tạo showtime với mã phòng chiếu không tồn tại trong hệ thống.',
+          procedure: stringifyProcedure(body),
           expectedResult: 404,
-          preconditions: 'Admin token.',
+          preconditions: 'Tài khoản admin đã đăng nhập thành công.',
         },
-        async () => {
-          const res = await request(server)
+        () =>
+          request(server)
             .post('/showtimes')
             .set('Authorization', `Bearer ${adminToken}`)
-            .send({
-              movieId: movieActive.id,
-              showtimes: [
-                {
-                  roomId: 999999,
-                  startTime: addHours(48),
-                  priceStandard: 80000,
-                  priceVip: 120000,
-                },
-              ],
-            });
+            .send(body),
+        (res) => {
           expect(res.status).toBe(404);
-          return res;
         },
       );
     });
 
-    it('CST – Phim đã ended → 409', async () => {
+    it('Tạo showtime thất bại – Phim đã kết thúc', async () => {
+      const body = {
+        movieId: movieEnded.id,
+        showtimes: [
+          {
+            roomId: room1.id,
+            startTime: addHours(48),
+            priceStandard: 80000,
+            priceVip: 120000,
+          },
+        ],
+      };
+
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Business: Movie Ended',
-          description: 'Tạo showtime cho phim có status=ended.',
-          procedure: `movieId: ${movieEnded.id}`,
+          testCase: 'Tạo showtime thất bại do phim đã kết thúc',
+          description: 'Tạo showtime cho phim đã kết thúc thời gian chiếu.',
+          procedure: stringifyProcedure(body),
           expectedResult: 409,
-          preconditions: 'movieEnded đã seed.',
+          preconditions:
+            'Phim có trạng thái đã kết thúc đã tồn tại trong hệ thống.',
         },
-        async () => {
-          const res = await request(server)
+        () =>
+          request(server)
             .post('/showtimes')
             .set('Authorization', `Bearer ${adminToken}`)
-            .send({
-              movieId: movieEnded.id,
-              showtimes: [
-                {
-                  roomId: room1.id,
-                  startTime: addHours(48),
-                  priceStandard: 80000,
-                  priceVip: 120000,
-                },
-              ],
-            });
+            .send(body),
+        (res) => {
           expect(res.status).toBe(409);
           const err = parseApiError(res);
           expectErrorMessage(err, 409, 'kết thúc');
-          return res;
         },
       );
     });
 
-    it('CST – startTime trong quá khứ → 409', async () => {
-      // Tạo movie với releaseDate quá khứ để không bị chặn bởi assertInRange
+    it('Tạo showtime thất bại – Thời gian chiếu trong quá khứ', async () => {
+      const pastTime = new Date(Date.now() - 60 * 60 * 1000)
+        .toISOString()
+        .replace(/\.\d{3}Z$/, '.000Z');
+
+      const body = {
+        movieId: movieActive.id,
+        showtimes: [
+          {
+            roomId: room1.id,
+            startTime: pastTime,
+            priceStandard: 80000,
+            priceVip: 120000,
+          },
+        ],
+      };
+
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Business: Past StartTime',
-          description: 'startTime <= now.',
-          procedure: 'startTime: 1 giờ trước',
+          testCase: 'Tạo showtime thất bại do thời gian chiếu trong quá khứ',
+          description:
+            'Tạo showtime với thời gian bắt đầu nhỏ hơn thời điểm hiện tại.',
+          procedure: stringifyProcedure(body),
           expectedResult: 409,
-          preconditions: 'Admin token.',
+          preconditions: 'Tài khoản admin đã đăng nhập thành công.',
         },
-        async () => {
-          const pastTime = new Date(Date.now() - 60 * 60 * 1000)
-            .toISOString()
-            .replace(/\.\d{3}Z$/, '.000Z');
-          const res = await request(server)
+        () =>
+          request(server)
             .post('/showtimes')
             .set('Authorization', `Bearer ${adminToken}`)
-            .send({
-              movieId: movieActive.id,
-              showtimes: [
-                {
-                  roomId: room1.id,
-                  startTime: pastTime,
-                  priceStandard: 80000,
-                  priceVip: 120000,
-                },
-              ],
-            });
+            .send(body),
+        (res) => {
           expect(res.status).toBe(409);
           const err = parseApiError(res);
           expectErrorMessage(err, 409, 'quá khứ');
-          return res;
         },
       );
     });
 
-    it('CST – startTime trước releaseDate của phim → 409', async () => {
-      // Tạo movie với releaseDate = +10 ngày
+    it('Tạo showtime thất bại – Trước ngày khởi chiếu của phim', async () => {
       const movieRepo = dataSource.getRepository(Movie);
       const futureMovie = await movieRepo.save(
         movieRepo.create({
@@ -594,42 +648,46 @@ describe('[API] POST /showtimes', () => {
         }),
       );
 
+      createdMovieIds.push(futureMovie.id);
+
+      const body = {
+        movieId: futureMovie.id,
+        showtimes: [
+          {
+            roomId: room1.id,
+            startTime: addHours(120),
+            priceStandard: 80000,
+            priceVip: 120000,
+          },
+        ],
+      };
+
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Business: StartTime Before ReleaseDate',
-          description: 'startTime trước ngày khởi chiếu.',
-          procedure: 'startTime = +5 ngày, releaseDate = +10 ngày',
+          testCase: 'Tạo showtime thất bại do trước ngày khởi chiếu',
+          description:
+            'Tạo showtime có thời gian bắt đầu trước ngày khởi chiếu của phim.',
+          procedure: stringifyProcedure(body),
           expectedResult: 409,
-          preconditions: 'futureMovie có releaseDate = now + 10d.',
+          preconditions:
+            'Phim có ngày khởi chiếu sau thời gian bắt đầu của showtime.',
         },
-        async () => {
-          const res = await request(server)
+        () =>
+          request(server)
             .post('/showtimes')
             .set('Authorization', `Bearer ${adminToken}`)
-            .send({
-              movieId: futureMovie.id,
-              showtimes: [
-                {
-                  roomId: room1.id,
-                  startTime: addHours(120),
-                  priceStandard: 80000,
-                  priceVip: 120000,
-                },
-              ],
-            });
+            .send(body),
+        (res) => {
           expect(res.status).toBe(409);
           const err = parseApiError(res);
           expectErrorMessage(err, 409, 'khởi chiếu');
-          return res;
         },
       );
-
-      await movieRepo.delete(futureMovie.id);
     });
 
-    it('CST – startTime sau endDate của phim → 409', async () => {
+    it('Tạo showtime thất bại – Sau ngày kết thúc chiếu của phim', async () => {
       const movieRepo = dataSource.getRepository(Movie);
       const shortMovie = await movieRepo.save(
         movieRepo.create({
@@ -639,52 +697,55 @@ describe('[API] POST /showtimes', () => {
           ageRating: AgeRating.P,
           status: MovieStatus.SHOWING,
           releaseDate: addDays(-5) as unknown as Date,
-          endDate: addDays(1) as unknown as Date, // kết thúc ngày mai
+          endDate: addDays(1) as unknown as Date,
         }),
       );
+
+      createdMovieIds.push(shortMovie.id);
+
+      const body = {
+        movieId: shortMovie.id,
+        showtimes: [
+          {
+            roomId: room1.id,
+            startTime: addHours(300),
+            priceStandard: 80000,
+            priceVip: 120000,
+          },
+        ],
+      };
 
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Business: StartTime After EndDate',
-          description: 'startTime sau endDate của phim.',
-          procedure: 'startTime = +10 ngày, endDate = +1 ngày',
+          testCase: 'Tạo showtime thất bại do sau ngày kết thúc chiếu',
+          description:
+            'Tạo showtime có thời gian bắt đầu sau ngày kết thúc chiếu của phim.',
+          procedure: stringifyProcedure(body),
           expectedResult: 409,
-          preconditions: 'shortMovie.endDate = now + 1d.',
+          preconditions:
+            'Phim có ngày kết thúc chiếu trước thời gian bắt đầu của showtime.',
         },
-        async () => {
-          const res = await request(server)
+        () =>
+          request(server)
             .post('/showtimes')
             .set('Authorization', `Bearer ${adminToken}`)
-            .send({
-              movieId: shortMovie.id,
-              showtimes: [
-                {
-                  roomId: room1.id,
-                  startTime: addHours(300),
-                  priceStandard: 80000,
-                  priceVip: 120000,
-                },
-              ],
-            });
+            .send(body),
+        (res) => {
           expect(res.status).toBe(409);
           const err = parseApiError(res);
           expectErrorMessage(err, 409, 'kết thúc chiếu');
-          return res;
         },
       );
-
-      await movieRepo.delete(shortMovie.id);
     });
 
-    it('CST – Overlap với showtime đã có trong cùng phòng → 409', async () => {
-      // Seed một showtime trước
+    it('Tạo showtime thất bại – Trùng lịch chiếu trong cùng phòng', async () => {
       const showtimeRepo = dataSource.getRepository(Showtime);
       const baseTime = new Date(Date.now() + 72 * 60 * 60 * 1000);
       baseTime.setMilliseconds(0);
-      const baseTimeStr = baseTime.toISOString().replace(/\.\d{3}Z$/, '.000Z');
-      const endTime = new Date(baseTime.getTime() + 120 * 60 * 1000); // +120 min
+
+      const endTime = new Date(baseTime.getTime() + 120 * 60 * 1000);
 
       const existing = await showtimeRepo.save(
         showtimeRepo.create({
@@ -696,131 +757,142 @@ describe('[API] POST /showtimes', () => {
           priceVip: 120000,
         }),
       );
+
       createdShowtimeIds.push(existing.id);
 
-      // Thử tạo showtime overlap: bắt đầu 2 giờ sau (120 min = nằm trong buffer 150 min)
       const overlapStart = new Date(baseTime.getTime() + 2 * 60 * 60 * 1000)
         .toISOString()
         .replace(/\.\d{3}Z$/, '.000Z');
 
+      const body = {
+        movieId: movieActive.id,
+        showtimes: [
+          {
+            roomId: room1.id,
+            startTime: overlapStart,
+            priceStandard: 80000,
+            priceVip: 120000,
+          },
+        ],
+      };
+
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Business: Room Schedule Overlap',
+          testCase: 'Tạo showtime thất bại do trùng lịch chiếu',
           description:
-            'Tạo showtime bị trùng lịch với suất chiếu đã có trong phòng (kể cả buffer 30 min).',
-          procedure: `startTime = baseTime + 2h, existingShowtime = ${baseTimeStr}`,
+            'Tạo showtime trong cùng phòng chiếu và bị trùng với lịch chiếu đã tồn tại.',
+          procedure: stringifyProcedure(body),
           expectedResult: 409,
-          preconditions: `Showtime tại ${baseTimeStr} trong room1 đã được seed.`,
+          preconditions:
+            'Phòng chiếu đã có một showtime trong khung giờ gần với thời gian gửi lên.',
         },
-        async () => {
-          const res = await request(server)
+        () =>
+          request(server)
             .post('/showtimes')
             .set('Authorization', `Bearer ${adminToken}`)
-            .send({
-              movieId: movieActive.id,
-              showtimes: [
-                {
-                  roomId: room1.id,
-                  startTime: overlapStart,
-                  priceStandard: 80000,
-                  priceVip: 120000,
-                },
-              ],
-            });
+            .send(body),
+        (res) => {
           expect(res.status).toBe(409);
           const err = parseApiError(res);
           expectErrorMessage(err, 409, 'trùng lịch');
-          return res;
         },
       );
     });
 
-    it('CST – Batch tự overlap trong cùng 1 request → 409', async () => {
+    it('Tạo showtime thất bại – Các suất chiếu trong request bị trùng nhau', async () => {
       const t1 = addHours(96);
-      // t2 chỉ cách t1 2 giờ (120 min) = nằm trong buffer 150 min → tự overlap
       const t2 = new Date(new Date(t1).getTime() + 2 * 60 * 60 * 1000)
         .toISOString()
         .replace(/\.\d{3}Z$/, '.000Z');
+
+      const body = {
+        movieId: movieActive.id,
+        showtimes: [
+          {
+            roomId: room2.id,
+            startTime: t1,
+            priceStandard: 80000,
+            priceVip: 120000,
+          },
+          {
+            roomId: room2.id,
+            startTime: t2,
+            priceStandard: 80000,
+            priceVip: 120000,
+          },
+        ],
+      };
 
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Business: Batch Self-Overlap',
+          testCase: 'Tạo showtime thất bại do các suất chiếu bị trùng nhau',
           description:
-            'Batch gồm 2 item trong cùng phòng, cách nhau 2 giờ (< buffer 150 min).',
-          procedure: `t1=${t1}, t2=${t2}, cùng room2`,
+            'Tạo nhiều showtime trong cùng một request nhưng các suất chiếu bị trùng khung giờ trong cùng phòng.',
+          procedure: stringifyProcedure(body),
           expectedResult: 409,
-          preconditions: 'Admin token.',
+          preconditions: 'Tài khoản admin đã đăng nhập thành công.',
         },
-        async () => {
-          const res = await request(server)
+        () =>
+          request(server)
             .post('/showtimes')
             .set('Authorization', `Bearer ${adminToken}`)
-            .send({
-              movieId: movieActive.id,
-              showtimes: [
-                {
-                  roomId: room2.id,
-                  startTime: t1,
-                  priceStandard: 80000,
-                  priceVip: 120000,
-                },
-                {
-                  roomId: room2.id,
-                  startTime: t2,
-                  priceStandard: 80000,
-                  priceVip: 120000,
-                },
-              ],
-            });
+            .send(body),
+        (res) => {
           expect(res.status).toBe(409);
           const err = parseApiError(res);
           expectErrorMessage(err, 409, 'trùng');
-          return res;
         },
       );
     });
   });
 
-  // ─── Happy Path ──────────────────────────────────────────────────────────────
-
   describe('Luồng thành công', () => {
-    it('CST – Tạo 1 showtime → 201 với đầy đủ response fields', async () => {
+    it('Tạo showtime thành công – Tạo một suất chiếu', async () => {
       const startTime = addHours(200);
+
+      const body = {
+        movieId: movieActive.id,
+        showtimes: [
+          {
+            roomId: room1.id,
+            startTime,
+            priceStandard: 80000,
+            priceVip: 120000,
+          },
+        ],
+      };
 
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Happy Path: Single Showtime',
-          description: 'Tạo 1 showtime hợp lệ.',
-          procedure: `startTime=${startTime}`,
+          testCase: 'Tạo showtime thành công',
+          description:
+            'Tạo một showtime với phim, phòng chiếu, thời gian chiếu và giá vé hợp lệ.',
+          procedure: stringifyProcedure(body),
           expectedResult: 201,
-          preconditions: 'Admin token, movieActive, room1.',
+          preconditions:
+            'Tài khoản admin đã đăng nhập, phim và phòng chiếu đã tồn tại.',
         },
-        async () => {
-          const res = await request(server)
+        () =>
+          request(server)
             .post('/showtimes')
             .set('Authorization', `Bearer ${adminToken}`)
-            .send({
-              movieId: movieActive.id,
-              showtimes: [
-                {
-                  roomId: room1.id,
-                  startTime,
-                  priceStandard: 80000,
-                  priceVip: 120000,
-                },
-              ],
-            });
+            .send(body),
+        (res) => {
           expect(res.status).toBe(201);
+
           const data = parseApiData<ShowtimeResponseDto[]>(res);
+
           expect(Array.isArray(data)).toBe(true);
           expect(data).toHaveLength(1);
+
           const st = data[0];
+
           expect(st.id).toBeDefined();
           expect(st.movieId).toBe(movieActive.id);
           expect(st.roomId).toBe(room1.id);
@@ -830,135 +902,154 @@ describe('[API] POST /showtimes', () => {
           expect(st.priceStandard).toBe(80000);
           expect(st.priceVip).toBe(120000);
           expect(st.priceCouple).toBeNull();
+
           createdShowtimeIds.push(st.id);
-          return res;
         },
       );
     });
 
-    it('CST – Tạo batch 2 showtime ở 2 phòng khác nhau → 201, trả đúng thứ tự gốc', async () => {
+    it('Tạo showtime thành công – Tạo nhiều suất chiếu ở nhiều phòng', async () => {
       const t1 = addHours(210);
       const t2 = addHours(220);
 
+      const body = {
+        movieId: movieActive.id,
+        showtimes: [
+          {
+            roomId: room1.id,
+            startTime: t1,
+            priceStandard: 80000,
+            priceVip: 120000,
+          },
+          {
+            roomId: room2.id,
+            startTime: t2,
+            priceStandard: 90000,
+            priceVip: 130000,
+            priceCouple: 200000,
+          },
+        ],
+      };
+
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Happy Path: Batch 2 Showtimes',
-          description: 'Tạo batch 2 showtime ở room1 và room2.',
-          procedure: `t1=${t1} (room1), t2=${t2} (room2)`,
+          testCase: 'Tạo nhiều showtime thành công',
+          description:
+            'Tạo hai showtime hợp lệ cho hai phòng chiếu khác nhau trong cùng một request.',
+          procedure: stringifyProcedure(body),
           expectedResult: 201,
-          preconditions: 'Admin token.',
+          preconditions:
+            'Tài khoản admin đã đăng nhập, phim và các phòng chiếu đã tồn tại.',
         },
-        async () => {
-          const res = await request(server)
+        () =>
+          request(server)
             .post('/showtimes')
             .set('Authorization', `Bearer ${adminToken}`)
-            .send({
-              movieId: movieActive.id,
-              showtimes: [
-                {
-                  roomId: room1.id,
-                  startTime: t1,
-                  priceStandard: 80000,
-                  priceVip: 120000,
-                },
-                {
-                  roomId: room2.id,
-                  startTime: t2,
-                  priceStandard: 90000,
-                  priceVip: 130000,
-                  priceCouple: 200000,
-                },
-              ],
-            });
+            .send(body),
+        (res) => {
           expect(res.status).toBe(201);
+
           const data = parseApiData<ShowtimeResponseDto[]>(res);
+
           expect(data).toHaveLength(2);
-          // Response giữ đúng thứ tự gốc: index 0 = room1, index 1 = room2
           expect(data[0].roomId).toBe(room1.id);
           expect(data[1].roomId).toBe(room2.id);
           expect(data[1].priceCouple).toBe(200000);
+
           data.forEach((st) => createdShowtimeIds.push(st.id));
-          return res;
         },
       );
     });
 
-    it('CST – Tạo showtime với status=sold_out → 201', async () => {
+    it('Tạo showtime thành công – Tạo suất chiếu đã bán hết', async () => {
       const startTime = addHours(230);
 
+      const body = {
+        movieId: movieActive.id,
+        showtimes: [
+          {
+            roomId: room2.id,
+            startTime,
+            status: 'sold_out',
+            priceStandard: 80000,
+            priceVip: 120000,
+          },
+        ],
+      };
+
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Happy Path: Sold Out Status',
-          description: 'Tạo showtime với status=sold_out.',
-          procedure: `status=sold_out, startTime=${startTime}`,
+          testCase: 'Tạo showtime đã bán hết thành công',
+          description: 'Tạo showtime hợp lệ với trạng thái đã bán hết.',
+          procedure: stringifyProcedure(body),
           expectedResult: 201,
-          preconditions: 'Admin token.',
+          preconditions:
+            'Tài khoản admin đã đăng nhập, phim và phòng chiếu đã tồn tại.',
         },
-        async () => {
-          const res = await request(server)
+        () =>
+          request(server)
             .post('/showtimes')
             .set('Authorization', `Bearer ${adminToken}`)
-            .send({
-              movieId: movieActive.id,
-              showtimes: [
-                {
-                  roomId: room2.id,
-                  startTime,
-                  status: 'sold_out',
-                  priceStandard: 80000,
-                  priceVip: 120000,
-                },
-              ],
-            });
+            .send(body),
+        (res) => {
           expect(res.status).toBe(201);
+
           const data = parseApiData<ShowtimeResponseDto[]>(res);
+
           expect(data[0].status).toBe('sold_out');
           data.forEach((st) => createdShowtimeIds.push(st.id));
-          return res;
         },
       );
     });
 
-    it('CST – endTime được tự tính = startTime + duration (120 min)', async () => {
+    it('Tạo showtime thành công – Tự tính giờ kết thúc theo phim', async () => {
       const startTime = addHours(240);
+
+      const body = {
+        movieId: movieActive.id,
+        showtimes: [
+          {
+            roomId: room1.id,
+            startTime,
+            priceStandard: 80000,
+            priceVip: 120000,
+          },
+        ],
+      };
 
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Happy Path: Auto endTime',
-          description: 'endTime = startTime + movie.duration (120 phút).',
-          procedure: `startTime=${startTime}`,
+          testCase: 'Tạo showtime thành công và tự tính giờ kết thúc',
+          description:
+            'Tạo showtime hợp lệ và hệ thống tự tính thời gian kết thúc dựa trên thời lượng phim.',
+          procedure: stringifyProcedure(body),
           expectedResult: 201,
-          preconditions: 'movieActive.duration = 120.',
+          preconditions:
+            'Phim có thời lượng 120 phút đã tồn tại trong hệ thống.',
         },
-        async () => {
-          const res = await request(server)
+        () =>
+          request(server)
             .post('/showtimes')
             .set('Authorization', `Bearer ${adminToken}`)
-            .send({
-              movieId: movieActive.id,
-              showtimes: [
-                {
-                  roomId: room1.id,
-                  startTime,
-                  priceStandard: 80000,
-                  priceVip: 120000,
-                },
-              ],
-            });
+            .send(body),
+        (res) => {
           expect(res.status).toBe(201);
+
           const data = parseApiData<ShowtimeResponseDto[]>(res);
           const st = data[0];
+
           const diffMs =
             new Date(st.endTime).getTime() - new Date(st.startTime).getTime();
+
           expect(diffMs).toBe(120 * 60 * 1000);
+
           createdShowtimeIds.push(st.id);
-          return res;
         },
       );
     });

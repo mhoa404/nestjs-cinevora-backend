@@ -89,6 +89,7 @@ export class MoviesService {
       title: dto.title,
       posterUrl: dto.posterUrl,
       trailerUrl: dto.trailerUrl,
+      bannerUrl: dto.bannerUrl,
       description: dto.description,
       duration: dto.duration,
       director: dto.director,
@@ -103,6 +104,7 @@ export class MoviesService {
     movie.slug = this.buildMovieSlug(prepared.baseSlug, movie.id);
     movie.posterUrl = prepared.posterUrl;
     movie.trailerUrl = prepared.trailerUrl;
+    movie.bannerUrl = prepared.bannerUrl;
     movie.description = prepared.description;
     movie.duration = prepared.duration;
     movie.director = prepared.director;

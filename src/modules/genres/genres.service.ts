@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -52,7 +53,7 @@ export class GenresService {
     const isSameSlug = slug === genre.slug;
 
     if (isSameName && isSameSlug) {
-      return GenreResponseDto.fromEntity(genre);
+      throw new BadRequestException('Không có thay đổi nào để cập nhật.');
     }
 
     if (!isSameName) {
