@@ -11,19 +11,13 @@ import {
 import { Showtime } from '../../showtimes/entities/showtime.entity';
 import { User } from '../../users/entities/user.entity';
 import { BookingSeat } from './booking-seat.entity';
+import { Payment } from '../../payments/entities/payment.entity';
 
 export enum BookingStatus {
   PENDING = 'pending',
   CONFIRMED = 'confirmed',
   CANCELLED = 'cancelled',
   USED = 'used',
-}
-
-export enum PaymentMethod {
-  CASH = 'cash',
-  MOMO = 'momo',
-  ZALOPAY = 'zalopay',
-  CREDIT_CARD = 'credit_card',
 }
 
 @Entity('bookings')
@@ -42,9 +36,6 @@ export class Booking {
 
   @Column({ name: 'total_price', type: 'decimal', precision: 10, scale: 0 })
   totalPrice!: number;
-
-  @Column({ name: 'payment_method', type: 'enum', enum: PaymentMethod })
-  paymentMethod!: PaymentMethod;
 
   @Column({ name: 'booked_at', type: 'timestamp' })
   bookedAt!: Date;
@@ -95,4 +86,7 @@ export class Booking {
 
   @OneToMany(() => BookingSeat, (bookingSeat) => bookingSeat.booking)
   bookingSeats!: BookingSeat[];
+
+  @OneToMany(() => Payment, (payment) => payment.booking)
+  payments!: Payment[];
 }
