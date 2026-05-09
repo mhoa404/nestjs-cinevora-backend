@@ -96,6 +96,16 @@ const TEST_SUITES: Record<
     file: 'test/api/showtimes/delete-showtime.api.spec.ts',
     description: 'API Xoá suất chiếu (Showtimes)',
   },
+  get_showtimes: {
+    prefix: 'GST',
+    file: 'test/api/showtimes/get-showtimes.api.spec.ts',
+    description: 'API Lấy danh sách suất chiếu (Showtimes)',
+  },
+  get_showtime_by_id: {
+    prefix: 'GSD',
+    file: 'test/api/showtimes/get-showtime-by-id.api.spec.ts',
+    description: 'API Lấy suất chiếu theo ID (Showtimes)',
+  },
 };
 
 console.log('\n╔════════════════════════════════════════════════╗');

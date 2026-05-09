@@ -435,7 +435,7 @@ describe('[API] PATCH /genres/:id', () => {
       );
     });
 
-    it('Cập nhật thành công - Giữ nguyên tên ban đầu', async () => {
+    it('Cập nhật thất bại - Giữ nguyên tên ban đầu', async () => {
       const unique = Date.now();
       const name = `Updated Genre Trim ${unique}`;
 
@@ -448,7 +448,7 @@ describe('[API] PATCH /genres/:id', () => {
           testCase: 'Business: Same Name',
           description: 'Cập nhật thể loại với tên cũ của chính nó.',
           procedure: stringifyProcedure(body),
-          expectedResult: 200,
+          expectedResult: 400,
           preconditions: 'Cập nhật về lại tên cũ.',
         },
         async () => {

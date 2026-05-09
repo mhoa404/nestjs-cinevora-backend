@@ -33,7 +33,6 @@ export class RolesGuard implements CanActivate {
       return true;
     }
 
-    // Ép kiểu request sang RequestWithUser để ESLint nhận diện được cấu trúc an toàn
     const request = context.switchToHttp().getRequest<RequestWithUser>();
     const user = request.user;
 
