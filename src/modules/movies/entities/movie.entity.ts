@@ -74,10 +74,10 @@ export class Movie {
   status!: MovieStatus;
 
   @Column({ name: 'release_date', type: 'date' })
-  releaseDate!: string;
+  releaseDate!: Date;
 
   @Column({ name: 'end_date', type: 'date', nullable: true })
-  endDate!: string | null;
+  endDate!: Date | null;
 
   @Column({
     name: 'avg_rating',

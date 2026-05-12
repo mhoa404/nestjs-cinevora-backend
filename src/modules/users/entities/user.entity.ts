@@ -23,7 +23,7 @@ export class User {
   password!: string;
 
   @Column({ name: 'date_of_birth', type: 'date' })
-  dateOfBirth!: string;
+  dateOfBirth!: Date;
 
   @Column({ type: 'varchar', length: 15, unique: true })
   phone!: string | null;
