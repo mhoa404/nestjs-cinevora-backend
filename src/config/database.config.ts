@@ -1,3 +1,4 @@
+// src/config/database.config.ts
 import { registerAs } from '@nestjs/config';
 
 export default registerAs('database', () => ({
@@ -9,4 +10,5 @@ export default registerAs('database', () => ({
   database: process.env.DB_NAME,
   synchronize: false,
   autoLoadEntities: true,
+  timezone: 'Z',
 }));

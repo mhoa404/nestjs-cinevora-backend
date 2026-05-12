@@ -29,10 +29,10 @@ export class Showtime {
   @Column({ name: 'room_id' })
   roomId!: number;
 
-  @Column({ name: 'start_time', type: 'datetime' })
+  @Column({ name: 'start_time', type: 'datetime', precision: 3 })
   startTime!: Date;
 
-  @Column({ name: 'end_time', type: 'datetime' })
+  @Column({ name: 'end_time', type: 'datetime', precision: 3 })
   endTime!: Date;
 
   @Column({
@@ -60,6 +60,7 @@ export class Showtime {
   @CreateDateColumn({
     name: 'created_at',
     type: 'datetime',
+    precision: 3,
     default: () => 'CURRENT_TIMESTAMP',
   })
   createdAt!: Date;
@@ -67,11 +68,13 @@ export class Showtime {
   @UpdateDateColumn({
     name: 'updated_at',
     type: 'datetime',
+    precision: 3,
     default: () => 'CURRENT_TIMESTAMP',
     onUpdate: 'CURRENT_TIMESTAMP',
   })
   updatedAt!: Date;
 
+  // Relations
   @ManyToOne(() => Movie, (movie) => movie.showtimes)
   @JoinColumn({ name: 'movie_id' })
   movie!: Movie;

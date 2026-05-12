@@ -1,29 +1,30 @@
+// src/modules/bookings/entities/booking-seat.entity.ts
 import {
   Column,
+  CreateDateColumn,
   Entity,
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
-  CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
 
+import { SeatType } from '../../../common/constants/seat-type.constant';
 import { Seat } from '../../seats/entities/seat.entity';
 import { Booking } from './booking.entity';
-import { SeatType } from '../../../common/constants/seat-type.constant';
 
 @Entity('booking_seats')
 export class BookingSeat {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @Column({ name: 'booking_id' })
+  @Column({ name: 'booking_id', type: 'int' })
   bookingId!: number;
 
-  @Column({ name: 'seat_id' })
+  @Column({ name: 'seat_id', type: 'int' })
   seatId!: number;
 
-  @Column({ name: 'seat_key', length: 10 })
+  @Column({ name: 'seat_key', type: 'varchar', length: 10 })
   seatKey!: string;
 
   @Column({ name: 'price', type: 'decimal', precision: 10, scale: 0 })
@@ -39,20 +40,21 @@ export class BookingSeat {
 
   @CreateDateColumn({
     name: 'created_at',
-    type: 'timestamp',
+    type: 'datetime',
+    precision: 3,
     default: () => 'CURRENT_TIMESTAMP',
   })
   createdAt!: Date;
 
   @UpdateDateColumn({
     name: 'updated_at',
-    type: 'timestamp',
+    type: 'datetime',
+    precision: 3,
     default: () => 'CURRENT_TIMESTAMP',
     onUpdate: 'CURRENT_TIMESTAMP',
   })
   updatedAt!: Date;
 
-  //Relation
   @ManyToOne(() => Booking, (booking) => booking.bookingSeats)
   @JoinColumn({ name: 'booking_id' })
   booking!: Booking;

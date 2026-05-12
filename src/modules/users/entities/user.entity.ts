@@ -23,7 +23,7 @@ export class User {
   password!: string;
 
   @Column({ name: 'date_of_birth', type: 'date' })
-  dateOfBirth!: Date;
+  dateOfBirth!: string;
 
   @Column({ type: 'varchar', length: 15, unique: true })
   phone!: string | null;
@@ -63,12 +63,18 @@ export class User {
   @Column({ name: 'is_active', type: 'boolean', default: true })
   isActive!: boolean;
 
-  @Column({ name: 'last_login_at', type: 'datetime', nullable: true })
+  @Column({
+    name: 'last_login_at',
+    type: 'datetime',
+    precision: 3,
+    nullable: true,
+  })
   lastLoginAt!: Date | null;
 
   @Column({
     name: 'created_at',
     type: 'datetime',
+    precision: 3,
     default: () => 'CURRENT_TIMESTAMP',
   })
   createdAt!: Date;
@@ -76,12 +82,13 @@ export class User {
   @Column({
     name: 'updated_at',
     type: 'datetime',
+    precision: 3,
     default: () => 'CURRENT_TIMESTAMP',
     onUpdate: 'CURRENT_TIMESTAMP',
   })
   updatedAt!: Date;
 
-  //Relations
+  // Relations
   @OneToMany(() => Booking, (booking) => booking.user)
   bookings!: Booking[];
 }

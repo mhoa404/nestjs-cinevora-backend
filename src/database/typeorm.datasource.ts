@@ -1,6 +1,7 @@
-import { DataSource } from 'typeorm';
+// src/database/typeorm.datasource.ts
 import * as dotenv from 'dotenv';
 import { join } from 'path';
+import { DataSource } from 'typeorm';
 
 dotenv.config();
 
@@ -14,6 +15,7 @@ export const AppDataSource = new DataSource({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   synchronize: false,
+  timezone: 'Z',
   entities: [
     isTsRuntime
       ? join(__dirname, '../modules/**/entities/*.entity.ts')

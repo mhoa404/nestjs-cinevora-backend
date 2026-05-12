@@ -1,3 +1,4 @@
+# docker-compose.yml
 services:
   mysql:
     image: mysql:8.0
@@ -14,6 +15,7 @@ services:
       MYSQL_DATABASE: ${DB_NAME}
       MYSQL_USER: ${DB_USER}
       MYSQL_PASSWORD: ${DB_PASSWORD}
+      TZ: UTC
     ports:
       - "127.0.0.1:3306:3306"
     volumes:
@@ -27,6 +29,24 @@ services:
     networks:
       - cinevora_network
 
+  redis:
+    image: redis:7-alpine
+    container_name: cinevora_redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - cinevora_network
+
   backend:
     build:
       context: .
@@ -36,6 +56,8 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     env_file:
       - .env
     environment:
@@ -43,6 +65,9 @@ services:
       PORT: 3000
       DB_HOST: mysql
       DB_PORT: 3306
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      TZ: UTC
     ports:
       - "3000:3000"
     networks:
@@ -64,6 +89,7 @@ services:
 
 volumes:
   mysql_data:
+  redis_data:
   jenkins_home:
 
 networks:

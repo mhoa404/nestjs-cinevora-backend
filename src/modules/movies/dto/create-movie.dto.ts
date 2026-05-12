@@ -26,6 +26,7 @@ export class CreateMovieDto {
   @IsUrl({}, { message: 'Trailer phim phải là URL hợp lệ.' })
   trailerUrl?: string;
 
+  @IsOptional()
   @IsUrl({}, { message: 'Banner phim phải là URL hợp lệ' })
   bannerUrl?: string;
 

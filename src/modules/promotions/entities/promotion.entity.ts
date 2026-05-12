@@ -1,4 +1,10 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 export enum PromotionType {
   HIGHTLIGHT = 'highlight',
@@ -42,14 +48,14 @@ export class Promotion {
     type: 'date',
     nullable: true,
   })
-  startDate!: Date | null;
+  startDate!: string | null;
 
   @Column({
     name: 'end_date',
     type: 'date',
     nullable: true,
   })
-  endDate!: Date | null;
+  endDate!: string | null;
 
   @Column({
     name: 'is_active',
@@ -58,10 +64,20 @@ export class Promotion {
   })
   isActive!: boolean;
 
-  @Column({
+  @CreateDateColumn({
     name: 'created_at',
-    type: 'timestamp',
+    type: 'datetime',
+    precision: 3,
     default: () => 'CURRENT_TIMESTAMP',
   })
   createdAt!: Date;
+
+  @UpdateDateColumn({
+    name: 'updated_at',
+    type: 'datetime',
+    precision: 3,
+    default: () => 'CURRENT_TIMESTAMP',
+    onUpdate: 'CURRENT_TIMESTAMP',
+  })
+  updatedAt!: Date;
 }

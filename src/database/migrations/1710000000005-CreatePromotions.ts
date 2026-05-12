@@ -15,7 +15,8 @@ export class CreatePromotions1710000000005 implements MigrationInterface {
                 \`start_date\`       DATE,
                 \`end_date\`         DATE,
                 \`is_active\`        TINYINT(1)      NOT NULL DEFAULT 1,
-                \`created_at\`       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                \`created_at\`       DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+                \`updated_at\`       DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
                 CONSTRAINT \`PK_promotions\` PRIMARY KEY (\`id\`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         `);
