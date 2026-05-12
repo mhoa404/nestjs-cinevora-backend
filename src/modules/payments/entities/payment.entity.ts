@@ -55,13 +55,24 @@ export class Payment {
   @Column({ name: 'provider_response', type: 'json', nullable: true })
   providerResponse!: Record<string, any> | null;
 
-  @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
+  @CreateDateColumn({
+    name: 'created_at',
+    type: 'datetime',
+    precision: 3,
+    default: () => 'CURRENT_TIMESTAMP',
+  })
   createdAt!: Date;
 
-  @UpdateDateColumn({ name: 'updated_at', type: 'timestamp' })
+  @UpdateDateColumn({
+    name: 'updated_at',
+    type: 'datetime',
+    precision: 3,
+    default: () => 'CURRENT_TIMESTAMP',
+    onUpdate: 'CURRENT_TIMESTAMP',
+  })
   updatedAt!: Date;
 
-  // Relation
+  // Relations
   @ManyToOne(() => Booking, (booking) => booking.payments)
   @JoinColumn({ name: 'booking_id' })
   booking!: Booking;

@@ -23,8 +23,8 @@ export class CreateMovies1710000000001 implements MigrationInterface {
         \`release_date\` DATE            NOT NULL,
         \`end_date\`     DATE            NULL,
         \`avg_rating\`   DECIMAL(3,1),
-        \`created_at\`   TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        \`updated_at\`   TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        \`created_at\`   DATETIME(3)       NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+        \`updated_at\`   DATETIME(3)       NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
         CONSTRAINT \`PK_movies\` PRIMARY KEY (\`id\`)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);

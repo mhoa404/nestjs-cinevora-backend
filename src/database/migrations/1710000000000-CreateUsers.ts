@@ -1,5 +1,4 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
-import * as bcrypt from 'bcrypt';
 
 export class CreateUsers1710000000000 implements MigrationInterface {
   name = 'CreateUsers1710000000000';
@@ -20,24 +19,14 @@ export class CreateUsers1710000000000 implements MigrationInterface {
         \`id_card_number\`   VARCHAR(20)     NULL,
         \`role\`             ENUM('customer', 'staff', 'admin', 'super_admin') NOT NULL DEFAULT 'customer',
         \`is_active\`        TINYINT(1)      NOT NULL DEFAULT 1,
-        \`last_login_at\`    DATETIME        NULL,
-        \`created_at\`       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        \`updated_at\`       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        \`last_login_at\`    DATETIME(3)     NULL,
+        \`created_at\`       DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+        \`updated_at\`       DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
 
         CONSTRAINT \`PK_users\` PRIMARY KEY (\`id\`),
         CONSTRAINT \`UQ_users_email\` UNIQUE (\`email\`),
         CONSTRAINT \`UQ_users_phone\` UNIQUE (\`phone\`)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    `);
-    const adminPassword = await bcrypt.hash('Api_tester_123', 10);
-    const clientPassword = await bcrypt.hash('Api_client_123', 10);
-
-    await queryRunner.query(`
-      INSERT INTO \`users\` (
-        \`full_name\`, \`email\`, \`password\`, \`date_of_birth\`, \`phone\`, \`role\`
-      ) VALUES 
-      ('API Tester', 'api_tester@gmail.com', '${adminPassword}', '2011-11-11', '0369539200', 'admin'),
-      ('API Client', 'api_client@gmail.com', '${clientPassword}', '2010-10-10', '0369539201', 'customer')
     `);
   }
 

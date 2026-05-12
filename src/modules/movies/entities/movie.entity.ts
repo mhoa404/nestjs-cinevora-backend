@@ -74,10 +74,10 @@ export class Movie {
   status!: MovieStatus;
 
   @Column({ name: 'release_date', type: 'date' })
-  releaseDate!: Date;
+  releaseDate!: string;
 
   @Column({ name: 'end_date', type: 'date', nullable: true })
-  endDate!: Date | null;
+  endDate!: string | null;
 
   @Column({
     name: 'avg_rating',
@@ -90,7 +90,8 @@ export class Movie {
 
   @CreateDateColumn({
     name: 'created_at',
-    type: 'timestamp',
+    type: 'datetime',
+    precision: 3,
     default: () => 'CURRENT_TIMESTAMP',
   })
   createdAt!: Date;
@@ -98,11 +99,13 @@ export class Movie {
   @UpdateDateColumn({
     name: 'updated_at',
     type: 'timestamp',
+    precision: 3,
     default: () => 'CURRENT_TIMESTAMP',
     onUpdate: 'CURRENT_TIMESTAMP',
   })
   updatedAt!: Date;
 
+  // Relations
   @OneToMany(() => Showtime, (showtime) => showtime.movie)
   showtimes!: Showtime[];
 

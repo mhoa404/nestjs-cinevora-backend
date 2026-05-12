@@ -9,9 +9,9 @@ export class CreateRefreshTokens1710000000006 implements MigrationInterface {
         \`id\`          INT             NOT NULL AUTO_INCREMENT,
         \`user_id\`     VARCHAR(36)     NOT NULL,
         \`token\`       VARCHAR(64)     NOT NULL,
-        \`expires_at\`  DATETIME        NOT NULL,
+        \`expires_at\`  DATETIME(3)     NOT NULL,
         \`is_revoked\`  TINYINT(1)      NOT NULL DEFAULT 0,
-        \`created_at\`  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        \`created_at\`  DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
         CONSTRAINT \`PK_refresh_tokens\` PRIMARY KEY (\`id\`),
         CONSTRAINT \`UQ_refresh_tokens_token\` UNIQUE (\`token\`),
         CONSTRAINT \`FK_refresh_tokens_user\` FOREIGN KEY (\`user_id\`)

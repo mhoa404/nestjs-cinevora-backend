@@ -1,5 +1,7 @@
+// src/modules/bookings/entities/booking.entity.ts
 import {
   Column,
+  CreateDateColumn,
   Entity,
   JoinColumn,
   ManyToOne,
@@ -8,16 +10,16 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
+import { Payment } from '../../payments/entities/payment.entity';
 import { Showtime } from '../../showtimes/entities/showtime.entity';
 import { User } from '../../users/entities/user.entity';
 import { BookingSeat } from './booking-seat.entity';
-import { Payment } from '../../payments/entities/payment.entity';
 
 export enum BookingStatus {
   PENDING = 'pending',
   CONFIRMED = 'confirmed',
   CANCELLED = 'cancelled',
-  USED = 'used',
+  EXPIRED = 'expired',
 }
 
 @Entity('bookings')
@@ -25,20 +27,32 @@ export class Booking {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @Column({ name: 'user_id' })
+  @Column({ name: 'user_id', type: 'varchar', length: 36 })
   userId!: string;
 
-  @Column({ name: 'showtime_id' })
+  @Column({ name: 'showtime_id', type: 'int' })
   showtimeId!: number;
 
   @Column({ name: 'ticket_count', type: 'int' })
   ticketCount!: number;
 
-  @Column({ name: 'total_price', type: 'decimal', precision: 10, scale: 0 })
+  @Column({ name: 'total_price', type: 'decimal', precision: 12, scale: 0 })
   totalPrice!: number;
 
-  @Column({ name: 'booked_at', type: 'timestamp' })
+  @Column({
+    name: 'booked_at',
+    type: 'datetime',
+    precision: 3,
+    default: () => 'CURRENT_TIMESTAMP',
+  })
   bookedAt!: Date;
+
+  @Column({
+    name: 'expires_at',
+    type: 'datetime',
+    precision: 3,
+  })
+  expiresAt!: Date;
 
   @Column({
     name: 'status',
@@ -48,34 +62,32 @@ export class Booking {
   })
   status!: BookingStatus;
 
-  @Column({ name: 'snapshot_movie_title', length: 255 })
+  @Column({ name: 'snapshot_movie_title', type: 'varchar', length: 255 })
   snapshotMovieTitle!: string;
 
-  @Column({ name: 'snapshot_cinema_name', length: 100 })
-  snapshotCinemaName!: string;
-
-  @Column({ name: 'snapshot_room_name', length: 20 })
+  @Column({ name: 'snapshot_room_name', type: 'varchar', length: 20 })
   snapshotRoomName!: string;
 
   @Column({ name: 'snapshot_showtime_start', type: 'timestamp' })
   snapshotShowtimeStart!: Date;
 
-  @Column({
+  @CreateDateColumn({
     name: 'created_at',
-    type: 'timestamp',
+    type: 'datetime',
+    precision: 3,
     default: () => 'CURRENT_TIMESTAMP',
   })
   createdAt!: Date;
 
   @UpdateDateColumn({
     name: 'updated_at',
-    type: 'timestamp',
+    type: 'datetime',
+    precision: 3,
     default: () => 'CURRENT_TIMESTAMP',
     onUpdate: 'CURRENT_TIMESTAMP',
   })
   updatedAt!: Date;
 
-  //Relation
   @ManyToOne(() => User, (user) => user.bookings)
   @JoinColumn({ name: 'user_id' })
   user!: User;
