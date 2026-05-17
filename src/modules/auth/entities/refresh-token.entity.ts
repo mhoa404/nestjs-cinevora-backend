@@ -34,7 +34,7 @@ export class RefreshToken {
     name: 'created_at',
     type: 'datetime',
     precision: 3,
-    default: () => 'CURRENT_TIMESTAMP',
+    default: () => 'CURRENT_TIMESTAMP(3)',
   })
   createdAt!: Date;
 

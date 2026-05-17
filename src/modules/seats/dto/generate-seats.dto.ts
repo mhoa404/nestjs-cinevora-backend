@@ -19,6 +19,7 @@ export class GenerateSeatRowDto {
   @MaxLength(10, { message: 'rowLabel không được vượt quá 10 ký tự' })
   rowLabel!: string;
 
+  @Type(() => Number)
   @IsInt({ message: 'count phải là số nguyên' })
   @Min(1, { message: 'count phải lớn hơn hoặc bằng 1' })
   @Max(100, { message: 'count không được vượt quá 100 ghế mỗi hàng' })
@@ -31,6 +32,7 @@ export class GenerateSeatRowDto {
 }
 
 export class GenerateSeatsDto {
+  @Type(() => Number)
   @IsInt({ message: 'roomId phải là số nguyên' })
   @Min(1, { message: 'roomId phải lớn hơn hoặc bằng 1' })
   roomId!: number;

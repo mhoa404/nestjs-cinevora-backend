@@ -7,7 +7,7 @@ import {
 } from 'typeorm';
 
 export enum PromotionType {
-  HIGHTLIGHT = 'highlight',
+  HIGHTLIGHT = 'hightlight',
   GRID = 'grid',
   TOP = 'top',
 }
@@ -68,7 +68,7 @@ export class Promotion {
     name: 'created_at',
     type: 'datetime',
     precision: 3,
-    default: () => 'CURRENT_TIMESTAMP',
+    default: () => 'CURRENT_TIMESTAMP(3)',
   })
   createdAt!: Date;
 
@@ -76,8 +76,8 @@ export class Promotion {
     name: 'updated_at',
     type: 'datetime',
     precision: 3,
-    default: () => 'CURRENT_TIMESTAMP',
-    onUpdate: 'CURRENT_TIMESTAMP',
+    default: () => 'CURRENT_TIMESTAMP(3)',
+    onUpdate: 'CURRENT_TIMESTAMP(3)',
   })
   updatedAt!: Date;
 }

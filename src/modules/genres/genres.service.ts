@@ -47,22 +47,28 @@ export class GenresService {
 
   async update(id: number, dto: UpdateGenreDto): Promise<GenreResponseDto> {
     const genre = await this.findEntityById(id);
-    const { name, slug, normalizedName } = prepareGenreInput(dto.name);
 
-    const isSameName = name === genre.name;
-    const isSameSlug = slug === genre.slug;
-
-    if (isSameName && isSameSlug) {
-      throw new BadRequestException('Không có thay đổi nào để cập nhật.');
+    if (!dto || Object.keys(dto).length === 0) {
+      throw new BadRequestException('Không có dữ liệu nào để cập nhật.');
     }
 
-    if (!isSameName) {
+    if (dto.name === undefined) {
+      throw new BadRequestException('Không có dữ liệu nào để cập nhật.');
+    }
+
+    const { name, slug, normalizedName } = prepareGenreInput(dto.name);
+
+    if (name === genre.name && slug === genre.slug) {
+      return GenreResponseDto.fromEntity(genre);
+    }
+
+    const isSameNormalizedName = normalizedName === genre.name.toLowerCase();
+
+    if (!isSameNormalizedName) {
       await this.assertNameUnique(normalizedName, id);
     }
 
-    if (!isSameSlug) {
-      await this.assertSlugUnique(slug, id);
-    }
+    await this.assertSlugUnique(slug, id);
 
     genre.name = name;
     genre.slug = slug;

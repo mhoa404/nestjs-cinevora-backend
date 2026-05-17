@@ -33,6 +33,7 @@ describe('[API] PATCH /genres/:id', () => {
 
   let targetGenreId = 0;
   let existingGenreName = '';
+  let slugCollisionInputName = '';
 
   const results: TestCaseRecord[] = [];
   const PREFIX = 'UGR';
@@ -124,6 +125,17 @@ describe('[API] PATCH /genres/:id', () => {
       }),
     );
     existingGenreName = genre2.name;
+
+    const slugCollisionName = `Ca Phe Slug ${unique}`;
+
+    await genreRepository.save(
+      genreRepository.create({
+        name: slugCollisionName,
+        slug: `ca-phe-slug-${unique}`,
+      }),
+    );
+
+    slugCollisionInputName = `Cà Phê Slug ${unique}`;
   });
 
   afterAll(async () => {
@@ -208,15 +220,15 @@ describe('[API] PATCH /genres/:id', () => {
   });
 
   describe('Validation', () => {
-    it('Cập nhật thất bại - Thiếu trường name', async () => {
+    it('Cập nhật thất bại - Body rỗng', async () => {
       const body = {};
 
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Validation: Missing Name',
-          description: 'Gửi body rỗng.',
+          testCase: 'Validation: Empty Body',
+          description: 'Gửi body rỗng khi PATCH thể loại.',
           procedure: stringifyProcedure(body),
           expectedResult: 400,
           preconditions: 'Dùng token Admin.',
@@ -229,7 +241,7 @@ describe('[API] PATCH /genres/:id', () => {
 
           expect(response.status).toBe(400);
           const error = parseApiError(response);
-          expectErrorMessage(error, 400, 'Vui lòng nhập tên thể loại.');
+          expectErrorMessage(error, 400, 'Không có dữ liệu nào để cập nhật.');
           return response;
         },
       );
@@ -435,29 +447,43 @@ describe('[API] PATCH /genres/:id', () => {
       );
     });
 
-    it('Cập nhật thất bại - Giữ nguyên tên ban đầu', async () => {
+    it('Cập nhật thành công - Gửi lại đúng name hiện tại của chính nó', async () => {
+      const genreRepository = dataSource.getRepository(Genre);
       const unique = Date.now();
-      const name = `Updated Genre Trim ${unique}`;
 
-      const body = { name };
+      const sameNameGenre = await genreRepository.save(
+        genreRepository.create({
+          name: `Same Name Genre ${unique}`,
+          slug: `same-name-genre-${unique}`,
+        }),
+      );
+
+      const body = { name: sameNameGenre.name };
 
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Business: Same Name',
-          description: 'Cập nhật thể loại với tên cũ của chính nó.',
+          testCase: 'Business: Same Name Accepted',
+          description:
+            'PATCH với name trùng name hiện tại của chính genre đó vẫn trả 200 OK.',
           procedure: stringifyProcedure(body),
-          expectedResult: 400,
-          preconditions: 'Cập nhật về lại tên cũ.',
+          expectedResult: 200,
+          preconditions: 'Genre đã tồn tại.',
         },
         async () => {
           const response = await request(server)
-            .patch(`/genres/${targetGenreId}`)
+            .patch(`/genres/${sameNameGenre.id}`)
             .set('Authorization', `Bearer ${adminToken}`)
             .send(body);
 
           expect(response.status).toBe(200);
+
+          const data = parseApiData<GenreResponseDto>(response);
+          expect(data.id).toBe(sameNameGenre.id);
+          expect(data.name).toBe(sameNameGenre.name);
+          expect(data.slug).toBe(sameNameGenre.slug);
+
           return response;
         },
       );
@@ -485,6 +511,35 @@ describe('[API] PATCH /genres/:id', () => {
           expect(response.status).toBe(409);
           const error = parseApiError(response);
           expectErrorMessage(error, 409, 'Tên thể loại đã tồn tại');
+          return response;
+        },
+      );
+    });
+
+    it('Cập nhật thất bại - Name khác nhưng slug sinh ra đã tồn tại bởi ID khác', async () => {
+      const body = { name: slugCollisionInputName };
+
+      await record(
+        {
+          id: nextId(),
+          scope: 'All',
+          testCase: 'Business: Duplicate Slug',
+          description:
+            'Cập nhật name khác name cũ, không trùng name đã tồn tại, nhưng slug sinh ra lại trùng slug của genre khác.',
+          procedure: stringifyProcedure(body),
+          expectedResult: 409,
+          preconditions: 'Đã tạo sẵn genre khác có slug tương đương.',
+        },
+        async () => {
+          const response = await request(server)
+            .patch(`/genres/${targetGenreId}`)
+            .set('Authorization', `Bearer ${adminToken}`)
+            .send(body);
+
+          expect(response.status).toBe(409);
+          const error = parseApiError(response);
+          expectErrorMessage(error, 409, 'Slug này đã tồn tại.');
+
           return response;
         },
       );

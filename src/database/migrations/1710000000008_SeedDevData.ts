@@ -104,29 +104,26 @@ export class SeedDevData1710000000008 implements MigrationInterface {
 
     await queryRunner.query(`
       INSERT IGNORE INTO \`rooms\` (\`name\`) VALUES
-      ${roomNames.map((roomName) => `('${roomName}')`).join(',\n')}
+      ${roomNames.map((roomName) => `('${roomName}')`).join(',\n      ')}
     `);
 
     const seatValues = roomNames
       .flatMap((roomName) =>
         rowLabels.flatMap((rowLabel) => {
           const seatType = vipRows.has(rowLabel) ? 'vip' : 'standard';
-
           return Array.from({ length: 10 }, (_, index) => {
             const seatNumber = index + 1;
             const seatKey = `${rowLabel}${seatNumber}`;
-
             return `((SELECT \`id\` FROM \`rooms\` WHERE \`name\` = '${roomName}'), '${seatKey}', '${rowLabel}', ${seatNumber}, '${seatType}')`;
           });
         }),
       )
-      .join(',\n');
+      .join(',\n      ');
 
     await queryRunner.query(`
-      INSERT IGNORE INTO \`seats\`
-        (\`room_id\`, \`seat_key\`, \`row_label\`, \`seat_number\`, \`seat_type\`)
+      INSERT IGNORE INTO \`seats\` (\`room_id\`, \`seat_key\`, \`row_label\`, \`seat_number\`, \`seat_type\`)
       VALUES
-        ${seatValues}
+      ${seatValues}
     `);
   }
 
@@ -164,9 +161,8 @@ export class SeedDevData1710000000008 implements MigrationInterface {
     await queryRunner.query(`
       INSERT IGNORE INTO \`movies\` (
         \`slug\`, \`title\`, \`poster_url\`, \`trailer_url\`, \`banner_url\`,
-        \`description\`, \`duration\`, \`director\`, \`actor\`,
-        \`language\`, \`age_rating\`, \`rated\`, \`status\`,
-        \`release_date\`, \`end_date\`, \`avg_rating\`
+        \`description\`, \`duration\`, \`director\`, \`actor\`, \`language\`,
+        \`age_rating\`, \`rated\`, \`status\`, \`release_date\`, \`end_date\`, \`avg_rating\`
       ) VALUES
       ${movieValues.join(',\n')}
     `);
@@ -193,6 +189,7 @@ export class SeedDevData1710000000008 implements MigrationInterface {
     today: Date,
   ): Promise<void> {
     const movies = this.getMovieSeeds();
+
     const preparedShowtimes = this.getShowtimeSeeds().map((showtime) => {
       const movie = movies[showtime.movieIndex];
       const releaseDate = this.addDays(today, movie.releaseOffsetDays);
@@ -217,18 +214,10 @@ export class SeedDevData1710000000008 implements MigrationInterface {
     for (const { showtime, movie, startTime, endTime } of preparedShowtimes) {
       await queryRunner.query(`
         INSERT INTO \`showtimes\` (
-          \`movie_id\`,
-          \`room_id\`,
-          \`start_time\`,
-          \`end_time\`,
-          \`status\`,
-          \`price_standard\`,
-          \`price_vip\`,
-          \`price_couple\`
+          \`movie_id\`, \`room_id\`, \`start_time\`, \`end_time\`,
+          \`status\`, \`price_standard\`, \`price_vip\`, \`price_couple\`
         )
-        SELECT
-          m.id,
-          r.id,
+        SELECT m.id, r.id,
           '${this.toMysqlDateTime(startTime)}',
           '${this.toMysqlDateTime(endTime)}',
           '${showtime.status}',
@@ -280,11 +269,21 @@ export class SeedDevData1710000000008 implements MigrationInterface {
   }
 
   private getShowtimeSeeds(): ShowtimeSeedItem[] {
+    // 10 suất chiếu này chỉ dùng cho 10 phim đang chiếu tại rạp.
+    // movieIndex 0 -> 9 tương ứng với 10 phim có status = 'now_showing'.
+    //
+    // Vì 10 phim now_showing có releaseOffsetDays lần lượt từ -1 đến -10,
+    // nên dayOffsetAfterRelease được set để start_time luôn nằm ở tương lai.
+    //
+    // end_time sẽ được tính tự động ở seedShowtimes():
+    //   end_time = start_time + movie.duration
+    //
+    // Buffer 30 phút vẫn được kiểm tra trong assertNoBufferConflicts().
     return [
       {
         movieIndex: 0,
         roomName: '01',
-        dayOffsetAfterRelease: 1,
+        dayOffsetAfterRelease: 2,
         hour: 9,
         minute: 0,
         status: 'open',
@@ -295,7 +294,7 @@ export class SeedDevData1710000000008 implements MigrationInterface {
       {
         movieIndex: 1,
         roomName: '02',
-        dayOffsetAfterRelease: 1,
+        dayOffsetAfterRelease: 3,
         hour: 10,
         minute: 0,
         status: 'open',
@@ -306,8 +305,8 @@ export class SeedDevData1710000000008 implements MigrationInterface {
       {
         movieIndex: 2,
         roomName: '03',
-        dayOffsetAfterRelease: 1,
-        hour: 13,
+        dayOffsetAfterRelease: 4,
+        hour: 9,
         minute: 30,
         status: 'open',
         priceStandard: 75000,
@@ -317,9 +316,9 @@ export class SeedDevData1710000000008 implements MigrationInterface {
       {
         movieIndex: 3,
         roomName: '04',
-        dayOffsetAfterRelease: 1,
-        hour: 15,
-        minute: 0,
+        dayOffsetAfterRelease: 5,
+        hour: 12,
+        minute: 30,
         status: 'open',
         priceStandard: 75000,
         priceVip: 90000,
@@ -328,7 +327,7 @@ export class SeedDevData1710000000008 implements MigrationInterface {
       {
         movieIndex: 4,
         roomName: '05',
-        dayOffsetAfterRelease: 2,
+        dayOffsetAfterRelease: 6,
         hour: 18,
         minute: 30,
         status: 'open',
@@ -339,8 +338,8 @@ export class SeedDevData1710000000008 implements MigrationInterface {
       {
         movieIndex: 5,
         roomName: '01',
-        dayOffsetAfterRelease: 2,
-        hour: 11,
+        dayOffsetAfterRelease: 7,
+        hour: 13,
         minute: 0,
         status: 'open',
         priceStandard: 80000,
@@ -350,8 +349,8 @@ export class SeedDevData1710000000008 implements MigrationInterface {
       {
         movieIndex: 6,
         roomName: '02',
-        dayOffsetAfterRelease: 2,
-        hour: 16,
+        dayOffsetAfterRelease: 8,
+        hour: 14,
         minute: 30,
         status: 'open',
         priceStandard: 85000,
@@ -361,42 +360,45 @@ export class SeedDevData1710000000008 implements MigrationInterface {
       {
         movieIndex: 7,
         roomName: '03',
-        dayOffsetAfterRelease: 2,
-        hour: 20,
+        dayOffsetAfterRelease: 9,
+        hour: 16,
         minute: 0,
         status: 'open',
         priceStandard: 85000,
         priceVip: 100000,
         priceCouple: 170000,
       },
-
       {
-        movieIndex: 15,
+        movieIndex: 8,
         roomName: '04',
-        dayOffsetAfterRelease: 5,
-        hour: 9,
-        minute: 30,
-        status: 'sold_out',
-        priceStandard: 65000,
-        priceVip: 80000,
-        priceCouple: 130000,
+        dayOffsetAfterRelease: 10,
+        hour: 18,
+        minute: 45,
+        status: 'open',
+        priceStandard: 90000,
+        priceVip: 105000,
+        priceCouple: 180000,
       },
       {
-        movieIndex: 16,
+        movieIndex: 9,
         roomName: '05',
-        dayOffsetAfterRelease: 6,
-        hour: 19,
-        minute: 0,
-        status: 'sold_out',
-        priceStandard: 65000,
-        priceVip: 80000,
-        priceCouple: 130000,
+        dayOffsetAfterRelease: 11,
+        hour: 22,
+        minute: 30,
+        status: 'open',
+        priceStandard: 90000,
+        priceVip: 105000,
+        priceCouple: 180000,
       },
     ];
   }
 
   private getMovieSeeds(): MovieSeedItem[] {
+    // 20 phim dev: 10 now_showing, 5 upcoming, 5 ended.
+    // Nhóm now_showing có release_date từ hôm qua trở về vài ngày trước
+    // và end_date còn khoảng 1 tháng sau ngày chạy seed.
     return [
+      // ── NOW SHOWING ──────────────────────────────────────────────────────
       {
         slug: 'seed-dev-bong-dem-sai-gon',
         title: 'Bóng Đêm Sài Gòn',
@@ -411,9 +413,9 @@ export class SeedDevData1710000000008 implements MigrationInterface {
         actor: 'Trần Bảo Sơn, Khả Ngân, Hứa Vĩ Văn',
         language: 'Tiếng Việt',
         ageRating: 'C16',
-        status: 'upcoming',
-        releaseOffsetDays: 7,
-        screeningDays: 45,
+        status: 'now_showing',
+        releaseOffsetDays: -1,
+        screeningDays: 31,
         avgRating: null,
         genreSlugs: ['toi-pham', 'giat-gan', 'tam-ly'],
       },
@@ -430,9 +432,9 @@ export class SeedDevData1710000000008 implements MigrationInterface {
         actor: 'Jun Phạm, Hoàng Yến Chibi, Lâm Vỹ Dạ',
         language: 'Tiếng Việt',
         ageRating: 'P',
-        status: 'upcoming',
-        releaseOffsetDays: 8,
-        screeningDays: 38,
+        status: 'now_showing',
+        releaseOffsetDays: -2,
+        screeningDays: 32,
         avgRating: null,
         genreSlugs: ['gia-dinh', 'hai-kich', 'tinh-cam'],
       },
@@ -450,9 +452,9 @@ export class SeedDevData1710000000008 implements MigrationInterface {
         actor: 'Minh Tiệp, Diễm My, Quốc Trường',
         language: 'Tiếng Anh',
         ageRating: 'C13',
-        status: 'upcoming',
-        releaseOffsetDays: 9,
-        screeningDays: 60,
+        status: 'now_showing',
+        releaseOffsetDays: -3,
+        screeningDays: 33,
         avgRating: null,
         genreSlugs: ['khoa-hoc-vien-tuong', 'phieu-luu', 'hanh-dong'],
       },
@@ -470,9 +472,9 @@ export class SeedDevData1710000000008 implements MigrationInterface {
         actor: 'Liên Bỉnh Phát, Kaity Nguyễn, Thái Hòa',
         language: 'Tiếng Việt',
         ageRating: 'C16',
-        status: 'upcoming',
-        releaseOffsetDays: 10,
-        screeningDays: 42,
+        status: 'now_showing',
+        releaseOffsetDays: -4,
+        screeningDays: 34,
         avgRating: null,
         genreSlugs: ['hanh-dong', 'giat-gan'],
       },
@@ -489,8 +491,8 @@ export class SeedDevData1710000000008 implements MigrationInterface {
         actor: 'Miu Lê, Hồng Ánh, Công Ninh',
         language: 'Tiếng Việt',
         ageRating: 'P',
-        status: 'upcoming',
-        releaseOffsetDays: 11,
+        status: 'now_showing',
+        releaseOffsetDays: -5,
         screeningDays: 35,
         avgRating: null,
         genreSlugs: ['gia-dinh', 'tinh-cam', 'tam-ly'],
@@ -509,9 +511,9 @@ export class SeedDevData1710000000008 implements MigrationInterface {
         actor: 'Johnny Trí Nguyễn, Ngô Thanh Vân, Bình Minh',
         language: 'Tiếng Anh',
         ageRating: 'C13',
-        status: 'upcoming',
-        releaseOffsetDays: 12,
-        screeningDays: 50,
+        status: 'now_showing',
+        releaseOffsetDays: -6,
+        screeningDays: 36,
         avgRating: null,
         genreSlugs: ['phieu-luu', 'hanh-dong'],
       },
@@ -529,9 +531,9 @@ export class SeedDevData1710000000008 implements MigrationInterface {
         actor: 'Lồng tiếng Việt',
         language: 'Lồng tiếng Việt',
         ageRating: 'P',
-        status: 'upcoming',
-        releaseOffsetDays: 13,
-        screeningDays: 32,
+        status: 'now_showing',
+        releaseOffsetDays: -7,
+        screeningDays: 37,
         avgRating: null,
         genreSlugs: ['hoat-hinh', 'gia-dinh', 'hai-kich'],
       },
@@ -549,9 +551,9 @@ export class SeedDevData1710000000008 implements MigrationInterface {
         actor: 'Quang Tuấn, Oanh Kiều, NSƯT Hữu Châu',
         language: 'Tiếng Việt',
         ageRating: 'C18',
-        status: 'upcoming',
-        releaseOffsetDays: 14,
-        screeningDays: 40,
+        status: 'now_showing',
+        releaseOffsetDays: -8,
+        screeningDays: 38,
         avgRating: null,
         genreSlugs: ['giat-gan', 'tam-ly'],
       },
@@ -569,9 +571,9 @@ export class SeedDevData1710000000008 implements MigrationInterface {
         actor: 'Song Luân, Isaac, Diễm My 9x',
         language: 'Tiếng Việt',
         ageRating: 'C13',
-        status: 'upcoming',
-        releaseOffsetDays: 8,
-        screeningDays: 48,
+        status: 'now_showing',
+        releaseOffsetDays: -9,
+        screeningDays: 39,
         avgRating: null,
         genreSlugs: ['hanh-dong', 'khoa-hoc-vien-tuong'],
       },
@@ -589,12 +591,13 @@ export class SeedDevData1710000000008 implements MigrationInterface {
         actor: 'Kiều Minh Tuấn, Thu Trang, Tiến Luật',
         language: 'Tiếng Việt',
         ageRating: 'C16',
-        status: 'upcoming',
-        releaseOffsetDays: 9,
-        screeningDays: 55,
+        status: 'now_showing',
+        releaseOffsetDays: -10,
+        screeningDays: 40,
         avgRating: null,
         genreSlugs: ['phieu-luu', 'giat-gan'],
       },
+      // ── UPCOMING ─────────────────────────────────────────────────────────
       {
         slug: 'seed-dev-ca-phe-nua-dem',
         title: 'Cà Phê Nửa Đêm',
@@ -695,6 +698,7 @@ export class SeedDevData1710000000008 implements MigrationInterface {
         avgRating: null,
         genreSlugs: ['gia-dinh', 'gia-tuong', 'tam-ly'],
       },
+      // ── ENDED ────────────────────────────────────────────────────────────
       {
         slug: 'seed-dev-nhung-ngay-da-qua',
         title: 'Những Ngày Đã Qua',
@@ -804,7 +808,6 @@ export class SeedDevData1710000000008 implements MigrationInterface {
       C16: 'C16 - Phim cấm khán giả dưới 16 tuổi',
       C18: 'C18 - Phim cấm khán giả dưới 18 tuổi',
     };
-
     return ratedMap[ageRating];
   }
 
@@ -817,7 +820,6 @@ export class SeedDevData1710000000008 implements MigrationInterface {
   private addDays(date: Date, days: number): Date {
     const nextDate = new Date(date);
     nextDate.setUTCDate(nextDate.getUTCDate() + days);
-
     return nextDate;
   }
 
@@ -828,7 +830,6 @@ export class SeedDevData1710000000008 implements MigrationInterface {
   private withUtcTime(date: Date, hour: number, minute: number): Date {
     const result = new Date(date);
     result.setUTCHours(hour, minute, 0, 0);
-
     return result;
   }
 
@@ -844,7 +845,6 @@ export class SeedDevData1710000000008 implements MigrationInterface {
     if (value === null) {
       return 'NULL';
     }
-
     return `'${this.escapeSql(value)}'`;
   }
 

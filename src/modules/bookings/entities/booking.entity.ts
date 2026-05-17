@@ -43,7 +43,7 @@ export class Booking {
     name: 'booked_at',
     type: 'datetime',
     precision: 3,
-    default: () => 'CURRENT_TIMESTAMP',
+    default: () => 'CURRENT_TIMESTAMP(3)',
   })
   bookedAt!: Date;
 
@@ -68,14 +68,14 @@ export class Booking {
   @Column({ name: 'snapshot_room_name', type: 'varchar', length: 20 })
   snapshotRoomName!: string;
 
-  @Column({ name: 'snapshot_showtime_start', type: 'timestamp' })
+  @Column({ name: 'snapshot_showtime_start', type: 'datetime', precision: 3 })
   snapshotShowtimeStart!: Date;
 
   @CreateDateColumn({
     name: 'created_at',
     type: 'datetime',
     precision: 3,
-    default: () => 'CURRENT_TIMESTAMP',
+    default: () => 'CURRENT_TIMESTAMP(3)',
   })
   createdAt!: Date;
 
@@ -83,16 +83,18 @@ export class Booking {
     name: 'updated_at',
     type: 'datetime',
     precision: 3,
-    default: () => 'CURRENT_TIMESTAMP',
-    onUpdate: 'CURRENT_TIMESTAMP',
+    default: () => 'CURRENT_TIMESTAMP(3)',
+    onUpdate: 'CURRENT_TIMESTAMP(3)',
   })
   updatedAt!: Date;
 
-  @ManyToOne(() => User, (user) => user.bookings)
+  @ManyToOne(() => User, (user) => user.bookings, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'user_id' })
   user!: User;
 
-  @ManyToOne(() => Showtime, (showtime) => showtime.bookings)
+  @ManyToOne(() => Showtime, (showtime) => showtime.bookings, {
+    onDelete: 'RESTRICT',
+  })
   @JoinColumn({ name: 'showtime_id' })
   showtime!: Showtime;
 

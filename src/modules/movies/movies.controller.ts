@@ -7,8 +7,8 @@ import {
   HttpStatus,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
-  Put,
   UseGuards,
 } from '@nestjs/common';
 
@@ -45,7 +45,7 @@ export class MoviesController {
     return this.moviesService.findOneBySlugOrId(slugOrId);
   }
 
-  @Put(':id')
+  @Patch(':id')
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   update(

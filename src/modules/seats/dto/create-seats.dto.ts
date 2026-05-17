@@ -18,6 +18,7 @@ export class CreateSeatItemDto {
   @IsNotEmpty({ message: 'rowLabel không được để trống' })
   rowLabel!: string;
 
+  @Type(() => Number)
   @Min(1, { message: 'seatNumber phải lớn hơn hoặc bằng 1' })
   @IsInt({ message: 'seatNumber phải là số nguyên' })
   @IsNotEmpty({ message: 'seatNumber không được để trống' })
@@ -30,6 +31,7 @@ export class CreateSeatItemDto {
 }
 
 export class CreateSeatsDto {
+  @Type(() => Number)
   @IsInt({ message: 'roomId phải là số nguyên' })
   @Min(1, { message: 'roomId phải lớn hơn hoặc bằng 1' })
   roomId!: number;

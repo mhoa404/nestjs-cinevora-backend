@@ -11,7 +11,8 @@ import { CreateMovieDto } from './dto/create-movie.dto';
 import { MovieResponseDto } from './dto/movie-response.dto';
 import { UpdateMovieDto } from './dto/update-movie.dto';
 import { Movie, MovieStatus } from './entities/movie.entity';
-import { prepareMovieInput } from './utils/movie-input.util';
+import { buildMovieInput } from './utils/movie-input.util';
+import { assignDefined } from '../../common/utils/assign-defined.util';
 
 @Injectable()
 export class MoviesService {
@@ -25,7 +26,7 @@ export class MoviesService {
   async create(dto: CreateMovieDto): Promise<MovieResponseDto> {
     this.validateEndDate(dto.endDate, dto.releaseDate);
 
-    const preparedInput = prepareMovieInput({
+    const createInput = buildMovieInput({
       title: dto.title,
       posterUrl: dto.posterUrl,
       trailerUrl: dto.trailerUrl,
@@ -41,17 +42,17 @@ export class MoviesService {
     const genres = await this.validateGenreIds(dto.genreIds);
 
     let movie = this.movieRepository.create({
-      title: preparedInput.title,
-      posterUrl: preparedInput.posterUrl,
-      trailerUrl: preparedInput.trailerUrl,
-      bannerUrl: preparedInput.bannerUrl,
-      description: preparedInput.description,
-      duration: preparedInput.duration,
-      director: preparedInput.director,
-      actor: preparedInput.actor,
-      language: preparedInput.language,
+      title: createInput.title,
+      posterUrl: createInput.posterUrl,
+      trailerUrl: createInput.trailerUrl,
+      bannerUrl: createInput.bannerUrl,
+      description: createInput.description,
+      duration: createInput.duration,
+      director: createInput.director,
+      actor: createInput.actor,
+      language: createInput.language,
       ageRating: dto.ageRating,
-      rated: preparedInput.rated,
+      rated: createInput.rated,
       status: dto.status ?? MovieStatus.COMING,
       releaseDate: new Date(dto.releaseDate),
       endDate: dto.endDate ? new Date(dto.endDate) : null,
@@ -59,7 +60,8 @@ export class MoviesService {
     });
 
     movie = await this.movieRepository.save(movie);
-    movie.slug = this.buildMovieSlug(preparedInput.baseSlug, movie.id);
+
+    movie.slug = this.buildMovieSlug(createInput.baseSlug!, movie.id);
 
     const savedMovie = await this.movieRepository.save(movie);
 
@@ -83,9 +85,13 @@ export class MoviesService {
   async update(id: number, dto: UpdateMovieDto): Promise<MovieResponseDto> {
     const movie = await this.findEntityById(id);
 
+    if (!dto || Object.keys(dto).length === 0) {
+      throw new BadRequestException('Không có dữ liệu nào để cập nhật.');
+    }
+
     this.validateEndDate(dto.endDate, dto.releaseDate);
 
-    const prepared = prepareMovieInput({
+    const updateInput = buildMovieInput({
       title: dto.title,
       posterUrl: dto.posterUrl,
       trailerUrl: dto.trailerUrl,
@@ -98,24 +104,36 @@ export class MoviesService {
       rated: dto.rated,
     });
 
-    const genres = await this.validateGenreIds(dto.genreIds);
+    if (updateInput.title !== undefined) {
+      movie.slug = this.buildMovieSlug(updateInput.baseSlug!, movie.id);
+    }
 
-    movie.title = prepared.title;
-    movie.slug = this.buildMovieSlug(prepared.baseSlug, movie.id);
-    movie.posterUrl = prepared.posterUrl;
-    movie.trailerUrl = prepared.trailerUrl;
-    movie.bannerUrl = prepared.bannerUrl;
-    movie.description = prepared.description;
-    movie.duration = prepared.duration;
-    movie.director = prepared.director;
-    movie.actor = prepared.actor;
-    movie.language = prepared.language;
-    movie.ageRating = dto.ageRating;
-    movie.rated = prepared.rated;
-    movie.status = dto.status ?? MovieStatus.COMING;
-    movie.releaseDate = new Date(dto.releaseDate);
-    movie.endDate = dto.endDate ? new Date(dto.endDate) : null;
-    movie.genres = genres;
+    assignDefined(movie, {
+      title: updateInput.title,
+      posterUrl: updateInput.posterUrl,
+      trailerUrl: updateInput.trailerUrl,
+      bannerUrl: updateInput.bannerUrl,
+      description: updateInput.description,
+      duration: updateInput.duration,
+      director: updateInput.director,
+      actor: updateInput.actor,
+      language: updateInput.language,
+      rated: updateInput.rated,
+      ageRating: dto.ageRating,
+      status: dto.status,
+      releaseDate:
+        dto.releaseDate !== undefined ? new Date(dto.releaseDate) : undefined,
+      endDate:
+        dto.endDate !== undefined
+          ? dto.endDate
+            ? new Date(dto.endDate)
+            : null
+          : undefined,
+    });
+
+    if (dto.genreIds !== undefined) {
+      movie.genres = await this.validateGenreIds(dto.genreIds);
+    }
 
     const savedMovie = await this.movieRepository.save(movie);
     return MovieResponseDto.fromEntity(savedMovie);

@@ -11,7 +11,7 @@ export class CreatePromotions1710000000005 implements MigrationInterface {
                 \`description\`      TEXT,
                 \`image_url\`        TEXT,
                 \`discount_percent\` DECIMAL(5,2),
-                \`promotion_type\`   ENUM('highlight', 'grid', 'top') NOT NULL DEFAULT 'grid',
+                \`promotion_type\`   ENUM('hightlight', 'grid', 'top') NOT NULL DEFAULT 'grid',
                 \`start_date\`       DATE,
                 \`end_date\`         DATE,
                 \`is_active\`        TINYINT(1)      NOT NULL DEFAULT 1,

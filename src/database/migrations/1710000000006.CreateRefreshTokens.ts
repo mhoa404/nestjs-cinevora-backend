@@ -22,15 +22,9 @@ export class CreateRefreshTokens1710000000006 implements MigrationInterface {
     await queryRunner.query(
       `CREATE INDEX \`IDX_refresh_tokens_user_id\` ON \`refresh_tokens\`(\`user_id\`)`,
     );
-    await queryRunner.query(
-      `CREATE INDEX \`IDX_refresh_tokens_token\` ON \`refresh_tokens\`(\`token\`)`,
-    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(
-      `DROP INDEX \`IDX_refresh_tokens_token\` ON \`refresh_tokens\``,
-    );
     await queryRunner.query(
       `DROP INDEX \`IDX_refresh_tokens_user_id\` ON \`refresh_tokens\``,
     );

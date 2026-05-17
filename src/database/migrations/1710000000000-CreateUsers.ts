@@ -10,7 +10,7 @@ export class CreateUsers1710000000000 implements MigrationInterface {
         \`full_name\`        VARCHAR(100)    NOT NULL,
         \`email\`            VARCHAR(150)    NOT NULL,
         \`password\`         VARCHAR(255)    NOT NULL,
-        \`date_of_birth\`    DATE            NULL,
+        \`date_of_birth\`    DATE            NOT NULL,
         \`phone\`            VARCHAR(15)     NULL,
         \`city\`             VARCHAR(50)     NULL,
         \`district\`         VARCHAR(50)     NULL,
@@ -25,7 +25,8 @@ export class CreateUsers1710000000000 implements MigrationInterface {
 
         CONSTRAINT \`PK_users\` PRIMARY KEY (\`id\`),
         CONSTRAINT \`UQ_users_email\` UNIQUE (\`email\`),
-        CONSTRAINT \`UQ_users_phone\` UNIQUE (\`phone\`)
+        CONSTRAINT \`UQ_users_phone\` UNIQUE (\`phone\`),
+        CONSTRAINT \`UQ_users_id_card_number\` UNIQUE (\`id_card_number\`)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
   }

@@ -25,7 +25,7 @@ export class User {
   @Column({ name: 'date_of_birth', type: 'date' })
   dateOfBirth!: Date;
 
-  @Column({ type: 'varchar', length: 15, unique: true })
+  @Column({ type: 'varchar', length: 15, unique: true, nullable: true })
   phone!: string | null;
 
   @Column({ type: 'varchar', length: 50, nullable: true })
@@ -75,7 +75,7 @@ export class User {
     name: 'created_at',
     type: 'datetime',
     precision: 3,
-    default: () => 'CURRENT_TIMESTAMP',
+    default: () => 'CURRENT_TIMESTAMP(3)',
   })
   createdAt!: Date;
 
@@ -83,8 +83,8 @@ export class User {
     name: 'updated_at',
     type: 'datetime',
     precision: 3,
-    default: () => 'CURRENT_TIMESTAMP',
-    onUpdate: 'CURRENT_TIMESTAMP',
+    default: () => 'CURRENT_TIMESTAMP(3)',
+    onUpdate: 'CURRENT_TIMESTAMP(3)',
   })
   updatedAt!: Date;
 

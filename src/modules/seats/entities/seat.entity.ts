@@ -7,12 +7,14 @@ import {
   PrimaryGeneratedColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  Unique,
 } from 'typeorm';
 import { BookingSeat } from '../../bookings/entities/booking-seat.entity';
 import { SeatType } from '../../../common/constants/seat-type.constant';
 import { Room } from '../../rooms/entities/room.entity';
 
 @Entity('seats')
+@Unique('UQ_seats_room_seat_key', ['roomId', 'seatKey'])
 export class Seat {
   @PrimaryGeneratedColumn()
   id!: number;
@@ -44,7 +46,7 @@ export class Seat {
     name: 'created_at',
     type: 'datetime',
     precision: 3,
-    default: () => 'CURRENT_TIMESTAMP',
+    default: () => 'CURRENT_TIMESTAMP(3)',
   })
   createdAt!: Date;
 
@@ -52,13 +54,13 @@ export class Seat {
     name: 'updated_at',
     type: 'datetime',
     precision: 3,
-    default: () => 'CURRENT_TIMESTAMP',
-    onUpdate: 'CURRENT_TIMESTAMP',
+    default: () => 'CURRENT_TIMESTAMP(3)',
+    onUpdate: 'CURRENT_TIMESTAMP(3)',
   })
   updatedAt!: Date;
 
   // Realations
-  @ManyToOne(() => Room, (room) => room.seats)
+  @ManyToOne(() => Room, (room) => room.seats, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'room_id' })
   room!: Room;
 

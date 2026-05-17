@@ -61,7 +61,7 @@ export class Showtime {
     name: 'created_at',
     type: 'datetime',
     precision: 3,
-    default: () => 'CURRENT_TIMESTAMP',
+    default: () => 'CURRENT_TIMESTAMP(3)',
   })
   createdAt!: Date;
 
@@ -69,17 +69,17 @@ export class Showtime {
     name: 'updated_at',
     type: 'datetime',
     precision: 3,
-    default: () => 'CURRENT_TIMESTAMP',
-    onUpdate: 'CURRENT_TIMESTAMP',
+    default: () => 'CURRENT_TIMESTAMP(3)',
+    onUpdate: 'CURRENT_TIMESTAMP(3)',
   })
   updatedAt!: Date;
 
   // Relations
-  @ManyToOne(() => Movie, (movie) => movie.showtimes)
+  @ManyToOne(() => Movie, (movie) => movie.showtimes, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'movie_id' })
   movie!: Movie;
 
-  @ManyToOne(() => Room, (room) => room.showtimes)
+  @ManyToOne(() => Room, (room) => room.showtimes, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'room_id' })
   room!: Room;
 

@@ -7,6 +7,7 @@ import {
   IsInt,
   IsNotEmpty,
   IsOptional,
+  IsPositive,
   Matches,
   Min,
   ValidateNested,
@@ -17,6 +18,7 @@ import { ShowtimeStatus } from '../entities/showtime.entity';
 const UTC_DATE_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
 
 export class ShowtimeItemDto {
+  @IsPositive()
   @Type(() => Number)
   @IsInt({ message: 'roomId phải là số nguyên.' })
   @IsNotEmpty({ message: 'Vui lòng chọn phòng chiếu.' })
@@ -53,6 +55,7 @@ export class ShowtimeItemDto {
 }
 
 export class CreateShowtimeDto {
+  @Type(() => Number)
   @Type(() => Number)
   @IsInt({ message: 'movieId phải là số nguyên.' })
   @IsNotEmpty({ message: 'Vui lòng chọn phim.' })

@@ -42,7 +42,7 @@ export class BookingSeat {
     name: 'created_at',
     type: 'datetime',
     precision: 3,
-    default: () => 'CURRENT_TIMESTAMP',
+    default: () => 'CURRENT_TIMESTAMP(3)',
   })
   createdAt!: Date;
 
@@ -50,16 +50,20 @@ export class BookingSeat {
     name: 'updated_at',
     type: 'datetime',
     precision: 3,
-    default: () => 'CURRENT_TIMESTAMP',
-    onUpdate: 'CURRENT_TIMESTAMP',
+    default: () => 'CURRENT_TIMESTAMP(3)',
+    onUpdate: 'CURRENT_TIMESTAMP(3)',
   })
   updatedAt!: Date;
 
-  @ManyToOne(() => Booking, (booking) => booking.bookingSeats)
+  @ManyToOne(() => Booking, (booking) => booking.bookingSeats, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'booking_id' })
   booking!: Booking;
 
-  @ManyToOne(() => Seat, (seat) => seat.bookingSeats)
+  @ManyToOne(() => Seat, (seat) => seat.bookingSeats, {
+    onDelete: 'RESTRICT',
+  })
   @JoinColumn({ name: 'seat_id' })
   seat!: Seat;
 }
