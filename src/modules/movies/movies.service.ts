@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -13,6 +14,14 @@ import { UpdateMovieDto } from './dto/update-movie.dto';
 import { Movie, MovieStatus } from './entities/movie.entity';
 import { buildMovieInput } from './utils/movie-input.util';
 import { assignDefined } from '../../common/utils/assign-defined.util';
+
+const CLEARABLE_FIELDS = new Set([
+  'description',
+  'director',
+  'actor',
+  'language',
+  'rated',
+]);
 
 @Injectable()
 export class MoviesService {
@@ -77,17 +86,96 @@ export class MoviesService {
     return movies.map((movie) => MovieResponseDto.fromEntity(movie));
   }
 
-  async findOneBySlugOrId(slugOrId: string): Promise<MovieResponseDto> {
+  async findBySlugOrId(slugOrId: string): Promise<MovieResponseDto> {
     const movie = await this.findEntityBySlugOrId(slugOrId);
     return MovieResponseDto.fromEntity(movie);
   }
 
-  async update(id: number, dto: UpdateMovieDto): Promise<MovieResponseDto> {
-    const movie = await this.findEntityById(id);
-
+  private assertUpdatePayload(dto: UpdateMovieDto): void {
     if (!dto || Object.keys(dto).length === 0) {
       throw new BadRequestException('Không có dữ liệu nào để cập nhật.');
     }
+
+    const nullFields = Object.entries(dto)
+      .filter(([, value]) => value === null)
+      .map(([key]) => key);
+
+    if (nullFields.length > 0) {
+      throw new BadRequestException(
+        `Không hỗ trợ set null cho PATCH: ${nullFields.join(', ')}.`,
+      );
+    }
+
+    const emptyStringFields = Object.entries(dto)
+      .filter(
+        ([key, value]) =>
+          typeof value === 'string' &&
+          value.length === 0 &&
+          !CLEARABLE_FIELDS.has(key),
+      )
+      .map(([key]) => key);
+
+    if (emptyStringFields.length > 0) {
+      throw new BadRequestException(
+        `Không hỗ trợ giá trị chuỗi rỗng cho PATCH: ${emptyStringFields.join(', ')}.`,
+      );
+    }
+
+    if (dto.genreIds !== undefined && dto.genreIds.length === 0) {
+      throw new BadRequestException(
+        'genreIds không được là mảng rỗng trong PATCH.',
+      );
+    }
+  }
+
+  private hasDefinedMovieFieldChange(
+    movie: Movie,
+    nextValues: Partial<Movie>,
+  ): boolean {
+    return Object.entries(nextValues).some(([key, nextValue]) => {
+      if (nextValue === undefined) {
+        return false;
+      }
+
+      const oldValue = movie[key as keyof Movie];
+
+      if (oldValue instanceof Date && nextValue instanceof Date) {
+        return oldValue.getTime() !== nextValue.getTime();
+      }
+
+      return oldValue !== nextValue;
+    });
+  }
+
+  private hasSameGenreIds(
+    currentGenres: Genre[],
+    nextGenres: Genre[],
+  ): boolean {
+    if (currentGenres.length !== nextGenres.length) {
+      return false;
+    }
+
+    const currentIds = currentGenres.map((genre) => genre.id).sort();
+    const nextIds = nextGenres.map((genre) => genre.id).sort();
+
+    return currentIds.every((currentId, index) => currentId === nextIds[index]);
+  }
+
+  private async assertSlugUnique(
+    slug: string,
+    excludeId?: number,
+  ): Promise<void> {
+    const existing = await this.movieRepository.findOne({ where: { slug } });
+
+    if (existing && existing.id !== excludeId) {
+      throw new ConflictException('Slug phim đã tồn tại.');
+    }
+  }
+
+  async update(id: number, dto: UpdateMovieDto): Promise<MovieResponseDto> {
+    this.assertUpdatePayload(dto);
+
+    const movie = await this.findEntityById(id);
 
     this.validateEndDate(dto.endDate, dto.releaseDate);
 
@@ -104,12 +192,27 @@ export class MoviesService {
       rated: dto.rated,
     });
 
+    let hasChange = false;
+
     if (updateInput.title !== undefined) {
-      movie.slug = this.buildMovieSlug(updateInput.baseSlug!, movie.id);
+      const nextSlug = this.buildMovieSlug(updateInput.baseSlug!, movie.id);
+
+      if (movie.slug !== nextSlug) {
+        await this.assertSlugUnique(nextSlug, movie.id);
+      }
+
+      if (movie.title !== updateInput.title) {
+        movie.title = updateInput.title;
+        hasChange = true;
+      }
+
+      if (movie.slug !== nextSlug) {
+        movie.slug = nextSlug;
+        hasChange = true;
+      }
     }
 
-    assignDefined(movie, {
-      title: updateInput.title,
+    const nextValues: Partial<Movie> = {
       posterUrl: updateInput.posterUrl,
       trailerUrl: updateInput.trailerUrl,
       bannerUrl: updateInput.bannerUrl,
@@ -123,16 +226,25 @@ export class MoviesService {
       status: dto.status,
       releaseDate:
         dto.releaseDate !== undefined ? new Date(dto.releaseDate) : undefined,
-      endDate:
-        dto.endDate !== undefined
-          ? dto.endDate
-            ? new Date(dto.endDate)
-            : null
-          : undefined,
-    });
+      endDate: dto.endDate !== undefined ? new Date(dto.endDate) : undefined,
+    };
+
+    if (this.hasDefinedMovieFieldChange(movie, nextValues)) {
+      assignDefined(movie, nextValues);
+      hasChange = true;
+    }
 
     if (dto.genreIds !== undefined) {
-      movie.genres = await this.validateGenreIds(dto.genreIds);
+      const nextGenres = await this.validateGenreIds(dto.genreIds);
+
+      if (!this.hasSameGenreIds(movie.genres, nextGenres)) {
+        movie.genres = nextGenres;
+        hasChange = true;
+      }
+    }
+
+    if (!hasChange) {
+      return MovieResponseDto.fromEntity(movie);
     }
 
     const savedMovie = await this.movieRepository.save(movie);
@@ -214,7 +326,9 @@ export class MoviesService {
   }
 
   private validateEndDate(endDate?: string, releaseDate?: string): void {
-    if (!endDate) return;
+    if (endDate === undefined) {
+      return;
+    }
 
     const end = new Date(endDate);
 

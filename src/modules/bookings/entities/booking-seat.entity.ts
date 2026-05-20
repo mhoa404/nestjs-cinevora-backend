@@ -1,4 +1,3 @@
-// src/modules/bookings/entities/booking-seat.entity.ts
 import {
   Column,
   CreateDateColumn,

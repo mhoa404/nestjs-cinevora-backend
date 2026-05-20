@@ -1,4 +1,3 @@
-// src/database/migrations/1710000000004-CreateBookings.ts
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class CreateBookings1710000000004 implements MigrationInterface {

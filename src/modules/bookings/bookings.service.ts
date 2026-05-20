@@ -1,4 +1,3 @@
-// src/modules/bookings/bookings.service.ts
 import {
   BadRequestException,
   ConflictException,

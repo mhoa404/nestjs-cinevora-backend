@@ -129,14 +129,23 @@ export class ShowtimesService {
     id: number,
     dto: UpdateShowtimeDto,
   ): Promise<ShowtimeResponseDto> {
+    this.assertUpdatePayload(dto);
+
     return this.dataSource.transaction(
       'SERIALIZABLE',
       async (manager): Promise<ShowtimeResponseDto> => {
         const showtime = await this.findShowtime(manager, id);
 
-        await this.applyUpdateSchedule(manager, showtime, dto);
+        const scheduleChanged = await this.applyUpdateSchedule(
+          manager,
+          showtime,
+          dto,
+        );
+        const fieldsChanged = this.applyUpdateFields(showtime, dto);
 
-        this.applyUpdateFields(showtime, dto);
+        if (!scheduleChanged && !fieldsChanged) {
+          return ShowtimeResponseDto.fromEntity(showtime);
+        }
 
         const savedShowtime = await manager.save(showtime);
 
@@ -265,16 +274,42 @@ export class ShowtimesService {
       });
   }
 
+  private assertUpdatePayload(dto: UpdateShowtimeDto): void {
+    if (!dto || Object.keys(dto).length === 0) {
+      throw new BadRequestException('Không có dữ liệu nào để cập nhật.');
+    }
+
+    const nullFields = Object.entries(dto)
+      .filter(([, value]) => value === null)
+      .map(([key]) => key);
+
+    if (nullFields.length > 0) {
+      throw new BadRequestException(
+        `Không hỗ trợ set null cho PATCH: ${nullFields.join(', ')}.`,
+      );
+    }
+
+    const emptyStringFields = Object.entries(dto)
+      .filter(([, value]) => typeof value === 'string' && value.length === 0)
+      .map(([key]) => key);
+
+    if (emptyStringFields.length > 0) {
+      throw new BadRequestException(
+        `Không hỗ trợ giá trị chuỗi rỗng cho PATCH: ${emptyStringFields.join(', ')}.`,
+      );
+    }
+  }
+
   private async applyUpdateSchedule(
     manager: EntityManager,
     showtime: Showtime,
     dto: UpdateShowtimeDto,
-  ): Promise<void> {
+  ): Promise<boolean> {
     const hasScheduleChange =
       dto.startTime !== undefined || dto.roomId !== undefined;
 
     if (!hasScheduleChange) {
-      return;
+      return false;
     }
 
     const roomId = dto.roomId ?? showtime.roomId;
@@ -292,10 +327,19 @@ export class ShowtimesService {
       excludeId: showtime.id,
     });
 
-    showtime.room = room;
-    showtime.roomId = roomId;
-    showtime.startTime = startTime;
-    showtime.endTime = endTime;
+    const changed =
+      showtime.roomId !== roomId ||
+      showtime.startTime.getTime() !== startTime.getTime() ||
+      showtime.endTime.getTime() !== endTime.getTime();
+
+    if (changed) {
+      showtime.room = room;
+      showtime.roomId = roomId;
+      showtime.startTime = startTime;
+      showtime.endTime = endTime;
+    }
+
+    return changed;
   }
 
   private resolveUpdateWindow(
@@ -312,22 +356,39 @@ export class ShowtimesService {
     return this.buildWindow(dto.startTime, showtime.movie.duration);
   }
 
-  private applyUpdateFields(showtime: Showtime, dto: UpdateShowtimeDto): void {
-    if (dto.priceStandard !== undefined) {
+  private applyUpdateFields(
+    showtime: Showtime,
+    dto: UpdateShowtimeDto,
+  ): boolean {
+    let changed = false;
+
+    if (
+      dto.priceStandard !== undefined &&
+      showtime.priceStandard !== dto.priceStandard
+    ) {
       showtime.priceStandard = dto.priceStandard;
+      changed = true;
     }
 
-    if (dto.priceVip !== undefined) {
+    if (dto.priceVip !== undefined && showtime.priceVip !== dto.priceVip) {
       showtime.priceVip = dto.priceVip;
+      changed = true;
     }
 
-    if (dto.priceCouple !== undefined) {
+    if (
+      dto.priceCouple !== undefined &&
+      showtime.priceCouple !== dto.priceCouple
+    ) {
       showtime.priceCouple = dto.priceCouple;
+      changed = true;
     }
 
-    if (dto.status !== undefined) {
+    if (dto.status !== undefined && showtime.status !== dto.status) {
       showtime.status = dto.status;
+      changed = true;
     }
+
+    return changed;
   }
 
   private async findMovie(

@@ -1,4 +1,3 @@
-// src/modules/bookings/services/seat-hold.service.ts
 import { Inject, Injectable } from '@nestjs/common';
 import Redis from 'ioredis';
 

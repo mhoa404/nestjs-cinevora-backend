@@ -1,4 +1,3 @@
-// src/modules/bookings/dto/seat-availability-response.dto.ts
 import { SeatType } from '../../../common/constants/seat-type.constant';
 
 export enum SeatAvailabilityStatus {

@@ -1,4 +1,3 @@
-// src/modules/seats/seats.module.ts
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Module } from '@nestjs/common';
 

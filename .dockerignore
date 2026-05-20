@@ -1,15 +1,53 @@
+# Dependencies 
 node_modules
+
+# Build output
 dist
-coverage
+
+# Version control
 .git
 .gitignore
+
+# Environment files
 .env
 .env.*
-*.log
-logs
-results
+
+# Test & coverage
 test
-dump-project.js
+coverage
+results
+
+# Docker files
+Dockerfile
+Dockerfile.*
+docker-compose*.yml
+.dockerignore
+
+# CI/CD
 Jenkinsfile
+
+# Documentation
 README.md
 LICENSE
+*.md
+docs/
+
+# IDE & editor configs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+pnpm-debug.log*
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Misc
+dump-project.js

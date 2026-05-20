@@ -1,4 +1,3 @@
-// src/modules/redis/redis.module.ts
 import { Global, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';

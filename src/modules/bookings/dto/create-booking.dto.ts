@@ -1,4 +1,3 @@
-// src/modules/bookings/dto/create-booking.dto.ts
 import { Type } from 'class-transformer';
 import {
   ArrayMinSize,

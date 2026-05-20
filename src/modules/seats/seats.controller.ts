@@ -1,4 +1,3 @@
-// src/modules/seats/seats.controller.ts
 import {
   Body,
   Controller,

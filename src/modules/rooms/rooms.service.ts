@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -10,6 +11,7 @@ import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
 import { RoomResponseDto } from './dto/room-response.dto';
 import { Room } from './entities/room.entity';
+import { assignDefined } from '../../common/utils/assign-defined.util';
 
 @Injectable()
 export class RoomsService {
@@ -43,12 +45,17 @@ export class RoomsService {
   }
 
   async update(id: number, dto: UpdateRoomDto): Promise<RoomResponseDto> {
+    this.assertUpdatePayload(dto);
+
     const room = await this.findEntityById(id);
 
-    if (dto.name && dto.name !== room.name) {
-      await this.assertNameUnique(dto.name, id);
-      room.name = dto.name;
+    if (room.name === dto.name) {
+      return RoomResponseDto.fromEntity(room);
     }
+
+    await this.assertNameUnique(dto.name!, id);
+
+    assignDefined(room, { name: dto.name });
 
     const saved = await this.roomRepository.save(room);
     return RoomResponseDto.fromEntity(saved);
@@ -69,6 +76,32 @@ export class RoomsService {
     }
 
     await this.roomRepository.remove(room);
+  }
+
+  private assertUpdatePayload(dto: UpdateRoomDto): void {
+    if (!dto || Object.keys(dto).length === 0) {
+      throw new BadRequestException('Không có dữ liệu nào để cập nhật.');
+    }
+
+    const nullFields = Object.entries(dto)
+      .filter(([, value]) => value === null)
+      .map(([key]) => key);
+
+    if (nullFields.length > 0) {
+      throw new BadRequestException(
+        `Không hỗ trợ set null cho PATCH: ${nullFields.join(', ')}.`,
+      );
+    }
+
+    const emptyStringFields = Object.entries(dto)
+      .filter(([, value]) => typeof value === 'string' && value.length === 0)
+      .map(([key]) => key);
+
+    if (emptyStringFields.length > 0) {
+      throw new BadRequestException(
+        `Không hỗ trợ giá trị chuỗi rỗng cho PATCH: ${emptyStringFields.join(', ')}.`,
+      );
+    }
   }
 
   private async findEntityById(id: number): Promise<Room> {

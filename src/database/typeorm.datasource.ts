@@ -1,9 +1,8 @@
-// src/database/typeorm.datasource.ts
 import * as dotenv from 'dotenv';
 import { join } from 'path';
 import { DataSource } from 'typeorm';
 
-dotenv.config();
+dotenv.config({ path: '.env.local' });
 
 const isTsRuntime = __filename.endsWith('.ts');
 

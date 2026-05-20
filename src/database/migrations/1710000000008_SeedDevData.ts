@@ -398,7 +398,7 @@ export class SeedDevData1710000000008 implements MigrationInterface {
     // Nhóm now_showing có release_date từ hôm qua trở về vài ngày trước
     // và end_date còn khoảng 1 tháng sau ngày chạy seed.
     return [
-      // ── NOW SHOWING ──────────────────────────────────────────────────────
+      // NOW SHOWING
       {
         slug: 'seed-dev-bong-dem-sai-gon',
         title: 'Bóng Đêm Sài Gòn',
@@ -597,7 +597,7 @@ export class SeedDevData1710000000008 implements MigrationInterface {
         avgRating: null,
         genreSlugs: ['phieu-luu', 'giat-gan'],
       },
-      // ── UPCOMING ─────────────────────────────────────────────────────────
+      // UPCOMING
       {
         slug: 'seed-dev-ca-phe-nua-dem',
         title: 'Cà Phê Nửa Đêm',
@@ -698,7 +698,7 @@ export class SeedDevData1710000000008 implements MigrationInterface {
         avgRating: null,
         genreSlugs: ['gia-dinh', 'gia-tuong', 'tam-ly'],
       },
-      // ── ENDED ────────────────────────────────────────────────────────────
+      // ENDED
       {
         slug: 'seed-dev-nhung-ngay-da-qua',
         title: 'Những Ngày Đã Qua',

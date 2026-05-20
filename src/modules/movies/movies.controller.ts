@@ -42,7 +42,7 @@ export class MoviesController {
   @Public()
   @Get(':slugOrId')
   findOne(@Param('slugOrId') slugOrId: string): Promise<MovieResponseDto> {
-    return this.moviesService.findOneBySlugOrId(slugOrId);
+    return this.moviesService.findBySlugOrId(slugOrId);
   }
 
   @Patch(':id')

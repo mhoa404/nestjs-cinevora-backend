@@ -1,97 +1,120 @@
-# docker-compose.yml
+# =============================================================================
+# Cinevora Backend — Docker Compose (Local/Development Environment)
+# =============================================================================
+# Usage:
+#   docker compose up -d            # Start all services
+#   docker compose logs -f app      # Follow app logs
+#   docker compose down             # Stop all services
+#   docker compose down -v          # Stop and remove volumes (reset data)
+# =============================================================================
+
 services:
-  mysql:
-    image: mysql:8.0
-    container_name: cinevora_mysql
-    restart: unless-stopped
-    command:
-      - --default-authentication-plugin=mysql_native_password
-      - --character-set-server=utf8mb4
-      - --collation-server=utf8mb4_unicode_ci
-    env_file:
-      - .env
-    environment:
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${DB_NAME}
-      MYSQL_USER: ${DB_USER}
-      MYSQL_PASSWORD: ${DB_PASSWORD}
-      TZ: UTC
-    ports:
-      - "127.0.0.1:3306:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 20s
-    networks:
-      - cinevora_network
-
-  redis:
-    image: redis:7-alpine
-    container_name: cinevora_redis
-    restart: unless-stopped
-    command: ["redis-server", "--appendonly", "yes"]
-    ports:
-      - "127.0.0.1:6379:6379"
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 10s
-    networks:
-      - cinevora_network
-
+  # ---------------------------------------------------------------------------
+  # Application — NestJS Backend
+  # ---------------------------------------------------------------------------
   backend:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: cinevora_backend
+    container_name: cinevora-backend
+    image: cinevora-backend
     restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    env_file:
+      - .env.local
+    environment:
+      # Override DB/Redis hosts to use Docker service names
+      DB_HOST: localhost
+      REDIS_HOST: redis
     depends_on:
       mysql:
         condition: service_healthy
       redis:
         condition: service_healthy
-    env_file:
-      - .env
-    environment:
-      NODE_ENV: production
-      PORT: 3000
-      DB_HOST: mysql
-      DB_PORT: 3306
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      TZ: UTC
-    ports:
-      - "3000:3000"
     networks:
-      - cinevora_network
+      - cinevora-network
+    # Resource limits to prevent runaway processes in dev
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
+
+  # ---------------------------------------------------------------------------
+  # MySQL 8 — Primary Database
+  # ---------------------------------------------------------------------------
+  mysql:
+    image: mysql:8.0-debian
+    container_name: cinevora-mysql
+    restart: unless-stopped
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - cinevora-network
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--silent" ]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    # MySQL tuning for development
+    command: >
+      --default-authentication-plugin=caching_sha2_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --innodb-buffer-pool-size=128M --max-connections=100
+
+  redis:
+    image: redis:7-alpine
+    container_name: cinevora-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    networks:
+      - cinevora-network
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    # Redis configuration for development
+    command: >
+      redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru --appendonly yes
 
   jenkins:
     build:
       context: .
       dockerfile: Dockerfile.jenkins
-    container_name: cinevora_jenkins
+    container_name: cinevora-jenkins
+    image: cinevora-jenkins
     restart: unless-stopped
+    user: root
     ports:
-      - "8080:8080"
-    volumes:
-      - jenkins_home:/var/jenkins_home
-      - /var/run/docker.sock:/var/run/docker.sock
+      - "${JENKINS_PORT:-8080}:8080"
+      - "${JENKINS_AGENT_PORT:-50000}:50000"
+    environment:
+      JAVA_OPTS: "-Djenkins.install.runSetupWizard=true"
+      DOCKER_HOST: unix:///var/run/docker.sock
     networks:
-      - cinevora_network
+      - cinevora-network
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
 volumes:
-  mysql_data:
-  redis_data:
-  jenkins_home:
+  mysql-data:
+    driver: local
+    name: cinevora-mysql-volume
 
 networks:
-  cinevora_network:
+  cinevora-network:
     driver: bridge
+    name: cinevora-network

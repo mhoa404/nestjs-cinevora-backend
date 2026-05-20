@@ -12,6 +12,7 @@ import { GenreResponseDto } from './dto/genre-response.dto';
 import { UpdateGenreDto } from './dto/update-genre.dto';
 import { Genre } from './entities/genre.entity';
 import { prepareGenreInput } from './utils/genre-input.util';
+import { assignDefined } from '../../common/utils/assign-defined.util';
 
 @Injectable()
 export class GenresService {
@@ -46,19 +47,12 @@ export class GenresService {
   }
 
   async update(id: number, dto: UpdateGenreDto): Promise<GenreResponseDto> {
+    this.assertUpdatePayload(dto);
+
     const genre = await this.findEntityById(id);
+    const { name, slug, normalizedName } = prepareGenreInput(dto.name!);
 
-    if (!dto || Object.keys(dto).length === 0) {
-      throw new BadRequestException('Không có dữ liệu nào để cập nhật.');
-    }
-
-    if (dto.name === undefined) {
-      throw new BadRequestException('Không có dữ liệu nào để cập nhật.');
-    }
-
-    const { name, slug, normalizedName } = prepareGenreInput(dto.name);
-
-    if (name === genre.name && slug === genre.slug) {
+    if (genre.name === name && genre.slug === slug) {
       return GenreResponseDto.fromEntity(genre);
     }
 
@@ -70,8 +64,7 @@ export class GenresService {
 
     await this.assertSlugUnique(slug, id);
 
-    genre.name = name;
-    genre.slug = slug;
+    assignDefined(genre, { name, slug });
 
     const saved = await this.genreRepository.save(genre);
     return GenreResponseDto.fromEntity(saved);
@@ -81,6 +74,32 @@ export class GenresService {
     const genre = await this.findEntityById(id);
     await this.assertNotInUse(id);
     await this.genreRepository.remove(genre);
+  }
+
+  private assertUpdatePayload(dto: UpdateGenreDto): void {
+    if (!dto || Object.keys(dto).length === 0) {
+      throw new BadRequestException('Không có dữ liệu nào để cập nhật.');
+    }
+
+    const nullFields = Object.entries(dto)
+      .filter(([, value]) => value === null)
+      .map(([key]) => key);
+
+    if (nullFields.length > 0) {
+      throw new BadRequestException(
+        `Không hỗ trợ set null cho PATCH: ${nullFields.join(', ')}.`,
+      );
+    }
+
+    const emptyStringFields = Object.entries(dto)
+      .filter(([, value]) => typeof value === 'string' && value.length === 0)
+      .map(([key]) => key);
+
+    if (emptyStringFields.length > 0) {
+      throw new BadRequestException(
+        `Không hỗ trợ giá trị chuỗi rỗng cho PATCH: ${emptyStringFields.join(', ')}.`,
+      );
+    }
   }
 
   private async findEntityById(id: number): Promise<Genre> {

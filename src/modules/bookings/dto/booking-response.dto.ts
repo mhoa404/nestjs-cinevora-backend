@@ -1,4 +1,3 @@
-// src/modules/bookings/dto/booking-response.dto.ts
 import { SeatType } from '../../../common/constants/seat-type.constant';
 import { Booking, BookingStatus } from '../entities/booking.entity';
 
