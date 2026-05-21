@@ -57,7 +57,7 @@ interface UpdateMovieResponse {
   genres: { id: number; name: string; slug: string }[];
 }
 
-describe('[API] PUT /movies/:id', () => {
+describe('[API] PATCH /movies/:id', () => {
   let app: INestApplication;
   let server: Server;
   let dataSource: DataSource;
@@ -223,7 +223,7 @@ describe('[API] PUT /movies/:id', () => {
         },
         async () => {
           const response = await request(server)
-            .put(`/movies/${targetMovieId}`)
+            .patch(`/movies/${targetMovieId}`)
             .send(body);
 
           expect(response.status).toBe(401);
@@ -247,7 +247,7 @@ describe('[API] PUT /movies/:id', () => {
         },
         async () => {
           const response = await request(server)
-            .put(`/movies/${targetMovieId}`)
+            .patch(`/movies/${targetMovieId}`)
             .set('Authorization', 'Bearer fake.jwt.token')
             .send(body);
 
@@ -272,7 +272,7 @@ describe('[API] PUT /movies/:id', () => {
         },
         async () => {
           const response = await request(server)
-            .put(`/movies/${targetMovieId}`)
+            .patch(`/movies/${targetMovieId}`)
             .set('Authorization', `Bearer ${customerToken}`)
             .send(body);
 
@@ -284,27 +284,27 @@ describe('[API] PUT /movies/:id', () => {
   });
 
   describe('Validation Payload', () => {
-    it('Cập nhật thất bại - Thiếu full payload do UpdateMovieDto hiện tại là full DTO', async () => {
+    it('Cập nhật thành công - Chỉ gửi title', async () => {
       const body: MovieBody = { title: 'Only Title' };
 
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Validation: Partial Payload Rejected',
+          testCase: 'Validation: Partial Payload Accepted',
           description:
-            'Chỉ gửi title như PATCH cũ, nhưng endpoint hiện tại yêu cầu full body.',
+            'Chỉ gửi 1 field cũ, nhưng endpoint hiện tại cho phép cập nhật từng trường.',
           procedure: stringifyProcedure(body),
-          expectedResult: 400,
+          expectedResult: 200,
           preconditions: 'Dùng token admin.',
         },
         async () => {
           const response = await request(server)
-            .put(`/movies/${targetMovieId}`)
+            .patch(`/movies/${targetMovieId}`)
             .set('Authorization', `Bearer ${adminToken}`)
             .send(body);
 
-          expect(response.status).toBe(400);
+          expect(response.status).toBe(200);
           const error = parseApiError(response);
           expect(error.statusCode).toBe(400);
           return response;
@@ -327,7 +327,7 @@ describe('[API] PUT /movies/:id', () => {
         },
         async () => {
           const response = await request(server)
-            .put(`/movies/${targetMovieId}`)
+            .patch(`/movies/${targetMovieId}`)
             .set('Authorization', `Bearer ${adminToken}`)
             .send(body);
 
@@ -354,7 +354,7 @@ describe('[API] PUT /movies/:id', () => {
         },
         async () => {
           const response = await request(server)
-            .put(`/movies/${targetMovieId}`)
+            .patch(`/movies/${targetMovieId}`)
             .set('Authorization', `Bearer ${adminToken}`)
             .send(body);
 
@@ -381,7 +381,7 @@ describe('[API] PUT /movies/:id', () => {
         },
         async () => {
           const response = await request(server)
-            .put(`/movies/${targetMovieId}`)
+            .patch(`/movies/${targetMovieId}`)
             .set('Authorization', `Bearer ${adminToken}`)
             .send(body);
 
@@ -408,7 +408,7 @@ describe('[API] PUT /movies/:id', () => {
         },
         async () => {
           const response = await request(server)
-            .put(`/movies/${targetMovieId}`)
+            .patch(`/movies/${targetMovieId}`)
             .set('Authorization', `Bearer ${adminToken}`)
             .send(body);
 
@@ -437,7 +437,7 @@ describe('[API] PUT /movies/:id', () => {
         },
         async () => {
           const response = await request(server)
-            .put('/movies/999999')
+            .patch('/movies/999999')
             .set('Authorization', `Bearer ${adminToken}`)
             .send(body);
 
@@ -464,7 +464,7 @@ describe('[API] PUT /movies/:id', () => {
         },
         async () => {
           const response = await request(server)
-            .put(`/movies/${targetMovieId}`)
+            .patch(`/movies/${targetMovieId}`)
             .set('Authorization', `Bearer ${adminToken}`)
             .send(body);
 
@@ -498,7 +498,7 @@ describe('[API] PUT /movies/:id', () => {
         },
         async () => {
           const response = await request(server)
-            .put(`/movies/${targetMovieId}`)
+            .patch(`/movies/${targetMovieId}`)
             .set('Authorization', `Bearer ${adminToken}`)
             .send(body);
 
@@ -532,7 +532,7 @@ describe('[API] PUT /movies/:id', () => {
         },
         async () => {
           const response = await request(server)
-            .put(`/movies/${targetMovieId}`)
+            .patch(`/movies/${targetMovieId}`)
             .set('Authorization', `Bearer ${adminToken}`)
             .send(body);
 
@@ -572,7 +572,7 @@ describe('[API] PUT /movies/:id', () => {
         },
         async () => {
           const response = await request(server)
-            .put(`/movies/${targetMovieId}`)
+            .patch(`/movies/${targetMovieId}`)
             .set('Authorization', `Bearer ${adminToken}`)
             .send(body);
 

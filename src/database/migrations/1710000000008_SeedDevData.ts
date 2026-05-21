@@ -41,8 +41,14 @@ export class SeedDevData1710000000008 implements MigrationInterface {
     const today = this.startOfUtcDate(new Date());
     const adminPassword = await bcrypt.hash('Api_tester_123', 10);
     const clientPassword = await bcrypt.hash('Api_client_123', 10);
+    const inactiveUserPassword = await bcrypt.hash('SomePassword123!', 10);
+    await this.seedDevUsers(
+      queryRunner,
+      adminPassword,
+      clientPassword,
+      inactiveUserPassword,
+    );
 
-    await this.seedDevUsers(queryRunner, adminPassword, clientPassword);
     await this.seedRoomsAndSeats(queryRunner);
     await this.seedMovies(queryRunner, today);
     await this.seedMovieGenres(queryRunner);
@@ -79,7 +85,7 @@ export class SeedDevData1710000000008 implements MigrationInterface {
 
     await queryRunner.query(`
       DELETE FROM \`users\`
-      WHERE \`email\` IN ('api_tester@gmail.com', 'api_client@gmail.com')
+      WHERE \`email\` IN ('api_tester@gmail.com', 'api_client@gmail.com', 'inactive_user@example.com')
     `);
   }
 
@@ -87,13 +93,15 @@ export class SeedDevData1710000000008 implements MigrationInterface {
     queryRunner: QueryRunner,
     adminPassword: string,
     clientPassword: string,
+    inactiveUserPassword: string,
   ): Promise<void> {
     await queryRunner.query(`
       INSERT IGNORE INTO \`users\` (
-        \`full_name\`, \`email\`, \`password\`, \`date_of_birth\`, \`phone\`, \`role\`
+        \`full_name\`, \`email\`, \`password\`, \`date_of_birth\`, \`phone\`, \`role\`, \`is_active\`
       ) VALUES
-        ('API Tester', 'api_tester@gmail.com', '${this.escapeSql(adminPassword)}', '2011-11-11', '0369539200', 'admin'),
-        ('API Client', 'api_client@gmail.com', '${this.escapeSql(clientPassword)}', '2010-10-10', '0369539201', 'customer')
+        ('API Tester', 'api_tester@gmail.com', '${this.escapeSql(adminPassword)}', '2011-11-11', '0369539200', 'admin', 1),
+        ('API Client', 'api_client@gmail.com', '${this.escapeSql(clientPassword)}', '2010-10-10', '0369539201', 'customer', 1),
+        ('Inactive User', 'inactive_user@example.com', '${this.escapeSql(inactiveUserPassword)}', '2010-10-10', '0369539202', 'customer', 0)
     `);
   }
 

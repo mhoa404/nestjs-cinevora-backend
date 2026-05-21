@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import request, { Response } from 'supertest';
 import cookieParser from 'cookie-parser';
 import { Server } from 'http';
+import { DataSource } from 'typeorm';
 
 import { exportTestReport, TestCaseRecord } from '../../helpers/excel-reporter';
 import { AuthResponse } from '../../types/auth-user.type';
@@ -25,6 +26,7 @@ type LogoutSuccessResponse = {
 describe('[API] POST /auth/logout', () => {
   let app: INestApplication;
   let server: Server;
+  let dataSource: DataSource;
 
   const results: TestCaseRecord[] = [];
   const PREFIX = (process.env.TEST_PREFIX ?? 'OUT').toUpperCase();
@@ -35,8 +37,21 @@ describe('[API] POST /auth/logout', () => {
     password: 'Api_client_123',
   };
 
-  let mobileRefreshToken = '';
-  let webRefreshToken = '';
+  const cleanupTokenUserEmails = [validUser.email];
+
+  const cleanupRefreshTokens = async (): Promise<void> => {
+    if (!dataSource?.isInitialized) return;
+
+    await dataSource.query(
+      [
+        'DELETE rt',
+        'FROM refresh_tokens rt',
+        'INNER JOIN users u ON u.id = rt.user_id',
+        'WHERE u.email IN (?)',
+      ].join(' '),
+      [cleanupTokenUserEmails],
+    );
+  };
 
   const nextId = (): string => {
     counter += 1;
@@ -71,6 +86,47 @@ describe('[API] POST /auth/logout', () => {
     }
   };
 
+  const createMobileRefreshToken = async (): Promise<string> => {
+    const response = await request(server).post('/auth/mobile/login').send({
+      email: validUser.email,
+      password: validUser.password,
+    });
+
+    expect(response.status).toBe(200);
+
+    return parseApiData<AuthResponse>(response).refreshToken as string;
+  };
+
+  const extractRefreshTokenCookie = (response: Response): string => {
+    const rawCookies = response.headers['set-cookie'];
+    const cookies: string[] = Array.isArray(rawCookies)
+      ? rawCookies
+      : rawCookies
+        ? [rawCookies]
+        : [];
+
+    const refreshTokenCookie = cookies.find((cookie) =>
+      cookie.startsWith('refreshToken='),
+    );
+
+    if (!refreshTokenCookie) {
+      throw new Error('Missing refreshToken cookie from login response.');
+    }
+
+    return refreshTokenCookie.split(';')[0];
+  };
+
+  const createWebRefreshTokenCookie = async (): Promise<string> => {
+    const response = await request(server).post('/auth/login').send({
+      email: validUser.email,
+      password: validUser.password,
+    });
+
+    expect(response.status).toBe(200);
+
+    return extractRefreshTokenCookie(response);
+  };
+
   beforeAll(async () => {
     process.env.ENABLE_RECAPTCHA = 'false';
 
@@ -91,31 +147,26 @@ describe('[API] POST /auth/logout', () => {
     app.use(cookieParser());
 
     await app.init();
-    server = app.getHttpServer() as Server;
 
-    const loginMobileRes = await request(server)
-      .post('/auth/mobile/login')
-      .send({
-        email: validUser.email,
-        password: validUser.password,
-      });
-    mobileRefreshToken = parseApiData<AuthResponse>(loginMobileRes)
-      .refreshToken as string;
-    const loginWebRes = await request(server).post('/auth/mobile/login').send({
-      email: validUser.email,
-      password: validUser.password,
-    });
-    webRefreshToken = parseApiData<AuthResponse>(loginWebRes)
-      .refreshToken as string;
+    server = app.getHttpServer() as Server;
+    dataSource = app.get(DataSource);
+
+    await cleanupRefreshTokens();
+  });
+
+  afterEach(async () => {
+    await cleanupRefreshTokens();
   });
 
   afterAll(async () => {
+    await cleanupRefreshTokens();
     await exportTestReport(results, PREFIX, 'Logout');
     await app.close();
   });
 
   describe('Mobile Scope', () => {
     it('Đăng xuất thành công (Mobile)', async () => {
+      const mobileRefreshToken = await createMobileRefreshToken();
       const body: LogoutBody = { refreshToken: mobileRefreshToken };
 
       await record(
@@ -144,6 +195,7 @@ describe('[API] POST /auth/logout', () => {
     });
 
     it('Đăng xuất thất bại - Token đã bị thu hồi (Mobile)', async () => {
+      const mobileRefreshToken = await createMobileRefreshToken();
       const body: LogoutBody = { refreshToken: mobileRefreshToken };
 
       await record(
@@ -151,10 +203,49 @@ describe('[API] POST /auth/logout', () => {
           id: nextId(),
           scope: 'Mobile',
           testCase: 'Token đã thu hồi',
-          description: 'Đăng xuất với token đã được thu hồi trước đó.',
+          description: 'Đăng xuất lần 2 với token đã được thu hồi trước đó.',
           procedure: stringifyProcedure(body),
           expectedResult: 401,
-          preconditions: 'Token trong DB đã có is_revoked = true.',
+          preconditions: 'Token đã được logout thành công trước đó.',
+        },
+        async () => {
+          const firstResponse = await request(server)
+            .post('/auth/mobile/logout')
+            .send(body);
+
+          expect(firstResponse.status).toBe(200);
+
+          const response = await request(server)
+            .post('/auth/mobile/logout')
+            .send(body);
+
+          expect(response.status).toBe(401);
+
+          const res = parseApiError(response);
+          expectErrorMessage(
+            res,
+            401,
+            'Refresh token không hợp lệ, đã hết hạn hoặc đã bị thu hồi.',
+          );
+
+          return response;
+        },
+      );
+    });
+
+    it('Đăng xuất thất bại - Refresh token không tồn tại (Mobile)', async () => {
+      const body: LogoutBody = { refreshToken: 'invalid-refresh-token' };
+
+      await record(
+        {
+          id: nextId(),
+          scope: 'Mobile',
+          testCase: 'Refresh token không tồn tại',
+          description:
+            'Gửi refresh token dạng chuỗi nhưng không tồn tại trong DB.',
+          procedure: stringifyProcedure(body),
+          expectedResult: 401,
+          preconditions: 'Không có token tương ứng trong bảng refresh_tokens.',
         },
         async () => {
           const response = await request(server)
@@ -235,6 +326,7 @@ describe('[API] POST /auth/logout', () => {
   describe('Web Scope', () => {
     it('Đăng xuất thành công (Web)', async () => {
       const body: LogoutBody = {};
+      const webRefreshTokenCookie = await createWebRefreshTokenCookie();
 
       await record(
         {
@@ -244,12 +336,12 @@ describe('[API] POST /auth/logout', () => {
           description: 'Gửi request chứa Cookie hợp lệ để đăng xuất.',
           procedure: 'Gửi Header: Cookie=refreshToken=...',
           expectedResult: 200,
-          preconditions: 'User đã đăng nhập.',
+          preconditions: 'User đã đăng nhập Web và có refreshToken Cookie.',
         },
         async () => {
           const response = await request(server)
             .post('/auth/logout')
-            .set('Cookie', [`refreshToken=${webRefreshToken}`])
+            .set('Cookie', [webRefreshTokenCookie])
             .send(body);
 
           expect(response.status).toBe(200);
@@ -275,6 +367,7 @@ describe('[API] POST /auth/logout', () => {
 
     it('Đăng xuất thất bại - Token đã bị thu hồi (Web)', async () => {
       const body: LogoutBody = {};
+      const webRefreshTokenCookie = await createWebRefreshTokenCookie();
 
       await record(
         {
@@ -284,12 +377,53 @@ describe('[API] POST /auth/logout', () => {
           description: 'Gửi Cookie chứa token đã bị thu hồi trước đó.',
           procedure: 'Gửi Header: Cookie với token cũ.',
           expectedResult: 401,
-          preconditions: 'Token đã bị đánh dấu is_revoked.',
+          preconditions: 'Token đã được logout thành công trước đó.',
+        },
+        async () => {
+          const firstResponse = await request(server)
+            .post('/auth/logout')
+            .set('Cookie', [webRefreshTokenCookie])
+            .send(body);
+
+          expect(firstResponse.status).toBe(200);
+
+          const response = await request(server)
+            .post('/auth/logout')
+            .set('Cookie', [webRefreshTokenCookie])
+            .send(body);
+
+          expect(response.status).toBe(401);
+
+          const res = parseApiError(response);
+          expectErrorMessage(
+            res,
+            401,
+            'Refresh token không hợp lệ, đã hết hạn hoặc đã bị thu hồi.',
+          );
+
+          return response;
+        },
+      );
+    });
+
+    it('Đăng xuất thất bại - Refresh token không tồn tại (Web)', async () => {
+      const body: LogoutBody = {};
+
+      await record(
+        {
+          id: nextId(),
+          scope: 'Web',
+          testCase: 'Refresh token không tồn tại',
+          description:
+            'Gửi Cookie refreshToken dạng chuỗi nhưng không tồn tại trong DB.',
+          procedure: 'Gửi Header: Cookie=refreshToken=invalid-refresh-token',
+          expectedResult: 401,
+          preconditions: 'Không có token tương ứng trong bảng refresh_tokens.',
         },
         async () => {
           const response = await request(server)
             .post('/auth/logout')
-            .set('Cookie', [`refreshToken=${webRefreshToken}`])
+            .set('Cookie', ['refreshToken=invalid-refresh-token'])
             .send(body);
 
           expect(response.status).toBe(401);
@@ -340,15 +474,7 @@ describe('[API] POST /auth/logout', () => {
 
     it('Đăng xuất thành công - Bỏ qua dữ liệu rác trong Body (Web)', async () => {
       const body: LogoutBody = { refreshToken: 123456 };
-
-      const loginWebRes = await request(server)
-        .post('/auth/mobile/login')
-        .send({
-          email: validUser.email,
-          password: validUser.password,
-        });
-      const validWebCookie = parseApiData<AuthResponse>(loginWebRes)
-        .refreshToken as string;
+      const webRefreshTokenCookie = await createWebRefreshTokenCookie();
 
       await record(
         {
@@ -363,7 +489,7 @@ describe('[API] POST /auth/logout', () => {
         async () => {
           const response = await request(server)
             .post('/auth/logout')
-            .set('Cookie', [`refreshToken=${validWebCookie}`])
+            .set('Cookie', [webRefreshTokenCookie])
             .send(body);
 
           expect(response.status).toBe(200);

@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import request, { Response } from 'supertest';
 import cookieParser from 'cookie-parser';
 import { Server } from 'http';
+import { DataSource } from 'typeorm';
 
 import { exportTestReport, TestCaseRecord } from '../../helpers/excel-reporter';
 import { AuthResponse } from '../../types/auth-user.type';
@@ -16,12 +17,13 @@ import {
 
 type LoginBody = {
   email?: string;
-  password?: string;
+  password?: unknown;
 };
 
 describe('[API] POST /auth/login', () => {
   let app: INestApplication;
   let server: Server;
+  let dataSource: DataSource;
 
   const results: TestCaseRecord[] = [];
   const PREFIX = 'LOG';
@@ -30,6 +32,26 @@ describe('[API] POST /auth/login', () => {
   const validUser = {
     email: 'api_client@gmail.com',
     password: 'Api_client_123',
+  };
+
+  /**
+   * Các login success case sẽ sinh refresh token cho user test.
+   * Cleanup sau mỗi case để tránh rác token hoặc ảnh hưởng các test suite khác.
+   */
+  const cleanupTokenUserEmails = [validUser.email];
+
+  const cleanupRefreshTokens = async (): Promise<void> => {
+    if (!dataSource?.isInitialized) return;
+
+    await dataSource.query(
+      `
+        DELETE rt
+        FROM refresh_tokens rt
+        INNER JOIN users u ON u.id = rt.user_id
+        WHERE u.email IN (?)
+      `,
+      [cleanupTokenUserEmails],
+    );
   };
 
   const nextId = (): string => {
@@ -85,14 +107,24 @@ describe('[API] POST /auth/login', () => {
     app.use(cookieParser());
 
     await app.init();
+
     server = app.getHttpServer() as Server;
+    dataSource = app.get(DataSource);
+  });
+
+  afterEach(async () => {
+    await cleanupRefreshTokens();
   });
 
   afterAll(async () => {
+    await cleanupRefreshTokens();
     await exportTestReport(results, PREFIX, 'Login');
     await app.close();
   });
 
+  // ---------------------------------------------------------------------------
+  // Mobile Scope
+  // ---------------------------------------------------------------------------
   describe('Mobile Scope', () => {
     it('Đăng nhập Mobile thành công', async () => {
       const body: LoginBody = {
@@ -120,8 +152,10 @@ describe('[API] POST /auth/login', () => {
           const res = parseApiData<AuthResponse>(response);
           expect(res.accessToken).toBeDefined();
           expect(res.refreshToken).toBeDefined();
+          expect(res.expiresIn).toBeDefined();
           expect(res.user.email).toBe(validUser.email);
           expect(res.user.role).toBeDefined();
+          expect(res.user.isActive).toBe(true);
 
           return response;
         },
@@ -149,36 +183,6 @@ describe('[API] POST /auth/login', () => {
 
           const res = parseApiError(response);
           expectErrorMessage(res, 400, 'Vui lòng nhập địa chỉ email.');
-
-          return response;
-        },
-      );
-    });
-
-    it('Đăng nhập Mobile thất bại - Email này chưa được đăng ký', async () => {
-      const body: LoginBody = {
-        email: 'not_exist_user_123@example.com',
-        password: 'SomePassword123!',
-      };
-
-      await record(
-        {
-          id: nextId(),
-          scope: 'Mobile',
-          testCase: 'Email chưa đăng ký (Mobile)',
-          description: 'Sử dụng một email không có trong hệ thống.',
-          procedure: stringifyProcedure(body),
-          expectedResult: 401,
-          preconditions: 'Email test không tồn tại trong DB.',
-        },
-        async () => {
-          const response = await request(server)
-            .post('/auth/mobile/login')
-            .send(body);
-          expect(response.status).toBe(401);
-
-          const res = parseApiError(response);
-          expectErrorMessage(res, 401, 'Email hoặc mật khẩu không đúng');
 
           return response;
         },
@@ -242,6 +246,33 @@ describe('[API] POST /auth/login', () => {
       );
     });
 
+    it('Đăng nhập Mobile thất bại - Password không phải chuỗi', async () => {
+      const body = { email: validUser.email, password: 123456 };
+
+      await record(
+        {
+          id: nextId(),
+          scope: 'Mobile',
+          testCase: 'Password không phải chuỗi (Mobile)',
+          description: 'Gửi password là kiểu số nguyên thay vì string.',
+          procedure: stringifyProcedure(body),
+          expectedResult: 400,
+          preconditions: 'Không có điều kiện đặc biệt.',
+        },
+        async () => {
+          const response = await request(server)
+            .post('/auth/mobile/login')
+            .send(body);
+          expect(response.status).toBe(400);
+
+          const res = parseApiError(response);
+          expectErrorMessage(res, 400, 'Mật khẩu không hợp lệ');
+
+          return response;
+        },
+      );
+    });
+
     it('Đăng nhập Mobile thất bại - Sai password', async () => {
       const body: LoginBody = {
         email: validUser.email,
@@ -271,8 +302,74 @@ describe('[API] POST /auth/login', () => {
         },
       );
     });
+
+    it('Đăng nhập Mobile thất bại - Email chưa được đăng ký', async () => {
+      const body: LoginBody = {
+        email: 'not_exist_user_123@example.com',
+        password: 'SomePassword123!',
+      };
+
+      await record(
+        {
+          id: nextId(),
+          scope: 'Mobile',
+          testCase: 'Email chưa đăng ký (Mobile)',
+          description: 'Sử dụng một email không có trong hệ thống.',
+          procedure: stringifyProcedure(body),
+          expectedResult: 401,
+          preconditions: 'Email test không tồn tại trong DB.',
+        },
+        async () => {
+          const response = await request(server)
+            .post('/auth/mobile/login')
+            .send(body);
+          expect(response.status).toBe(401);
+
+          const res = parseApiError(response);
+          expectErrorMessage(res, 401, 'Email hoặc mật khẩu không đúng');
+
+          return response;
+        },
+      );
+    });
+
+    it('Đăng nhập Mobile thất bại - Tài khoản bị vô hiệu hoá', async () => {
+      // Tài khoản này cần được seed với is_active = 0 trong DB test.
+      // Nếu chưa có seed riêng, bỏ qua (skip) hoặc tạo user rồi deactivate trước khi chạy.
+      const body: LoginBody = {
+        email: 'inactive_user@example.com',
+        password: 'SomePassword123!',
+      };
+
+      await record(
+        {
+          id: nextId(),
+          scope: 'Mobile',
+          testCase: 'Tài khoản bị vô hiệu hoá (Mobile)',
+          description:
+            'Đăng nhập bằng tài khoản có is_active = false trong DB.',
+          procedure: stringifyProcedure(body),
+          expectedResult: 401,
+          preconditions: 'Tài khoản tồn tại trong DB nhưng is_active = false.',
+        },
+        async () => {
+          const response = await request(server)
+            .post('/auth/mobile/login')
+            .send(body);
+          expect(response.status).toBe(401);
+
+          const res = parseApiError(response);
+          expectErrorMessage(res, 401, 'Email hoặc mật khẩu không đúng');
+
+          return response;
+        },
+      );
+    });
   });
 
+  // ---------------------------------------------------------------------------
+  // Web Scope
+  // ---------------------------------------------------------------------------
   describe('Web Scope', () => {
     it('Đăng nhập Web thành công', async () => {
       const body: LoginBody = {
@@ -297,10 +394,12 @@ describe('[API] POST /auth/login', () => {
 
           const res = parseApiData<AuthResponse>(response);
           expect(res.accessToken).toBeDefined();
-
+          expect(res.expiresIn).toBeDefined();
+          // Web endpoint KHÔNG trả refreshToken trong body — nằm trong cookie
           expect(res.refreshToken).toBeUndefined();
           expect(res.user.email).toBe(validUser.email);
           expect(res.user.role).toBeDefined();
+          expect(res.user.isActive).toBe(true);
 
           const rawCookies = response.headers['set-cookie'];
           expect(rawCookies).toBeDefined();
@@ -311,6 +410,11 @@ describe('[API] POST /auth/login', () => {
 
           expect(
             cookies.some((cookie) => cookie.includes('refreshToken=')),
+          ).toBeTruthy();
+
+          // Cookie phải có HttpOnly
+          expect(
+            cookies.some((cookie) => cookie.toLowerCase().includes('httponly')),
           ).toBeTruthy();
 
           return response;
@@ -337,34 +441,6 @@ describe('[API] POST /auth/login', () => {
 
           const res = parseApiError(response);
           expectErrorMessage(res, 400, 'Vui lòng nhập địa chỉ email.');
-
-          return response;
-        },
-      );
-    });
-
-    it('Đăng nhập Web thất bại - Email này chưa được đăng ký', async () => {
-      const body: LoginBody = {
-        email: 'not_exist_user_123@example.com',
-        password: 'SomePassword123!',
-      };
-
-      await record(
-        {
-          id: nextId(),
-          scope: 'Web',
-          testCase: 'Email chưa đăng ký (Web)',
-          description: 'Sử dụng một email không có trong hệ thống.',
-          procedure: stringifyProcedure(body),
-          expectedResult: 401,
-          preconditions: 'Email test không tồn tại trong DB.',
-        },
-        async () => {
-          const response = await request(server).post('/auth/login').send(body);
-          expect(response.status).toBe(401);
-
-          const res = parseApiError(response);
-          expectErrorMessage(res, 401, 'Email hoặc mật khẩu không đúng');
 
           return response;
         },
@@ -424,6 +500,31 @@ describe('[API] POST /auth/login', () => {
       );
     });
 
+    it('Đăng nhập Web thất bại - Password không phải chuỗi', async () => {
+      const body = { email: validUser.email, password: 123456 };
+
+      await record(
+        {
+          id: nextId(),
+          scope: 'Web',
+          testCase: 'Password không phải chuỗi (Web)',
+          description: 'Gửi password là kiểu số nguyên thay vì string.',
+          procedure: stringifyProcedure(body),
+          expectedResult: 400,
+          preconditions: 'Không có điều kiện đặc biệt.',
+        },
+        async () => {
+          const response = await request(server).post('/auth/login').send(body);
+          expect(response.status).toBe(400);
+
+          const res = parseApiError(response);
+          expectErrorMessage(res, 400, 'Mật khẩu không hợp lệ');
+
+          return response;
+        },
+      );
+    });
+
     it('Đăng nhập Web thất bại - Sai password', async () => {
       const body: LoginBody = {
         email: validUser.email,
@@ -439,6 +540,64 @@ describe('[API] POST /auth/login', () => {
           procedure: stringifyProcedure(body),
           expectedResult: 401,
           preconditions: 'Tài khoản đã tồn tại trong DB.',
+        },
+        async () => {
+          const response = await request(server).post('/auth/login').send(body);
+          expect(response.status).toBe(401);
+
+          const res = parseApiError(response);
+          expectErrorMessage(res, 401, 'Email hoặc mật khẩu không đúng');
+
+          return response;
+        },
+      );
+    });
+
+    it('Đăng nhập Web thất bại - Email chưa được đăng ký', async () => {
+      const body: LoginBody = {
+        email: 'not_exist_user_123@example.com',
+        password: 'SomePassword123!',
+      };
+
+      await record(
+        {
+          id: nextId(),
+          scope: 'Web',
+          testCase: 'Email chưa đăng ký (Web)',
+          description: 'Sử dụng một email không có trong hệ thống.',
+          procedure: stringifyProcedure(body),
+          expectedResult: 401,
+          preconditions: 'Email test không tồn tại trong DB.',
+        },
+        async () => {
+          const response = await request(server).post('/auth/login').send(body);
+          expect(response.status).toBe(401);
+
+          const res = parseApiError(response);
+          expectErrorMessage(res, 401, 'Email hoặc mật khẩu không đúng');
+
+          return response;
+        },
+      );
+    });
+
+    it('Đăng nhập Web thất bại - Tài khoản bị vô hiệu hoá', async () => {
+      // Tài khoản này cần được seed với is_active = 0 trong DB test.
+      const body: LoginBody = {
+        email: 'inactive_user@example.com',
+        password: 'SomePassword123!',
+      };
+
+      await record(
+        {
+          id: nextId(),
+          scope: 'Web',
+          testCase: 'Tài khoản bị vô hiệu hoá (Web)',
+          description:
+            'Đăng nhập bằng tài khoản có is_active = false trong DB.',
+          procedure: stringifyProcedure(body),
+          expectedResult: 401,
+          preconditions: 'Tài khoản tồn tại trong DB nhưng is_active = false.',
         },
         async () => {
           const response = await request(server).post('/auth/login').send(body);
