@@ -26,6 +26,16 @@ const TEST_SUITES: Record<
     file: 'test/api/auth/logout.api.spec.ts',
     description: 'API Đăng xuất (Auth)',
   },
+  get_genres: {
+    prefix: 'GGR',
+    file: 'test/api/genres/get-genres.api.spec.ts',
+    description: 'API Lấy danh sách thể loại phim (Genres)',
+  },
+  get_genre_by_id: {
+    prefix: 'GGI',
+    file: 'test/api/genres/get-genre-by-id.api.spec.ts',
+    description: 'API Lấy thể loại phim theo ID (Genres)',
+  },
   create_genre: {
     prefix: 'CGR',
     file: 'test/api/genres/create-genre.api.spec.ts',

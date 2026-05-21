@@ -1,5 +1,6 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { DataSource } from 'typeorm';
 import request, { Response } from 'supertest';
 import cookieParser from 'cookie-parser';
 import { Server } from 'http';
@@ -13,6 +14,7 @@ import {
 } from '../../helpers/http-test.helper';
 import { AppModule } from '../../../src/app.module';
 import { GenreResponseDto } from '../../../src/modules/genres/dto/genre-response.dto';
+import { Genre } from '../../../src/modules/genres/entities/genre.entity';
 import { AuthResponseDto } from '../../../src/modules/auth/dto/auth-response.dto';
 
 type GenreBody = {
@@ -24,9 +26,12 @@ type GenreBody = {
 describe('[API] POST /genres', () => {
   let app: INestApplication;
   let server: Server;
+  let dataSource: DataSource;
 
   let adminToken = '';
   let customerToken = '';
+
+  const createdGenreIds: number[] = [];
 
   const results: TestCaseRecord[] = [];
   const PREFIX = 'CGR';
@@ -34,7 +39,7 @@ describe('[API] POST /genres', () => {
 
   const nextId = (): string => {
     counter += 1;
-    return `${PREFIX}${String(counter).padStart(2, '0')}`;
+    return PREFIX + String(counter).padStart(2, '0');
   };
 
   const stringifyProcedure = (
@@ -65,6 +70,12 @@ describe('[API] POST /genres', () => {
     }
   };
 
+  const rememberCreatedGenre = (genre: GenreResponseDto): void => {
+    if (typeof genre.id === 'number') {
+      createdGenreIds.push(genre.id);
+    }
+  };
+
   beforeAll(async () => {
     process.env.ENABLE_RECAPTCHA = 'false';
 
@@ -73,6 +84,7 @@ describe('[API] POST /genres', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    dataSource = app.get<DataSource>(DataSource);
 
     app.useGlobalPipes(
       new ValidationPipe({
@@ -101,6 +113,12 @@ describe('[API] POST /genres', () => {
   });
 
   afterAll(async () => {
+    const genreRepository = dataSource.getRepository(Genre);
+
+    if (createdGenreIds.length > 0) {
+      await genreRepository.delete(createdGenreIds);
+    }
+
     await exportTestReport(results, PREFIX, 'Create_Genre');
     await app.close();
   });
@@ -113,16 +131,18 @@ describe('[API] POST /genres', () => {
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Security: Missing Token',
+          testCase: 'Không có Header Authorization',
           description:
             'Gọi API tạo thể loại nhưng không set header Authorization.',
           procedure: stringifyProcedure(body),
           expectedResult: 401,
-          preconditions: 'Không có token.',
+          preconditions: 'Không có',
         },
         async () => {
           const response = await request(server).post('/genres').send(body);
+
           expect(response.status).toBe(401);
+
           return response;
         },
       );
@@ -135,11 +155,11 @@ describe('[API] POST /genres', () => {
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Security: Fake Token',
+          testCase: 'Gửi Token giả',
           description: 'Gửi Bearer token không hợp lệ.',
           procedure: stringifyProcedure(body),
           expectedResult: 401,
-          preconditions: 'Token giả.',
+          preconditions: 'Không có',
         },
         async () => {
           const response = await request(server)
@@ -148,6 +168,7 @@ describe('[API] POST /genres', () => {
             .send(body);
 
           expect(response.status).toBe(401);
+
           return response;
         },
       );
@@ -160,7 +181,7 @@ describe('[API] POST /genres', () => {
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Security: Customer Forbidden',
+          testCase: 'Gửi Bearer token của Customer',
           description: 'Gửi token của tài khoản Customer.',
           procedure: stringifyProcedure(body),
           expectedResult: 403,
@@ -169,10 +190,11 @@ describe('[API] POST /genres', () => {
         async () => {
           const response = await request(server)
             .post('/genres')
-            .set('Authorization', `Bearer ${customerToken}`)
+            .set('Authorization', 'Bearer ' + customerToken)
             .send(body);
 
           expect(response.status).toBe(403);
+
           return response;
         },
       );
@@ -187,21 +209,23 @@ describe('[API] POST /genres', () => {
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Validation: Missing Name',
+          testCase: 'Gửi body rỗng',
           description: 'Gửi body rỗng.',
           procedure: stringifyProcedure(body),
           expectedResult: 400,
-          preconditions: 'Dùng token Admin.',
+          preconditions: 'Token Admin hợp lệ',
         },
         async () => {
           const response = await request(server)
             .post('/genres')
-            .set('Authorization', `Bearer ${adminToken}`)
+            .set('Authorization', 'Bearer ' + adminToken)
             .send(body);
 
           expect(response.status).toBe(400);
+
           const error = parseApiError(response);
           expectErrorMessage(error, 400, 'Vui lòng nhập tên thể loại.');
+
           return response;
         },
       );
@@ -214,21 +238,23 @@ describe('[API] POST /genres', () => {
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Validation: Name Too Long',
+          testCase: 'Gửi tên quá dài',
           description: 'Gửi name có 101 ký tự.',
           procedure: stringifyProcedure(body),
           expectedResult: 400,
-          preconditions: 'Dùng token Admin.',
+          preconditions: 'Token Admin hợp lệ',
         },
         async () => {
           const response = await request(server)
             .post('/genres')
-            .set('Authorization', `Bearer ${adminToken}`)
+            .set('Authorization', 'Bearer ' + adminToken)
             .send(body);
 
           expect(response.status).toBe(400);
+
           const error = parseApiError(response);
           expectErrorMessage(error, 400, 'Tên thể loại tối đa 100 ký tự.');
+
           return response;
         },
       );
@@ -241,21 +267,23 @@ describe('[API] POST /genres', () => {
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Validation: Empty String',
+          testCase: 'Gửi name là chuỗi rỗng',
           description: 'Gửi name là chuỗi rỗng.',
           procedure: stringifyProcedure(body),
           expectedResult: 400,
-          preconditions: 'Dùng token Admin.',
+          preconditions: 'Token Admin hợp lệ',
         },
         async () => {
           const response = await request(server)
             .post('/genres')
-            .set('Authorization', `Bearer ${adminToken}`)
+            .set('Authorization', 'Bearer ' + adminToken)
             .send(body);
 
           expect(response.status).toBe(400);
+
           const error = parseApiError(response);
           expectErrorMessage(error, 400, 'Vui lòng nhập tên thể loại.');
+
           return response;
         },
       );
@@ -268,21 +296,23 @@ describe('[API] POST /genres', () => {
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Validation: Whitespace Only',
+          testCase: 'Gửi name chỉ gồm khoảng trắng',
           description: 'Gửi name toàn dấu cách.',
           procedure: stringifyProcedure(body),
           expectedResult: 400,
-          preconditions: 'Dùng token Admin.',
+          preconditions: 'Token Admin hợp lệ',
         },
         async () => {
           const response = await request(server)
             .post('/genres')
-            .set('Authorization', `Bearer ${adminToken}`)
+            .set('Authorization', 'Bearer ' + adminToken)
             .send(body);
 
           expect(response.status).toBe(400);
+
           const error = parseApiError(response);
-          expectErrorMessage(error, 400, 'Tên thể loại không được để trống.');
+          expectErrorMessage(error, 400, 'Vui lòng nhập tên thể loại.');
+
           return response;
         },
       );
@@ -295,19 +325,23 @@ describe('[API] POST /genres', () => {
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Validation: Name Is Null',
+          testCase: 'Gửi name là null',
           description: 'Gửi name là null.',
           procedure: stringifyProcedure(body),
           expectedResult: 400,
-          preconditions: 'Dùng token Admin.',
+          preconditions: 'Token Admin hợp lệ',
         },
         async () => {
           const response = await request(server)
             .post('/genres')
-            .set('Authorization', `Bearer ${adminToken}`)
+            .set('Authorization', 'Bearer ' + adminToken)
             .send(body);
 
           expect(response.status).toBe(400);
+
+          const error = parseApiError(response);
+          expectErrorMessage(error, 400, 'Vui lòng nhập tên thể loại.');
+
           return response;
         },
       );
@@ -320,46 +354,56 @@ describe('[API] POST /genres', () => {
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Validation: Name Is Boolean',
+          testCase: 'Gửi sai định dạng name',
           description: 'Gửi name là true boolean.',
           procedure: stringifyProcedure(body),
           expectedResult: 400,
-          preconditions: 'Dùng token Admin.',
+          preconditions: 'Token Admin hợp lệ',
         },
         async () => {
           const response = await request(server)
             .post('/genres')
-            .set('Authorization', `Bearer ${adminToken}`)
+            .set('Authorization', 'Bearer ' + adminToken)
             .send(body);
 
           expect(response.status).toBe(400);
+
+          const error = parseApiError(response);
+          expectErrorMessage(error, 400, 'Tên thể loại không hợp lệ.');
+
           return response;
         },
       );
     });
 
     it('Tạo thất bại - Gửi payload dư field', async () => {
-      const body = { name: 'Thể loại C', allowAll: true, extraField: 'abc' };
+      const body = {
+        name: 'Thể loại C',
+        allowAll: true,
+        extraField: 'abc',
+      };
 
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Validation: Extra Fields',
+          testCase: 'Gửi payload dư field',
           description: 'Gửi thêm field không được khai báo trong DTO.',
           procedure: stringifyProcedure(body),
           expectedResult: 400,
-          preconditions: 'ValidationPipe bật forbidNonWhitelisted.',
+          preconditions: 'Token Admin hợp lệ',
         },
         async () => {
           const response = await request(server)
             .post('/genres')
-            .set('Authorization', `Bearer ${adminToken}`)
+            .set('Authorization', 'Bearer ' + adminToken)
             .send(body);
 
           expect(response.status).toBe(400);
+
           const error = parseApiError(response);
-          expect(error.statusCode).toBe(400);
+          expectErrorMessage(error, 400, 'property allowAll should not exist');
+
           return response;
         },
       );
@@ -369,29 +413,31 @@ describe('[API] POST /genres', () => {
   describe('Business Logic', () => {
     it('Tạo thành công - Name hợp lệ', async () => {
       const unique = Date.now();
-      const body = { name: `Test Genre ${unique}` };
+      const body = { name: 'Test Genre ' + unique };
 
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Happy Path: Create Success',
+          testCase: 'Tạo thể loại với name hợp lệ',
           description: 'Tạo thể loại với token admin và name hợp lệ.',
           procedure: stringifyProcedure(body),
           expectedResult: 201,
-          preconditions: 'Tài khoản Admin đã đăng nhập.',
+          preconditions: 'Token Admin hợp lệ',
         },
         async () => {
           const response = await request(server)
             .post('/genres')
-            .set('Authorization', `Bearer ${adminToken}`)
+            .set('Authorization', 'Bearer ' + adminToken)
             .send(body);
 
           expect(response.status).toBe(201);
 
           const data = parseApiData<GenreResponseDto>(response);
+          rememberCreatedGenre(data);
+
           expect(data.name).toBe(body.name);
-          expect(data.slug).toBe(`test-genre-${unique}`);
+          expect(data.slug).toBe('test-genre-' + unique);
 
           return response;
         },
@@ -400,29 +446,74 @@ describe('[API] POST /genres', () => {
 
     it('Tạo thành công - Tự trim khoảng trắng hai đầu', async () => {
       const unique = Date.now();
-      const body = { name: `   Genre Trim ${unique}   ` };
+      const body = { name: '   Genre Trim ' + unique + '   ' };
 
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Happy Path: Auto Trim',
+          testCase: 'Tự động trim value của name',
           description: 'Truyền tên có dấu cách thừa ở đầu và cuối.',
           procedure: stringifyProcedure(body),
           expectedResult: 201,
-          preconditions: 'Dùng token admin.',
+          preconditions: 'Token Admin hợp lệ',
         },
         async () => {
           const response = await request(server)
             .post('/genres')
-            .set('Authorization', `Bearer ${adminToken}`)
+            .set('Authorization', 'Bearer ' + adminToken)
             .send(body);
 
           expect(response.status).toBe(201);
 
           const data = parseApiData<GenreResponseDto>(response);
-          expect(data.name).toBe(`Genre Trim ${unique}`);
-          expect(data.slug).toBe(`genre-trim-${unique}`);
+          rememberCreatedGenre(data);
+
+          expect(data.name).toBe('Genre Trim ' + unique);
+          expect(data.slug).toBe('genre-trim-' + unique);
+
+          return response;
+        },
+      );
+    });
+
+    it('Tạo thành công - Trả về đúng shape GenreResponseDto', async () => {
+      const unique = Date.now();
+      const body = { name: 'Genre Shape ' + unique };
+
+      await record(
+        {
+          id: nextId(),
+          scope: 'All',
+          testCase: 'Kiểm tra response shape',
+          description:
+            'Tạo thể loại thành công và kiểm tra response chỉ gồm các field của GenreResponseDto.',
+          procedure: stringifyProcedure(body),
+          expectedResult: 201,
+          preconditions: 'Token Admin hợp lệ',
+        },
+        async () => {
+          const response = await request(server)
+            .post('/genres')
+            .set('Authorization', 'Bearer ' + adminToken)
+            .send(body);
+
+          expect(response.status).toBe(201);
+
+          const data = parseApiData<GenreResponseDto>(response);
+          rememberCreatedGenre(data);
+
+          expect(typeof data.id).toBe('number');
+          expect(data.name).toBe(body.name);
+          expect(data.slug).toBe('genre-shape-' + unique);
+          expect(typeof data.createdAt).toBe('string');
+
+          expect(Object.keys(data).sort()).toEqual([
+            'createdAt',
+            'id',
+            'name',
+            'slug',
+          ]);
 
           return response;
         },
@@ -431,12 +522,15 @@ describe('[API] POST /genres', () => {
 
     it('Tạo thất bại - Tên thể loại đã tồn tại', async () => {
       const unique = Date.now();
-      const originalName = `Duplicate Genre ${unique}`;
+      const originalName = 'Duplicate Genre ' + unique;
 
-      await request(server)
+      const createResponse = await request(server)
         .post('/genres')
-        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Authorization', 'Bearer ' + adminToken)
         .send({ name: originalName });
+
+      expect(createResponse.status).toBe(201);
+      rememberCreatedGenre(parseApiData<GenreResponseDto>(createResponse));
 
       const body = { name: originalName };
 
@@ -444,21 +538,64 @@ describe('[API] POST /genres', () => {
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Business: Duplicate Name',
+          testCase: 'Lặp lại tên thể loại',
           description: 'Tạo lại thể loại có tên giống hệt bản ghi đã tồn tại.',
           procedure: stringifyProcedure(body),
           expectedResult: 409,
-          preconditions: 'Đã tạo sẵn genre cùng tên.',
+          preconditions: 'Tồn tại genre với name này.',
         },
         async () => {
           const response = await request(server)
             .post('/genres')
-            .set('Authorization', `Bearer ${adminToken}`)
+            .set('Authorization', 'Bearer ' + adminToken)
             .send(body);
 
           expect(response.status).toBe(409);
+
           const error = parseApiError(response);
           expectErrorMessage(error, 409, 'Tên thể loại đã tồn tại');
+
+          return response;
+        },
+      );
+    });
+
+    it('Tạo thất bại - Tên thể loại đã tồn tại không phân biệt hoa thường', async () => {
+      const unique = Date.now();
+      const originalName = 'Case Duplicate Genre ' + unique;
+
+      const createResponse = await request(server)
+        .post('/genres')
+        .set('Authorization', 'Bearer ' + adminToken)
+        .send({ name: originalName });
+
+      expect(createResponse.status).toBe(201);
+      rememberCreatedGenre(parseApiData<GenreResponseDto>(createResponse));
+
+      const body = { name: originalName.toUpperCase() };
+
+      await record(
+        {
+          id: nextId(),
+          scope: 'All',
+          testCase: 'Lặp lại tên nhưng khác format',
+          description:
+            'Tạo thể loại có tên khác hoa thường nhưng trùng normalizedName với bản ghi đã tồn tại.',
+          procedure: stringifyProcedure(body),
+          expectedResult: 409,
+          preconditions: 'Đã tạo sẵn genre cùng tên khác format',
+        },
+        async () => {
+          const response = await request(server)
+            .post('/genres')
+            .set('Authorization', 'Bearer ' + adminToken)
+            .send(body);
+
+          expect(response.status).toBe(409);
+
+          const error = parseApiError(response);
+          expectErrorMessage(error, 409, 'Tên thể loại đã tồn tại');
+
           return response;
         },
       );
@@ -466,13 +603,16 @@ describe('[API] POST /genres', () => {
 
     it('Tạo thất bại - Trùng slug', async () => {
       const unique = Date.now();
-      const originalName = `Test Slug ${unique}`;
-      const conflictName = `Tést-Slug ${unique}`;
+      const originalName = 'Test Slug ' + unique;
+      const conflictName = 'Tést-Slug ' + unique;
 
-      await request(server)
+      const createResponse = await request(server)
         .post('/genres')
-        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Authorization', 'Bearer ' + adminToken)
         .send({ name: originalName });
+
+      expect(createResponse.status).toBe(201);
+      rememberCreatedGenre(parseApiData<GenreResponseDto>(createResponse));
 
       const body = { name: conflictName };
 
@@ -480,21 +620,23 @@ describe('[API] POST /genres', () => {
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Business: Duplicate Slug',
+          testCase: 'Lặp lại slug',
           description: 'Tên khác nhưng slug sinh ra trùng với bản ghi đã có.',
           procedure: stringifyProcedure(body),
           expectedResult: 409,
-          preconditions: 'Đã tạo sẵn genre có slug tương ứng.',
+          preconditions: 'Tồn tại genre có slug tương ứng.',
         },
         async () => {
           const response = await request(server)
             .post('/genres')
-            .set('Authorization', `Bearer ${adminToken}`)
+            .set('Authorization', 'Bearer ' + adminToken)
             .send(body);
 
           expect(response.status).toBe(409);
+
           const error = parseApiError(response);
           expectErrorMessage(error, 409, 'Slug này đã tồn tại.');
+
           return response;
         },
       );

@@ -49,6 +49,41 @@ const TEST_DOMAINS: Record<string, TestDomain> = {
       },
     ],
   },
+  genres: {
+    description: 'Toàn bộ API Genres',
+    suites: [
+      {
+        key: 'get_genres',
+        prefix: 'GGR',
+        file: 'test/api/genres/get-genres.api.spec.ts',
+        description: 'API Lấy danh sách thể loại phim (Genres)',
+      },
+      {
+        key: 'get_genre_by_id',
+        prefix: 'GGI',
+        file: 'test/api/genres/get-genre-by-id.api.spec.ts',
+        description: 'API Lấy thông tin thể loại phim theo ID (Genres)',
+      },
+      {
+        key: 'create_genre',
+        prefix: 'CGR',
+        file: 'test/api/genres/create-genre.api.spec.ts',
+        description: 'API Tạo thể loại phim (Genres)',
+      },
+      {
+        key: 'update_genre',
+        prefix: 'UGR',
+        file: 'test/api/genres/update-genre.api.spec.ts',
+        description: 'API Cập nhật thể loại phim (Genres)',
+      },
+      {
+        key: 'delete_genre',
+        prefix: 'DGR',
+        file: 'test/api/genres/delete-genre.api.spec.ts',
+        description: 'API Xoá thể loại phim (Genres)',
+      },
+    ],
+  },
 };
 
 console.log('► CINEVORA DOMAIN API TEST RUNNER ◄');
