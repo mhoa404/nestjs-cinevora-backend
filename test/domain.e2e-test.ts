@@ -84,6 +84,41 @@ const TEST_DOMAINS: Record<string, TestDomain> = {
       },
     ],
   },
+  movies: {
+    description: 'Toàn bộ API Movies',
+    suites: [
+      {
+        key: 'get_movies',
+        prefix: 'GMV',
+        file: 'test/api/movies/get-movies.api.spec.ts',
+        description: 'API Lấy danh sách phim (Movies)',
+      },
+      {
+        key: 'get_movie_detail',
+        prefix: 'GMD',
+        file: 'test/api/movies/get-movie-detail.api.spec.ts',
+        description: 'API Lấy thông tin chi tiết phim (Movies)',
+      },
+      {
+        key: 'create_movie',
+        prefix: 'CMV',
+        file: 'test/api/movies/create-movie.api.spec.ts',
+        description: 'API Tạo phim (Movies)',
+      },
+      {
+        key: 'update_movie',
+        prefix: 'UMV',
+        file: 'test/api/movies/update-movie.api.spec.ts',
+        description: 'API Cập nhật phim (Movies)',
+      },
+      {
+        key: 'delete_movie',
+        prefix: 'DMV',
+        file: 'test/api/movies/delete-movie.api.spec.ts',
+        description: 'API Xoá phim (Movies)',
+      },
+    ],
+  },
 };
 
 console.log('► CINEVORA DOMAIN API TEST RUNNER ◄');

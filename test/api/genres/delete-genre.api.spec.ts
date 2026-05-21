@@ -21,6 +21,7 @@ import {
   Movie,
   MovieStatus,
 } from '../../../src/modules/movies/entities/movie.entity';
+import { cleanupRefreshTokens } from '../../helpers/cleanup-refresh-token';
 
 describe('[API] DELETE /genres/:id', () => {
   let app: INestApplication;
@@ -156,6 +157,8 @@ describe('[API] DELETE /genres/:id', () => {
     if (createdGenreIds.length > 0) {
       await genreRepository.delete(createdGenreIds);
     }
+
+    await cleanupRefreshTokens(dataSource);
 
     await exportTestReport(results, PREFIX, 'Delete_Genre');
     await app.close();

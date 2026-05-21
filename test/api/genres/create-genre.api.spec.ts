@@ -16,6 +16,7 @@ import { AppModule } from '../../../src/app.module';
 import { GenreResponseDto } from '../../../src/modules/genres/dto/genre-response.dto';
 import { Genre } from '../../../src/modules/genres/entities/genre.entity';
 import { AuthResponseDto } from '../../../src/modules/auth/dto/auth-response.dto';
+import { cleanupRefreshTokens } from '../../helpers/cleanup-refresh-token';
 
 type GenreBody = {
   name?: string | null | boolean;
@@ -118,6 +119,8 @@ describe('[API] POST /genres', () => {
     if (createdGenreIds.length > 0) {
       await genreRepository.delete(createdGenreIds);
     }
+
+    await cleanupRefreshTokens(dataSource);
 
     await exportTestReport(results, PREFIX, 'Create_Genre');
     await app.close();

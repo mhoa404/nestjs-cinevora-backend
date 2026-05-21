@@ -51,6 +51,16 @@ const TEST_SUITES: Record<
     file: 'test/api/genres/delete-genre.api.spec.ts',
     description: 'API xoá thể loại phim (Genres)',
   },
+  get_movies: {
+    prefix: 'GMV',
+    file: 'test/api/movies/get-movies.api.spec.ts',
+    description: 'API Lấy danh sách phim (Movies)',
+  },
+  get_movie_detail: {
+    prefix: 'GMD',
+    file: 'test/api/movies/get-movie-detail.api.spec.ts',
+    description: 'API Lấy chi tiết phim (Movies)',
+  },
   create_movie: {
     prefix: 'CMV',
     file: 'test/api/movies/create-movie.api.spec.ts',
