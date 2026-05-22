@@ -12,6 +12,7 @@ import {
   parseApiData,
 } from '../../helpers/http-test.helper';
 import { Room } from '../../../src/modules/rooms/entities/room.entity';
+import { Seat } from '../../../src/modules/seats/entities/seat.entity';
 import { RoomResponseDto } from '../../../src/modules/rooms/dto/room-response.dto';
 import { AppModule } from '../../../src/app.module';
 import { AuthResponseDto } from '../../../src/modules/auth/dto/auth-response.dto';
@@ -26,7 +27,10 @@ describe('[API] GET /rooms/:id', () => {
   let customerToken = '';
 
   let validRoomId = 0;
+  let validRoomName = '';
+
   const createdRoomIds: number[] = [];
+  const createdSeatIds: number[] = [];
 
   const results: TestCaseRecord[] = [];
   const PREFIX = 'GRI';
@@ -91,81 +95,128 @@ describe('[API] GET /rooms/:id', () => {
       .send({ email: 'api_client@gmail.com', password: 'Api_client_123' });
     customerToken = parseApiData<AuthResponseDto>(customerLoginRes).accessToken;
 
-    // Seed 1 phòng để test lấy theo ID
     const roomRepository = dataSource.getRepository(Room);
+    const seatRepository = dataSource.getRepository(Seat);
+
+    const seed = String(Date.now()).slice(-8);
     const room = await roomRepository.save(
-      roomRepository.create({ name: '40' }),
+      roomRepository.create({ name: `GRI${seed}` }),
     );
+
     validRoomId = room.id;
+    validRoomName = room.name;
     createdRoomIds.push(room.id);
+
+    const seats = await seatRepository.save([
+      seatRepository.create({
+        roomId: room.id,
+        seatKey: 'A1',
+        rowLabel: 'A',
+        seatNumber: 1,
+      }),
+      seatRepository.create({
+        roomId: room.id,
+        seatKey: 'A2',
+        rowLabel: 'A',
+        seatNumber: 2,
+      }),
+    ]);
+
+    createdSeatIds.push(...seats.map((seat) => seat.id));
   });
 
   afterAll(async () => {
+    const seatRepository = dataSource.getRepository(Seat);
     const roomRepository = dataSource.getRepository(Room);
+
+    if (createdSeatIds.length > 0) {
+      await seatRepository.delete(createdSeatIds);
+    }
+
     if (createdRoomIds.length > 0) {
       await roomRepository.delete(createdRoomIds);
     }
+
     await exportTestReport(results, PREFIX, 'Get_Room_By_Id');
     await app.close();
   });
 
   describe('Phân quyền', () => {
-    it('Lấy phòng thất bại - Không truyền Authorization Token', async () => {
+    it('Lấy phòng thất bại - Không truyền Authorization Token trả về đúng message', async () => {
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Security: Missing Token',
+          testCase: 'Không gửi Header Authorization',
           description: 'Không gửi access token khi gọi API lấy phòng theo ID.',
-          procedure: 'Không có dữ liệu',
+          procedure: `GET /rooms/${validRoomId}`,
           expectedResult: 401,
-          preconditions: 'Không có token.',
+          preconditions: 'Không có',
         },
         async () => {
           const response = await request(server).get(`/rooms/${validRoomId}`);
+
           expect(response.status).toBe(401);
+
+          const error = parseApiError(response);
+          expectErrorMessage(error, 401, 'Unauthorized');
+
           return response;
         },
       );
     });
 
-    it('Lấy phòng thất bại - Truyền Fake Token', async () => {
+    it('Lấy phòng thất bại - Truyền Fake Token trả về đúng message', async () => {
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Security: Fake Token',
+          testCase: 'Gửi token giả',
           description: 'Gửi Bearer token không hợp lệ.',
-          procedure: 'Không có dữ liệu',
+          procedure: `GET /rooms/${validRoomId} với Authorization: Bearer fake.jwt.token`,
           expectedResult: 401,
-          preconditions: 'Token giả.',
+          preconditions: 'Không có',
         },
         async () => {
           const response = await request(server)
             .get(`/rooms/${validRoomId}`)
             .set('Authorization', 'Bearer fake.jwt.token');
+
           expect(response.status).toBe(401);
+
+          const error = parseApiError(response);
+          expectErrorMessage(error, 401, 'Unauthorized');
+
           return response;
         },
       );
     });
 
-    it('Lấy phòng thất bại - Role Customer bị chặn', async () => {
+    it('Lấy phòng thất bại - Role Customer bị chặn trả về đúng message', async () => {
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Security: Customer Forbidden',
+          testCase: 'Gửi token Customer',
           description: 'Tài khoản Customer cố lấy thông tin phòng chiếu.',
-          procedure: 'Không có dữ liệu',
+          procedure: `GET /rooms/${validRoomId}`,
           expectedResult: 403,
-          preconditions: 'Dùng token Customer.',
+          preconditions: 'Token Customer hợp lệ',
         },
         async () => {
           const response = await request(server)
             .get(`/rooms/${validRoomId}`)
             .set('Authorization', `Bearer ${customerToken}`);
+
           expect(response.status).toBe(403);
+
+          const error = parseApiError(response);
+          expectErrorMessage(
+            error,
+            403,
+            'Bạn không có quyền thực hiện hành động này.',
+          );
+
           return response;
         },
       );
@@ -173,23 +224,32 @@ describe('[API] GET /rooms/:id', () => {
   });
 
   describe('Validation & Business Logic', () => {
-    it('Lấy phòng thất bại - ID không phải số nguyên (ParseIntPipe fails)', async () => {
+    it('Lấy phòng thất bại - ID không phải số nguyên trả về đúng message', async () => {
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Validation: Invalid ID Format',
+          testCase: 'Gửi sai định dạng ID',
           description:
-            'Truyền ID là chuỗi chữ cái, ParseIntPipe không thể parse.',
-          procedure: 'Không có dữ liệu',
+            'Truyền ID là chuỗi chữ cái, ParseIntPipe không thể parse sang number.',
+          procedure: 'GET /rooms/abc',
           expectedResult: 400,
-          preconditions: 'Dùng token Admin.',
+          preconditions: 'Token Admin hợp lệ',
         },
         async () => {
           const response = await request(server)
             .get('/rooms/abc')
             .set('Authorization', `Bearer ${adminToken}`);
+
           expect(response.status).toBe(400);
+
+          const error = parseApiError(response);
+          expectErrorMessage(
+            error,
+            400,
+            'Validation failed (numeric string is expected)',
+          );
+
           return response;
         },
       );
@@ -200,19 +260,22 @@ describe('[API] GET /rooms/:id', () => {
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Business: Room Not Found',
+          testCase: 'Gửi ID không tồn tại',
           description: 'Lấy thông tin phòng với ID không tồn tại.',
-          procedure: 'Không có dữ liệu',
+          procedure: 'GET /rooms/999999',
           expectedResult: 404,
-          preconditions: 'Dùng token Admin.',
+          preconditions: 'Token Admin hợp lệ và room ID không tồn tại',
         },
         async () => {
           const response = await request(server)
             .get('/rooms/999999')
             .set('Authorization', `Bearer ${adminToken}`);
+
           expect(response.status).toBe(404);
+
           const error = parseApiError(response);
           expectErrorMessage(error, 404, 'Phòng #999999 không tồn tại.');
+
           return response;
         },
       );
@@ -220,16 +283,17 @@ describe('[API] GET /rooms/:id', () => {
   });
 
   describe('Luồng thành công', () => {
-    it('Lấy phòng thành công - Trả về 200 và dữ liệu phòng đúng', async () => {
+    it('Lấy phòng thành công - Kiểm tra response shape của RoomResponseDto', async () => {
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Happy Path: Get Room By Valid ID',
-          description: 'Lấy thông tin một phòng chiếu bằng ID hợp lệ.',
-          procedure: 'Không có dữ liệu',
+          testCase: 'Kiểm tra response shape',
+          description:
+            'Lấy thông tin một phòng chiếu bằng ID hợp lệ và kiểm tra response đúng RoomResponseDto.',
+          procedure: `GET /rooms/${validRoomId}`,
           expectedResult: 200,
-          preconditions: `Phòng ID ${validRoomId} đã được seed sẵn.`,
+          preconditions: `Token Admin hợp lệ`,
         },
         async () => {
           const response = await request(server)
@@ -239,10 +303,50 @@ describe('[API] GET /rooms/:id', () => {
           expect(response.status).toBe(200);
 
           const data = parseApiData<RoomResponseDto>(response);
+
           expect(data.id).toBe(validRoomId);
-          expect(data.name).toBe('40');
-          expect(data.createdAt).toBeDefined();
-          expect(data.updatedAt).toBeDefined();
+          expect(data.name).toBe(validRoomName);
+          expect(typeof data.totalSeats).toBe('number');
+          expect(typeof data.createdAt).toBe('string');
+          expect(typeof data.updatedAt).toBe('string');
+
+          expect(Object.keys(data).sort()).toEqual([
+            'createdAt',
+            'id',
+            'name',
+            'totalSeats',
+            'updatedAt',
+          ]);
+
+          return response;
+        },
+      );
+    });
+
+    it('Lấy phòng thành công - Trả về đúng totalSeats theo số ghế của phòng', async () => {
+      await record(
+        {
+          id: nextId(),
+          scope: 'All',
+          testCase: 'Kiểm tra phòng với tổng ghế',
+          description:
+            'Lấy thông tin một phòng chiếu bằng ID hợp lệ, totalSeats phản ánh đúng số ghế thuộc phòng.',
+          procedure: `GET /rooms/${validRoomId}`,
+          expectedResult: 200,
+          preconditions: `Token Admin hợp lệ và phòng đã có ghế`,
+        },
+        async () => {
+          const response = await request(server)
+            .get(`/rooms/${validRoomId}`)
+            .set('Authorization', `Bearer ${adminToken}`);
+
+          expect(response.status).toBe(200);
+
+          const data = parseApiData<RoomResponseDto>(response);
+
+          expect(data.id).toBe(validRoomId);
+          expect(data.name).toBe(validRoomName);
+          expect(data.totalSeats).toBe(2);
 
           return response;
         },

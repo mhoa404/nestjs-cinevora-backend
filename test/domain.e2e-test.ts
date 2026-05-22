@@ -119,6 +119,41 @@ const TEST_DOMAINS: Record<string, TestDomain> = {
       },
     ],
   },
+  rooms: {
+    description: 'Toàn bộ API Rooms',
+    suites: [
+      {
+        key: 'get_rooms',
+        prefix: 'GRM',
+        file: 'test/api/rooms/get-rooms.api.spec.ts',
+        description: 'API Lấy danh sách phòng chiếu (Rooms)',
+      },
+      {
+        key: 'get_room_by_id',
+        prefix: 'GRI',
+        file: 'test/api/rooms/get-room-by-id.api.spec.ts',
+        description: 'API Lấy thông tin phòng theo ID (Rooms)',
+      },
+      {
+        key: 'create_room',
+        prefix: 'CRM',
+        file: 'test/api/rooms/create-room.api.spec.ts',
+        description: 'API Tạo phòng chiếu (Rooms)',
+      },
+      {
+        key: 'update_room',
+        prefix: 'URM',
+        file: 'test/api/rooms/update-room.api.spec.ts',
+        description: 'API Cập nhật phòng chiếu (Rooms)',
+      },
+      {
+        key: 'delete_room',
+        prefix: 'DRM',
+        file: 'test/api/rooms/delete-room.api.spec.ts',
+        description: 'API Xoá phòng chiếu (Rooms)',
+      },
+    ],
+  },
 };
 
 console.log('► CINEVORA DOMAIN API TEST RUNNER ◄');

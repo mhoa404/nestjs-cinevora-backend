@@ -21,6 +21,7 @@ import {
 import { AppModule } from '../../../src/app.module';
 import { AuthResponseDto } from '../../../src/modules/auth/dto/auth-response.dto';
 import { exportTestReport, TestCaseRecord } from '../../helpers/excel-reporter';
+import { cleanupRefreshTokens } from '../../helpers/cleanup-refresh-token';
 
 describe('[API] DELETE /rooms/:id', () => {
   let app: INestApplication;
@@ -30,13 +31,13 @@ describe('[API] DELETE /rooms/:id', () => {
   let adminToken = '';
   let customerToken = '';
 
-  // Phòng sạch (không có showtime) => có thể xoá
   let cleanRoomId = 0;
-  // Phòng đang có showtime => không thể xoá
   let linkedRoomId = 0;
 
   let seededMovieId = 0;
   let seededShowtimeId = 0;
+
+  const createdRoomIds: number[] = [];
 
   const results: TestCaseRecord[] = [];
   const PREFIX = 'DRM';
@@ -66,6 +67,24 @@ describe('[API] DELETE /rooms/:id', () => {
     } finally {
       results.push({ ...meta, actualResult, passed, testDate });
     }
+  };
+
+  const allocateRoomNames = async (): Promise<string[]> => {
+    const roomRepository = dataSource.getRepository(Room);
+    const existingRooms = await roomRepository.find({ select: ['name'] });
+    const existingNames = new Set(existingRooms.map((room) => room.name));
+
+    const availableNames = Array.from({ length: 100 }, (_, index) =>
+      String(index).padStart(2, '0'),
+    ).filter((name) => !existingNames.has(name));
+
+    if (availableNames.length < 2) {
+      throw new Error(
+        'Không đủ room name dạng 2 chữ số để chạy delete-room e2e.',
+      );
+    }
+
+    return availableNames.slice(0, 2);
   };
 
   beforeAll(async () => {
@@ -104,21 +123,23 @@ describe('[API] DELETE /rooms/:id', () => {
     const roomRepository = dataSource.getRepository(Room);
     const movieRepository = dataSource.getRepository(Movie);
     const showtimeRepository = dataSource.getRepository(Showtime);
-    const unique = Date.now();
 
-    // Seed phòng sạch
+    const [cleanRoomName, linkedRoomName] = await allocateRoomNames();
+
     const cleanRoom = await roomRepository.save(
-      roomRepository.create({ name: '50' }),
+      roomRepository.create({ name: cleanRoomName }),
     );
     cleanRoomId = cleanRoom.id;
+    createdRoomIds.push(cleanRoom.id);
 
-    // Seed phòng có showtime (để test 409)
     const linkedRoom = await roomRepository.save(
-      roomRepository.create({ name: '51' }),
+      roomRepository.create({ name: linkedRoomName }),
     );
     linkedRoomId = linkedRoom.id;
+    createdRoomIds.push(linkedRoom.id);
 
-    // Seed một movie tối giản để làm FK cho showtime
+    const unique = Date.now();
+
     const movie = await movieRepository.save(
       movieRepository.create({
         title: `Delete Room Test Movie ${unique}`,
@@ -132,15 +153,15 @@ describe('[API] DELETE /rooms/:id', () => {
     );
     seededMovieId = movie.id;
 
-    // Seed showtime liên kết với linkedRoom
-    const now = new Date();
-    const later = new Date(now.getTime() + 2 * 60 * 60 * 1000); // +2 giờ
+    const startTime = new Date(Date.now() + 60 * 60 * 1000);
+    const endTime = new Date(startTime.getTime() + 2 * 60 * 60 * 1000);
+
     const showtime = await showtimeRepository.save(
       showtimeRepository.create({
-        movieId: String(movie.id),
+        movieId: movie.id,
         roomId: linkedRoom.id,
-        startTime: now,
-        endTime: later,
+        startTime,
+        endTime,
         priceStandard: 90000,
         priceVip: 120000,
         priceCouple: null,
@@ -150,7 +171,6 @@ describe('[API] DELETE /rooms/:id', () => {
   });
 
   afterAll(async () => {
-    // Teardown: xoá showtime -> movie -> rooms (thứ tự đúng để tránh FK constraint)
     const showtimeRepository = dataSource.getRepository(Showtime);
     const movieRepository = dataSource.getRepository(Movie);
     const roomRepository = dataSource.getRepository(Room);
@@ -158,135 +178,189 @@ describe('[API] DELETE /rooms/:id', () => {
     if (seededShowtimeId) {
       await showtimeRepository.delete(seededShowtimeId);
     }
+
     if (seededMovieId) {
       await movieRepository.delete(seededMovieId);
     }
-    // linkedRoom vẫn còn sau test (không bị xoá thành công), cleanRoom đã bị xoá bởi happy path
-    // Nếu cleanRoom chưa bị xoá (test fail), dọn nốt
-    const remaining = await roomRepository.findOne({
-      where: { id: cleanRoomId },
-    });
-    if (remaining) {
-      await roomRepository.delete(cleanRoomId);
+
+    if (createdRoomIds.length > 0) {
+      await roomRepository.delete(createdRoomIds);
     }
-    await roomRepository.delete(linkedRoomId);
+
+    await cleanupRefreshTokens(dataSource);
 
     await exportTestReport(results, PREFIX, 'Delete_Room');
     await app.close();
   });
 
   describe('Phân quyền', () => {
-    it('Xoá thất bại - Không truyền Authorization Token', async () => {
+    it('Xoá thất bại - Không truyền Authorization Token trả về đúng message', async () => {
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Security: Missing Token',
+          testCase: 'Không truyền token',
           description: 'Không gửi access token khi gọi API xoá phòng.',
-          procedure: 'Không có dữ liệu',
+          procedure: `DELETE /rooms/${cleanRoomId}`,
           expectedResult: 401,
-          preconditions: 'Không có token.',
+          preconditions: 'Không có token',
         },
         async () => {
           const response = await request(server).delete(
             `/rooms/${cleanRoomId}`,
           );
+
           expect(response.status).toBe(401);
+
+          const error = parseApiError(response);
+          expectErrorMessage(error, 401, 'Unauthorized');
+
           return response;
         },
       );
     });
 
-    it('Xoá thất bại - Truyền Fake Token', async () => {
+    it('Xoá thất bại - Truyền Fake Token trả về đúng message', async () => {
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Security: Fake Token',
+          testCase: 'Token không hợp lệ',
           description: 'Gửi Bearer token không hợp lệ.',
-          procedure: 'Không có dữ liệu',
+          procedure: `DELETE /rooms/${cleanRoomId}`,
           expectedResult: 401,
-          preconditions: 'Token giả.',
+          preconditions: 'Token giả',
         },
         async () => {
           const response = await request(server)
             .delete(`/rooms/${cleanRoomId}`)
             .set('Authorization', 'Bearer fake.jwt.token');
+
           expect(response.status).toBe(401);
+
+          const error = parseApiError(response);
+          expectErrorMessage(error, 401, 'Unauthorized');
+
           return response;
         },
       );
     });
 
-    it('Xoá thất bại - Role Customer bị chặn', async () => {
+    it('Xoá thất bại - Role Customer bị chặn trả về đúng message', async () => {
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Security: Customer Forbidden',
+          testCase: 'Customer không có quyền',
           description: 'Tài khoản Customer cố xoá phòng chiếu.',
-          procedure: 'Không có dữ liệu',
+          procedure: `DELETE /rooms/${cleanRoomId}`,
           expectedResult: 403,
-          preconditions: 'Dùng token Customer.',
+          preconditions: 'Token Customer',
         },
         async () => {
           const response = await request(server)
             .delete(`/rooms/${cleanRoomId}`)
             .set('Authorization', `Bearer ${customerToken}`);
+
           expect(response.status).toBe(403);
+
+          const error = parseApiError(response);
+          expectErrorMessage(
+            error,
+            403,
+            'Bạn không có quyền thực hiện hành động này.',
+          );
+
           return response;
         },
       );
     });
   });
 
-  describe('Business Logic', () => {
-    it('Xoá thất bại - Room ID không tồn tại', async () => {
+  describe('Validation & Business Logic', () => {
+    it('Xoá thất bại - ID không phải số nguyên trả về đúng message', async () => {
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Business: Room Not Found',
-          description: 'Xoá phòng với ID không tồn tại trong DB.',
-          procedure: 'Không có dữ liệu',
-          expectedResult: 404,
-          preconditions: 'Dùng token Admin.',
+          testCase: 'ID sai định dạng',
+          description:
+            'Truyền id là chuỗi chữ cái, ParseIntPipe không thể parse sang number.',
+          procedure: 'DELETE /rooms/abc',
+          expectedResult: 400,
+          preconditions: 'Token Admin',
         },
         async () => {
           const response = await request(server)
-            .delete('/rooms/999999')
+            .delete('/rooms/abc')
             .set('Authorization', `Bearer ${adminToken}`);
-          expect(response.status).toBe(404);
+
+          expect(response.status).toBe(400);
+
           const error = parseApiError(response);
-          expectErrorMessage(error, 404, 'Phòng #999999 không tồn tại.');
+          expectErrorMessage(
+            error,
+            400,
+            'Validation failed (numeric string is expected)',
+          );
+
           return response;
         },
       );
     });
 
-    it('Xoá thất bại - Phòng đang có suất chiếu liên kết (409 Conflict)', async () => {
+    it('Xoá thất bại - Room ID không tồn tại', async () => {
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Business: Room Has Active Showtimes',
+          testCase: 'Phòng không tồn tại',
+          description: 'Xoá phòng với ID không tồn tại trong DB.',
+          procedure: 'DELETE /rooms/999999',
+          expectedResult: 404,
+          preconditions: 'Token Admin',
+        },
+        async () => {
+          const response = await request(server)
+            .delete('/rooms/999999')
+            .set('Authorization', `Bearer ${adminToken}`);
+
+          expect(response.status).toBe(404);
+
+          const error = parseApiError(response);
+          expectErrorMessage(error, 404, 'Phòng #999999 không tồn tại.');
+
+          return response;
+        },
+      );
+    });
+
+    it('Xoá thất bại - Phòng đang có suất chiếu', async () => {
+      await record(
+        {
+          id: nextId(),
+          scope: 'All',
+          testCase: 'Phòng đang có suất chiếu',
           description:
             'Cố xoá phòng đang có suất chiếu, hệ thống phải trả về 409 Conflict.',
-          procedure: 'Không có dữ liệu',
+          procedure: `DELETE /rooms/${linkedRoomId}`,
           expectedResult: 409,
-          preconditions: `Phòng ID ${linkedRoomId} đã được gán showtime ID ${seededShowtimeId}.`,
+          preconditions: 'Token Admin, phòng có suất chiếu',
         },
         async () => {
           const response = await request(server)
             .delete(`/rooms/${linkedRoomId}`)
             .set('Authorization', `Bearer ${adminToken}`);
+
           expect(response.status).toBe(409);
+
           const error = parseApiError(response);
           expectErrorMessage(
             error,
             409,
             'Không thể xoá phòng đang có suất chiếu',
           );
+
           return response;
         },
       );
@@ -294,45 +368,33 @@ describe('[API] DELETE /rooms/:id', () => {
   });
 
   describe('Luồng thành công', () => {
-    it('Xoá thành công - Phòng sạch bị xoá, trả về 204 No Content', async () => {
+    it('Xoá thành công - Phòng không có suất chiếu', async () => {
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Happy Path: Delete Clean Room',
+          testCase: 'Xoá phòng hợp lệ',
           description:
             'Xoá thành công một phòng không có suất chiếu nào liên kết.',
-          procedure: 'Không có dữ liệu',
+          procedure: `DELETE /rooms/${cleanRoomId}`,
           expectedResult: 204,
-          preconditions: `Phòng "50" (ID: ${cleanRoomId}) không có showtime.`,
+          preconditions: 'Token Admin, phòng không có suất chiếu',
         },
         async () => {
           const response = await request(server)
             .delete(`/rooms/${cleanRoomId}`)
             .set('Authorization', `Bearer ${adminToken}`);
-          expect(response.status).toBe(204);
-          return response;
-        },
-      );
-    });
 
-    it('Xác nhận sau xoá - Phòng không còn tồn tại trong DB (404)', async () => {
-      await record(
-        {
-          id: nextId(),
-          scope: 'All',
-          testCase: 'Happy Path: Verify Deletion',
-          description:
-            'Gọi lại GET /rooms/:id sau khi xoá, hệ thống trả về 404.',
-          procedure: 'Không có dữ liệu',
-          expectedResult: 404,
-          preconditions: `Phòng ID ${cleanRoomId} đã bị xoá ở test case trước.`,
-        },
-        async () => {
-          const response = await request(server)
-            .get(`/rooms/${cleanRoomId}`)
-            .set('Authorization', `Bearer ${adminToken}`);
-          expect(response.status).toBe(404);
+          expect(response.status).toBe(204);
+          expect(response.text).toBe('');
+
+          const roomRepository = dataSource.getRepository(Room);
+          const deletedRoom = await roomRepository.findOne({
+            where: { id: cleanRoomId },
+          });
+
+          expect(deletedRoom).toBeNull();
+
           return response;
         },
       );
