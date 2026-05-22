@@ -189,6 +189,35 @@ const TEST_DOMAINS: Record<string, TestDomain> = {
       },
     ],
   },
+  seats: {
+    description: 'Toàn bộ API Seats',
+    suites: [
+      {
+        key: 'get_seats',
+        prefix: 'GSE',
+        file: 'test/api/seats/get-seats.api.spec.ts',
+        description: 'API Lấy danh sách ghế (Seats)',
+      },
+      {
+        key: 'create_seats',
+        prefix: 'CSE',
+        file: 'test/api/seats/create-seats.api.spec.ts',
+        description: 'API Tạo ghế (Seats)',
+      },
+      {
+        key: 'generate_seats',
+        prefix: 'GNS',
+        file: 'test/api/seats/generate-seats.api.spec.ts',
+        description: 'API Generate ghế (Seats)',
+      },
+      {
+        key: 'delete_seat',
+        prefix: 'DSE',
+        file: 'test/api/seats/delete-seat.api.spec.ts',
+        description: 'API Xoá ghế (Seats)',
+      },
+    ],
+  },
 };
 
 console.log('► CINEVORA DOMAIN API TEST RUNNER ◄');

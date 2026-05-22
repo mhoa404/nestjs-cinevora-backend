@@ -126,6 +126,26 @@ const TEST_SUITES: Record<
     file: 'test/api/showtimes/get-showtime-by-id.api.spec.ts',
     description: 'API Lấy suất chiếu theo ID (Showtimes)',
   },
+  get_seats: {
+    prefix: 'GSE',
+    file: 'test/api/seats/get-seats.api.spec.ts',
+    description: 'API Lấy danh sách ghế (Seats)',
+  },
+  create_seats: {
+    prefix: 'CSE',
+    file: 'test/api/seats/create-seats.api.spec.ts',
+    description: 'API Tạo ghế (Seats)',
+  },
+  generate_seats: {
+    prefix: 'GNS',
+    file: 'test/api/seats/generate-seats.api.spec.ts',
+    description: 'API Generate ghế (Seats)',
+  },
+  delete_seat: {
+    prefix: 'DSE',
+    file: 'test/api/seats/delete-seat.api.spec.ts',
+    description: 'API Xoá ghế (Seats)',
+  },
 };
 
 console.log('\n╔════════════════════════════════════════════════╗');

@@ -2,6 +2,7 @@ import { Type } from 'class-transformer';
 import {
   ArrayNotEmpty,
   IsArray,
+  IsDefined,
   IsEnum,
   IsInt,
   IsNotEmpty,
@@ -36,9 +37,10 @@ export class CreateSeatsDto {
   @Min(1, { message: 'roomId phải lớn hơn hoặc bằng 1' })
   roomId!: number;
 
-  @ArrayNotEmpty({ message: 'seats không được rỗng' })
   @IsArray({ message: 'seats phải là mảng' })
+  @ArrayNotEmpty({ message: 'seats không được rỗng' })
   @ValidateNested({ each: true })
   @Type(() => CreateSeatItemDto)
+  @IsDefined({ message: 'seats không được rỗng' })
   seats!: CreateSeatItemDto[];
 }
