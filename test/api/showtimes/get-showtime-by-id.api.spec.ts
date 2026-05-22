@@ -18,7 +18,10 @@ import {
   AgeRating,
 } from '../../../src/modules/movies/entities/movie.entity';
 import { Room } from '../../../src/modules/rooms/entities/room.entity';
-import { Showtime } from '../../../src/modules/showtimes/entities/showtime.entity';
+import {
+  Showtime,
+  ShowtimeStatus,
+} from '../../../src/modules/showtimes/entities/showtime.entity';
 import { ShowtimeResponseDto } from '../../../src/modules/showtimes/dto/showtime-response.dto';
 
 describe('[API] GET /showtimes/:id', () => {
@@ -34,10 +37,13 @@ describe('[API] GET /showtimes/:id', () => {
   const PREFIX = 'GSD';
   let counter = 0;
 
-  const nextId = () => `${PREFIX}${String(++counter).padStart(2, '0')}`;
+  const nextId = (): string => {
+    counter += 1;
+    return PREFIX + String(counter).padStart(2, '0');
+  };
 
   const stringifyProcedure = (payload: unknown): string =>
-    JSON.stringify(payload, null, 2);
+    typeof payload === 'string' ? payload : JSON.stringify(payload, null, 2);
 
   const getActualResult = (response?: Response): number =>
     response?.status ?? 0;
@@ -102,10 +108,12 @@ describe('[API] GET /showtimes/:id', () => {
     const movieRepo = dataSource.getRepository(Movie);
     const roomRepo = dataSource.getRepository(Room);
     const showtimeRepo = dataSource.getRepository(Showtime);
+    const seed = String(Date.now()).slice(-6);
 
     movie = await movieRepo.save(
       movieRepo.create({
-        title: 'GSD Movie',
+        title: 'GSD ' + seed,
+        slug: 'gsd-' + seed,
         posterUrl: 'https://example.com/p.jpg',
         duration: 105,
         ageRating: AgeRating.P,
@@ -115,7 +123,11 @@ describe('[API] GET /showtimes/:id', () => {
       }),
     );
 
-    room = await roomRepo.save(roomRepo.create({ name: 'H1' }));
+    room = await roomRepo.save(
+      roomRepo.create({
+        name: 'R' + seed,
+      }),
+    );
 
     const startTime = new Date(Date.now() + 48 * 60 * 60 * 1000);
     startTime.setMilliseconds(0);
@@ -128,6 +140,7 @@ describe('[API] GET /showtimes/:id', () => {
         roomId: room.id,
         startTime,
         endTime,
+        status: ShowtimeStatus.OPEN,
         priceStandard: 75000,
         priceVip: 110000,
         priceCouple: 190000,
@@ -152,83 +165,135 @@ describe('[API] GET /showtimes/:id', () => {
     await app.close();
   });
 
-  describe('Kiểm tra dữ liệu đầu vào', () => {
-    it('Lấy showtime thất bại – Id không phải số nguyên', async () => {
-      const procedure = {
-        params: {
-          id: 'abc',
-        },
-      };
-
+  describe('Phân quyền', () => {
+    it('Lấy chi tiết thành công - Không cần Access Token', async () => {
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Lấy showtime thất bại do id không hợp lệ',
-          description:
-            'Lấy chi tiết showtime với id trên URL không phải là số nguyên.',
-          procedure: stringifyProcedure(procedure),
+          testCase: 'Không gửi Header',
+          description: 'Gọi API public mà không gửi Authorization header.',
+          procedure: stringifyProcedure({
+            params: {
+              id: targetShowtime.id,
+            },
+          }),
+          expectedResult: 200,
+          preconditions: 'Có showtime',
+        },
+        () => request(server).get(`/showtimes/${targetShowtime.id}`),
+        (response) => {
+          expect(response.status).toBe(200);
+
+          const data = parseApiData<ShowtimeResponseDto>(response);
+          expect(data.id).toBe(targetShowtime.id);
+        },
+      );
+    });
+
+    it('Lấy chi tiết thành công - Gửi token giả', async () => {
+      await record(
+        {
+          id: nextId(),
+          scope: 'All',
+          testCase: 'Gửi token giả',
+          description: 'Gọi API public với Bearer token không hợp lệ.',
+          procedure: stringifyProcedure({
+            params: {
+              id: targetShowtime.id,
+            },
+            token: 'Không hợp lệ',
+          }),
+          expectedResult: 200,
+          preconditions: 'Có showtime',
+        },
+        () =>
+          request(server)
+            .get(`/showtimes/${targetShowtime.id}`)
+            .set('Authorization', 'Bearer fake.jwt.token'),
+        (response) => {
+          expect(response.status).toBe(200);
+
+          const data = parseApiData<ShowtimeResponseDto>(response);
+          expect(data.id).toBe(targetShowtime.id);
+        },
+      );
+    });
+  });
+
+  describe('Kiểm tra dữ liệu đầu vào', () => {
+    it('Lấy chi tiết thất bại - ID không phải số nguyên', async () => {
+      await record(
+        {
+          id: nextId(),
+          scope: 'All',
+          testCase: 'Sai định dạng ID',
+          description: 'Gửi ID không thể parse sang số nguyên.',
+          procedure: stringifyProcedure({
+            params: {
+              id: 'abc',
+            },
+          }),
           expectedResult: 400,
-          preconditions: 'Showtime cần lấy chi tiết đã tồn tại trong hệ thống.',
+          preconditions: 'Không có',
         },
         () => request(server).get('/showtimes/abc'),
         (response) => {
           expect(response.status).toBe(400);
-          parseApiError(response);
+
+          const error = parseApiError(response);
+          expectErrorMessage(
+            error,
+            400,
+            'Validation failed (numeric string is expected)',
+          );
         },
       );
     });
   });
 
   describe('Ràng buộc nghiệp vụ', () => {
-    it('Lấy showtime thất bại – Showtime không tồn tại', async () => {
-      const procedure = {
-        params: {
-          id: 999999,
-        },
-      };
-
+    it('Lấy chi tiết thất bại - Showtime không tồn tại', async () => {
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Lấy showtime thất bại do showtime không tồn tại',
-          description:
-            'Lấy chi tiết showtime với id không tồn tại trong hệ thống.',
-          procedure: stringifyProcedure(procedure),
+          testCase: 'Gửi ID không tồn tại',
+          description: 'Gửi ID không tồn tại trong hệ thống.',
+          procedure: stringifyProcedure({
+            params: {
+              id: 999999,
+            },
+          }),
           expectedResult: 404,
-          preconditions:
-            'Không có showtime nào trong hệ thống sử dụng id được gửi lên.',
+          preconditions: 'Không có showtime',
         },
         () => request(server).get('/showtimes/999999'),
         (response) => {
           expect(response.status).toBe(404);
 
           const error = parseApiError(response);
-          expectErrorMessage(error, 404, 'không tồn tại');
+          expectErrorMessage(error, 404, 'Suất chiếu #999999 không tồn tại.');
         },
       );
     });
   });
 
   describe('Luồng thành công', () => {
-    it('Lấy showtime thành công – Không cần token', async () => {
-      const procedure = {
-        params: {
-          id: targetShowtime.id,
-        },
-      };
-
+    it('Lấy chi tiết thành công - Đúng dữ liệu', async () => {
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Lấy showtime thành công khi không cần token',
-          description:
-            'Lấy chi tiết showtime theo id hợp lệ mà không cần đăng nhập.',
-          procedure: stringifyProcedure(procedure),
+          testCase: 'Đúng dữ liệu',
+          description: 'Gửi ID hợp lệ và kiểm tra dữ liệu trả về.',
+          procedure: stringifyProcedure({
+            params: {
+              id: targetShowtime.id,
+            },
+          }),
           expectedResult: 200,
-          preconditions: 'Showtime cần lấy chi tiết đã tồn tại trong hệ thống.',
+          preconditions: 'Có showtime',
         },
         () => request(server).get(`/showtimes/${targetShowtime.id}`),
         (response) => {
@@ -241,13 +306,71 @@ describe('[API] GET /showtimes/:id', () => {
           expect(data.movieTitle).toBe(movie.title);
           expect(data.roomId).toBe(room.id);
           expect(data.roomName).toBe(room.name);
+          expect(data.status).toBe(ShowtimeStatus.OPEN);
           expect(data.priceStandard).toBe(75000);
           expect(data.priceVip).toBe(110000);
           expect(data.priceCouple).toBe(190000);
-          expect(data.startTime).toBeDefined();
-          expect(data.endTime).toBeDefined();
+          expect(data.startTime).toBe(targetShowtime.startTime.toISOString());
+          expect(data.endTime).toBe(targetShowtime.endTime.toISOString());
           expect(data.createdAt).toBeDefined();
           expect(data.updatedAt).toBeDefined();
+        },
+      );
+    });
+
+    it('Lấy chi tiết thành công - Kiểm tra response shape', async () => {
+      await record(
+        {
+          id: nextId(),
+          scope: 'All',
+          testCase: 'Kiểm tra response shape',
+          description:
+            'Kiểm tra response chỉ gồm các field của ShowtimeResponseDto.',
+          procedure: stringifyProcedure({
+            params: {
+              id: targetShowtime.id,
+            },
+          }),
+          expectedResult: 200,
+          preconditions: 'Có showtime',
+        },
+        () => request(server).get(`/showtimes/${targetShowtime.id}`),
+        (response) => {
+          expect(response.status).toBe(200);
+
+          const data = parseApiData<ShowtimeResponseDto>(response);
+
+          expect(typeof data.id).toBe('number');
+          expect(typeof data.movieId).toBe('number');
+          expect(typeof data.movieTitle).toBe('string');
+          expect(typeof data.roomId).toBe('number');
+          expect(typeof data.roomName).toBe('string');
+          expect(typeof data.startTime).toBe('string');
+          expect(typeof data.endTime).toBe('string');
+          expect(typeof data.status).toBe('string');
+          expect(typeof data.priceStandard).toBe('number');
+          expect(typeof data.priceVip).toBe('number');
+          expect(
+            typeof data.priceCouple === 'number' || data.priceCouple === null,
+          ).toBe(true);
+          expect(typeof data.createdAt).toBe('string');
+          expect(typeof data.updatedAt).toBe('string');
+
+          expect(Object.keys(data).sort()).toEqual([
+            'createdAt',
+            'endTime',
+            'id',
+            'movieId',
+            'movieTitle',
+            'priceCouple',
+            'priceStandard',
+            'priceVip',
+            'roomId',
+            'roomName',
+            'startTime',
+            'status',
+            'updatedAt',
+          ]);
         },
       );
     });

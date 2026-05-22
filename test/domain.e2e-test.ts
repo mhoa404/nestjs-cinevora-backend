@@ -154,6 +154,41 @@ const TEST_DOMAINS: Record<string, TestDomain> = {
       },
     ],
   },
+  showtimes: {
+    description: 'Toàn bộ API Showtimes',
+    suites: [
+      {
+        key: 'get_showtimes',
+        prefix: 'GST',
+        file: 'test/api/showtimes/get-showtimes.api.spec.ts',
+        description: 'API Lấy danh sách suất chiếu (Showtimes)',
+      },
+      {
+        key: 'get_showtime_by_id',
+        prefix: 'GSD',
+        file: 'test/api/showtimes/get-showtime-by-id.api.spec.ts',
+        description: 'API Lấy thông tin suất chiếu theo ID (Showtimes)',
+      },
+      {
+        key: 'create_showtime',
+        prefix: 'CST',
+        file: 'test/api/showtimes/create-showtime.api.spec.ts',
+        description: 'API Tạo suất chiếu (Showtimes)',
+      },
+      {
+        key: 'update_showtime',
+        prefix: 'UST',
+        file: 'test/api/showtimes/update-showtime.api.spec.ts',
+        description: 'API Cập nhật suất chiếu (Showtimes)',
+      },
+      {
+        key: 'delete_showtime',
+        prefix: 'DST',
+        file: 'test/api/showtimes/delete-showtime.api.spec.ts',
+        description: 'API Xoá suất chiếu (Showtimes)',
+      },
+    ],
+  },
 };
 
 console.log('► CINEVORA DOMAIN API TEST RUNNER ◄');

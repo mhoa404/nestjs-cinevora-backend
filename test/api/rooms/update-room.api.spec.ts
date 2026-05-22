@@ -204,7 +204,7 @@ describe('[API] PATCH /rooms/:id', () => {
           description: 'Không gửi access token khi gọi API cập nhật phòng.',
           procedure: stringifyProcedure(body),
           expectedResult: 401,
-          preconditions: 'Không có token',
+          preconditions: 'Không có',
         },
         async () => {
           const response = await request(server)
@@ -232,7 +232,7 @@ describe('[API] PATCH /rooms/:id', () => {
           description: 'Gửi Bearer token không hợp lệ.',
           procedure: stringifyProcedure(body),
           expectedResult: 401,
-          preconditions: 'Token giả',
+          preconditions: 'Không có',
         },
         async () => {
           const response = await request(server)
@@ -261,7 +261,7 @@ describe('[API] PATCH /rooms/:id', () => {
           description: 'Tài khoản Customer cố cập nhật phòng chiếu.',
           procedure: stringifyProcedure(body),
           expectedResult: 403,
-          preconditions: 'Token Customer',
+          preconditions: 'Token Customer hợp lệ',
         },
         async () => {
           const response = await request(server)
@@ -297,7 +297,7 @@ describe('[API] PATCH /rooms/:id', () => {
             'Truyền id là chuỗi chữ cái, ParseIntPipe không thể parse sang number.',
           procedure: stringifyProcedure(body),
           expectedResult: 400,
-          preconditions: 'Token Admin',
+          preconditions: 'Token Admin hợp lệ',
         },
         async () => {
           const response = await request(server)
@@ -330,7 +330,7 @@ describe('[API] PATCH /rooms/:id', () => {
           description: 'Gửi body rỗng, không có dữ liệu để cập nhật.',
           procedure: stringifyProcedure(body),
           expectedResult: 400,
-          preconditions: 'Token Admin',
+          preconditions: 'Token Admin hợp lệ',
         },
         async () => {
           const response = await request(server)
@@ -359,7 +359,7 @@ describe('[API] PATCH /rooms/:id', () => {
           description: 'Gửi name là null khi PATCH phòng.',
           procedure: stringifyProcedure(body),
           expectedResult: 400,
-          preconditions: 'Token Admin',
+          preconditions: 'Token Admin hợp lệ',
         },
         async () => {
           const response = await request(server)
@@ -392,7 +392,7 @@ describe('[API] PATCH /rooms/:id', () => {
           description: 'Gửi name là chuỗi rỗng.',
           procedure: stringifyProcedure(body),
           expectedResult: 400,
-          preconditions: 'Token Admin',
+          preconditions: 'Token Admin hợp lệ',
         },
         async () => {
           const response = await request(server)
@@ -426,7 +426,7 @@ describe('[API] PATCH /rooms/:id', () => {
             'Gửi name chỉ gồm khoảng trắng, Trim decorator sẽ trim về chuỗi rỗng.',
           procedure: stringifyProcedure(body),
           expectedResult: 400,
-          preconditions: 'Token Admin',
+          preconditions: 'Token Admin hợp lệ',
         },
         async () => {
           const response = await request(server)
@@ -459,7 +459,7 @@ describe('[API] PATCH /rooms/:id', () => {
           description: 'Gửi name chỉ có 1 chữ số, không đúng định dạng.',
           procedure: stringifyProcedure(body),
           expectedResult: 400,
-          preconditions: 'Token Admin',
+          preconditions: 'Token Admin hợp lệ',
         },
         async () => {
           const response = await request(server)
@@ -492,7 +492,7 @@ describe('[API] PATCH /rooms/:id', () => {
           description: 'Gửi name gồm ký tự chữ cái, không phải số.',
           procedure: stringifyProcedure(body),
           expectedResult: 400,
-          preconditions: 'Token Admin',
+          preconditions: 'Token Admin hợp lệ',
         },
         async () => {
           const response = await request(server)
@@ -525,7 +525,7 @@ describe('[API] PATCH /rooms/:id', () => {
           description: 'Gửi name có 3 chữ số, không đúng định dạng.',
           procedure: stringifyProcedure(body),
           expectedResult: 400,
-          preconditions: 'Token Admin',
+          preconditions: 'Token Admin hợp lệ',
         },
         async () => {
           const response = await request(server)
@@ -561,7 +561,7 @@ describe('[API] PATCH /rooms/:id', () => {
           description: 'Gửi thêm field không được khai báo trong DTO.',
           procedure: stringifyProcedure(body),
           expectedResult: 400,
-          preconditions: 'Token Admin',
+          preconditions: 'Token Admin hợp lệ',
         },
         async () => {
           const response = await request(server)
@@ -596,7 +596,7 @@ describe('[API] PATCH /rooms/:id', () => {
           description: 'Cập nhật phòng với ID không tồn tại trong DB.',
           procedure: stringifyProcedure(body),
           expectedResult: 404,
-          preconditions: 'Token Admin',
+          preconditions: 'Token Admin hợp lệ',
         },
         async () => {
           const response = await request(server)
@@ -656,7 +656,7 @@ describe('[API] PATCH /rooms/:id', () => {
             'PATCH với name trùng name hiện tại của chính phòng đó vẫn trả 200 OK.',
           procedure: stringifyProcedure(body),
           expectedResult: 200,
-          preconditions: 'Token Admin',
+          preconditions: 'Token Admin hợp lệ',
         },
         async () => {
           const response = await request(server)
@@ -691,7 +691,7 @@ describe('[API] PATCH /rooms/:id', () => {
             'Cập nhật tên phòng thành công với token Admin và payload hợp lệ.',
           procedure: stringifyProcedure(body),
           expectedResult: 200,
-          preconditions: 'Token Admin, tên phòng chưa tồn tại',
+          preconditions: 'Token Admin hợp lệ, tên phòng chưa tồn tại',
         },
         async () => {
           const response = await request(server)
@@ -726,7 +726,7 @@ describe('[API] PATCH /rooms/:id', () => {
             'Cập nhật phòng thành công khi name có khoảng trắng hai đầu.',
           procedure: stringifyProcedure(body),
           expectedResult: 200,
-          preconditions: 'Token Admin, tên phòng chưa tồn tại',
+          preconditions: 'Token Admin hợp lệ, tên phòng chưa tồn tại',
         },
         async () => {
           const response = await request(server)
@@ -759,7 +759,7 @@ describe('[API] PATCH /rooms/:id', () => {
             'Cập nhật phòng thành công và kiểm tra response chỉ gồm các field của RoomResponseDto.',
           procedure: stringifyProcedure(body),
           expectedResult: 200,
-          preconditions: 'Token Admin, tên phòng chưa tồn tại',
+          preconditions: 'Token Admin hợp lệ, tên phòng chưa tồn tại',
         },
         async () => {
           const response = await request(server)
