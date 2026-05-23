@@ -218,6 +218,29 @@ const TEST_DOMAINS: Record<string, TestDomain> = {
       },
     ],
   },
+  bookings: {
+    description: 'Toàn bộ API Bookings',
+    suites: [
+      {
+        key: 'get_showtime_seats',
+        prefix: 'GSS',
+        file: 'test/api/bookings/get-showtime-seats.api.spec.ts',
+        description: 'API Lấy sơ đồ ghế suất chiếu (Bookings)',
+      },
+      {
+        key: 'create_booking',
+        prefix: 'CBK',
+        file: 'test/api/bookings/create-booking.api.spec.ts',
+        description: 'API Tạo booking (Bookings)',
+      },
+      {
+        key: 'cancel_booking',
+        prefix: 'CAB',
+        file: 'test/api/bookings/cancel-booking.api.spec.ts',
+        description: 'API Huỷ booking (Bookings)',
+      },
+    ],
+  },
 };
 
 console.log('► CINEVORA DOMAIN API TEST RUNNER ◄');

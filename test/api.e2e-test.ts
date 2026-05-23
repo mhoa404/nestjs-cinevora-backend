@@ -146,6 +146,21 @@ const TEST_SUITES: Record<
     file: 'test/api/seats/delete-seat.api.spec.ts',
     description: 'API Xoá ghế (Seats)',
   },
+  get_showtime_seats: {
+    prefix: 'GSS',
+    file: 'test/api/bookings/get-showtime-seats.api.spec.ts',
+    description: 'API Lấy sơ đồ ghế suất chiếu (Bookings)',
+  },
+  create_booking: {
+    prefix: 'CBK',
+    file: 'test/api/bookings/create-booking.api.spec.ts',
+    description: 'API Tạo booking (Bookings)',
+  },
+  cancel_booking: {
+    prefix: 'CAB',
+    file: 'test/api/bookings/cancel-booking.api.spec.ts',
+    description: 'API Huỷ booking (Bookings)',
+  },
 };
 
 console.log('\n╔════════════════════════════════════════════════╗');
