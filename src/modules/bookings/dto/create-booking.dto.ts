@@ -9,15 +9,15 @@ import {
 
 export class CreateBookingDto {
   @Type(() => Number)
-  @IsInt()
   @IsPositive()
+  @IsInt()
   showtimeId!: number;
 
+  @Type(() => Number)
   @IsArray()
   @ArrayMinSize(1)
   @ArrayUnique()
-  @Type(() => Number)
-  @IsInt({ each: true })
   @IsPositive({ each: true })
+  @IsInt({ each: true })
   seatIds!: number[];
 }

@@ -94,10 +94,10 @@ export class CreateMovieDto {
   endDate?: string;
 
   @IsOptional()
-  @IsArray({ message: 'genreIds phải là một mảng.' })
-  @ArrayUnique({ message: 'genreIds không được chứa giá trị trùng lặp.' })
   @Type(() => Number)
-  @IsInt({ each: true, message: 'Mỗi genreId phải là số nguyên.' })
+  @ArrayUnique({ message: 'genreIds không được chứa giá trị trùng lặp.' })
   @IsPositive({ each: true, message: 'Mỗi genreId phải là số dương.' })
+  @IsInt({ each: true, message: 'Mỗi genreId phải là số nguyên.' })
+  @IsArray({ message: 'genreIds phải là một mảng.' })
   genreIds?: number[];
 }

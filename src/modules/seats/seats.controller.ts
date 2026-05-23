@@ -25,6 +25,8 @@ export class SeatsController {
   constructor(private readonly seatsService: SeatsService) {}
 
   @Get()
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   findAll(
     @Query('roomId', ParseIntPipe) roomId: number,
   ): Promise<SeatResponseDto[]> {

@@ -13,6 +13,7 @@ import {
 import { AppModule } from '../../../src/app.module';
 import { AuthResponseDto } from '../../../src/modules/auth/dto/auth-response.dto';
 import { exportTestReport, TestCaseRecord } from '../../helpers/excel-reporter';
+import { cleanupRefreshTokens } from '../../helpers/cleanup-refresh-token';
 import {
   Movie,
   MovieStatus,
@@ -34,16 +35,22 @@ describe('[API] DELETE /showtimes/:id', () => {
   let room: Room;
 
   const createdShowtimeIds: number[] = [];
+  const createdMovieIds: number[] = [];
+  const createdRoomIds: number[] = [];
+
   const results: TestCaseRecord[] = [];
   const PREFIX = 'DST';
 
   let counter = 0;
   let seedCounter = 0;
 
-  const nextId = () => `${PREFIX}${String(++counter).padStart(2, '0')}`;
+  const nextId = (): string => {
+    counter += 1;
+    return PREFIX + String(counter).padStart(2, '0');
+  };
 
   const stringifyProcedure = (payload: unknown): string =>
-    JSON.stringify(payload, null, 2);
+    typeof payload === 'string' ? payload : JSON.stringify(payload, null, 2);
 
   const getActualResult = (response?: Response): number =>
     response?.status ?? 0;
@@ -82,6 +89,14 @@ describe('[API] DELETE /showtimes/:id', () => {
 
     return showtime;
   };
+
+  const deleteShowtime = (
+    id: number | string,
+    token = adminToken,
+  ): Promise<Response> =>
+    request(server)
+      .delete('/showtimes/' + id)
+      .set('Authorization', 'Bearer ' + token);
 
   const record = async (
     meta: Omit<TestCaseRecord, 'passed' | 'testDate' | 'actualResult'>,
@@ -133,26 +148,28 @@ describe('[API] DELETE /showtimes/:id', () => {
 
     server = app.getHttpServer() as Server;
 
-    const adminRes = await request(server).post('/auth/mobile/login').send({
-      email: 'api_tester@gmail.com',
-      password: 'Api_tester_123',
-    });
+    const adminLoginResponse = await request(server)
+      .post('/auth/mobile/login')
+      .send({ email: 'api_tester@gmail.com', password: 'Api_tester_123' });
 
-    adminToken = parseApiData<AuthResponseDto>(adminRes).accessToken;
+    adminToken = parseApiData<AuthResponseDto>(adminLoginResponse).accessToken;
 
-    const customerRes = await request(server).post('/auth/mobile/login').send({
-      email: 'api_client@gmail.com',
-      password: 'Api_client_123',
-    });
+    const customerLoginResponse = await request(server)
+      .post('/auth/mobile/login')
+      .send({ email: 'api_client@gmail.com', password: 'Api_client_123' });
 
-    customerToken = parseApiData<AuthResponseDto>(customerRes).accessToken;
+    customerToken = parseApiData<AuthResponseDto>(
+      customerLoginResponse,
+    ).accessToken;
 
     const movieRepo = dataSource.getRepository(Movie);
     const roomRepo = dataSource.getRepository(Room);
+    const seed = String(Date.now()).slice(-6);
 
     movieActive = await movieRepo.save(
       movieRepo.create({
-        title: 'DST Active Movie',
+        title: 'DST A ' + seed,
+        slug: 'dst-a-' + seed,
         posterUrl: 'https://example.com/poster.jpg',
         duration: 90,
         ageRating: AgeRating.P,
@@ -164,7 +181,8 @@ describe('[API] DELETE /showtimes/:id', () => {
 
     movieEnded = await movieRepo.save(
       movieRepo.create({
-        title: 'DST Ended Movie',
+        title: 'DST E ' + seed,
+        slug: 'dst-e-' + seed,
         posterUrl: 'https://example.com/poster.jpg',
         duration: 90,
         ageRating: AgeRating.P,
@@ -174,7 +192,14 @@ describe('[API] DELETE /showtimes/:id', () => {
       }),
     );
 
-    room = await roomRepo.save(roomRepo.create({ name: 'D1' }));
+    room = await roomRepo.save(
+      roomRepo.create({
+        name: 'D' + seed,
+      }),
+    );
+
+    createdMovieIds.push(movieActive.id, movieEnded.id);
+    createdRoomIds.push(room.id);
   });
 
   afterAll(async () => {
@@ -184,230 +209,255 @@ describe('[API] DELETE /showtimes/:id', () => {
       await dataSource.getRepository(Showtime).delete(uniqueShowtimeIds);
     }
 
-    if (movieActive?.id && movieEnded?.id) {
-      await dataSource
-        .getRepository(Movie)
-        .delete([movieActive.id, movieEnded.id]);
+    if (createdMovieIds.length > 0) {
+      await dataSource.getRepository(Movie).delete(createdMovieIds);
     }
 
-    if (room?.id) {
-      await dataSource.getRepository(Room).delete(room.id);
+    if (createdRoomIds.length > 0) {
+      await dataSource.getRepository(Room).delete(createdRoomIds);
     }
+
+    await cleanupRefreshTokens(dataSource);
 
     await exportTestReport(results, PREFIX, 'Delete_Showtime');
     await app.close();
   });
 
-  describe('Kiểm tra dữ liệu đầu vào', () => {
-    it('Xóa showtime thất bại – Id không phải số nguyên', async () => {
-      const procedure = {
-        params: {
-          id: 'xyz',
-        },
-      };
+  describe('Phân quyền', () => {
+    it('Xóa thất bại - Không truyền Authorization Token trả về đúng message', async () => {
+      const showtime = await seedShowtime(movieEnded);
 
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Xóa showtime thất bại do id không hợp lệ',
-          description: 'Xóa showtime với id trên URL không phải là số nguyên.',
-          procedure: stringifyProcedure(procedure),
-          expectedResult: 400,
-          preconditions: 'Tài khoản admin đã đăng nhập thành công.',
+          testCase: 'Không truyền token',
+          description: 'Không gửi access token khi xóa suất chiếu.',
+          procedure: stringifyProcedure({
+            params: {
+              id: showtime.id,
+            },
+          }),
+          expectedResult: 401,
+          preconditions: 'Không có',
+        },
+        () => request(server).delete('/showtimes/' + showtime.id),
+        (response) => {
+          expect(response.status).toBe(401);
+
+          const error = parseApiError(response);
+          expectErrorMessage(error, 401, 'Unauthorized');
+        },
+      );
+    });
+
+    it('Xóa thất bại - Truyền Fake Token trả về đúng message', async () => {
+      const showtime = await seedShowtime(movieEnded);
+
+      await record(
+        {
+          id: nextId(),
+          scope: 'All',
+          testCase: 'Token không hợp lệ',
+          description: 'Gửi Bearer token không hợp lệ.',
+          procedure: stringifyProcedure({
+            params: {
+              id: showtime.id,
+            },
+            token: 'Không hợp lệ',
+          }),
+          expectedResult: 401,
+          preconditions: 'Không có',
         },
         () =>
           request(server)
-            .delete('/showtimes/xyz')
-            .set('Authorization', `Bearer ${adminToken}`),
+            .delete('/showtimes/' + showtime.id)
+            .set('Authorization', 'Bearer fake.jwt.token'),
         (response) => {
-          expect(response.status).toBe(400);
-          parseApiError(response);
+          expect(response.status).toBe(401);
+
+          const error = parseApiError(response);
+          expectErrorMessage(error, 401, 'Unauthorized');
+        },
+      );
+    });
+
+    it('Xóa thất bại - Role Customer bị chặn trả về đúng message', async () => {
+      const showtime = await seedShowtime(movieEnded);
+
+      await record(
+        {
+          id: nextId(),
+          scope: 'All',
+          testCase: 'Customer không có quyền',
+          description: 'Tài khoản Customer cố xóa suất chiếu.',
+          procedure: stringifyProcedure({
+            params: {
+              id: showtime.id,
+            },
+          }),
+          expectedResult: 403,
+          preconditions: 'Token Customer hợp lệ',
+        },
+        () => deleteShowtime(showtime.id, customerToken),
+        (response) => {
+          expect(response.status).toBe(403);
+
+          const error = parseApiError(response);
+          expectErrorMessage(
+            error,
+            403,
+            'Bạn không có quyền thực hiện hành động này.',
+          );
         },
       );
     });
   });
 
-  describe('Phân quyền', () => {
-    it('Xóa showtime thất bại – Thiếu token', async () => {
-      const showtime = await seedShowtime(movieEnded);
-
-      const procedure = {
-        params: {
-          id: showtime.id,
-        },
-      };
-
+  describe('Kiểm tra dữ liệu đầu vào', () => {
+    it('Xóa thất bại - ID không phải số nguyên', async () => {
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Xóa showtime thất bại do thiếu token',
-          description: 'Xóa showtime khi chưa đăng nhập bằng tài khoản admin.',
-          procedure: stringifyProcedure(procedure),
-          expectedResult: 401,
-          preconditions: 'Không gửi access token trong request.',
+          testCase: 'Sai định dạng ID',
+          description: 'Gửi id không thể parse sang số nguyên.',
+          procedure: stringifyProcedure({
+            params: {
+              id: 'xyz',
+            },
+          }),
+          expectedResult: 400,
+          preconditions: 'Token Admin hợp lệ',
         },
-        () => request(server).delete(`/showtimes/${showtime.id}`),
+        () => deleteShowtime('xyz'),
         (response) => {
-          expect(response.status).toBe(401);
-          parseApiError(response);
-        },
-      );
-    });
+          expect(response.status).toBe(400);
 
-    it('Xóa showtime thất bại – Tài khoản không đủ quyền', async () => {
-      const showtime = await seedShowtime(movieEnded);
-
-      const procedure = {
-        params: {
-          id: showtime.id,
-        },
-      };
-
-      await record(
-        {
-          id: nextId(),
-          scope: 'All',
-          testCase: 'Xóa showtime thất bại do không đủ quyền',
-          description: 'Xóa showtime bằng tài khoản khách hàng thông thường.',
-          procedure: stringifyProcedure(procedure),
-          expectedResult: 403,
-          preconditions: 'Tài khoản customer đã đăng nhập thành công.',
-        },
-        () =>
-          request(server)
-            .delete(`/showtimes/${showtime.id}`)
-            .set('Authorization', `Bearer ${customerToken}`),
-        (response) => {
-          expect(response.status).toBe(403);
-          parseApiError(response);
+          const error = parseApiError(response);
+          expectErrorMessage(
+            error,
+            400,
+            'Validation failed (numeric string is expected)',
+          );
         },
       );
     });
   });
 
   describe('Ràng buộc nghiệp vụ', () => {
-    it('Xóa showtime thất bại – Showtime không tồn tại', async () => {
-      const procedure = {
-        params: {
-          id: 999999,
-        },
-      };
-
+    it('Xóa thất bại - Showtime không tồn tại', async () => {
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Xóa showtime thất bại do showtime không tồn tại',
-          description: 'Xóa showtime với id không tồn tại trong hệ thống.',
-          procedure: stringifyProcedure(procedure),
+          testCase: 'Showtime không tồn tại',
+          description: 'Gửi id không tồn tại trong hệ thống.',
+          procedure: stringifyProcedure({
+            params: {
+              id: 999999,
+            },
+          }),
           expectedResult: 404,
-          preconditions: 'Tài khoản admin đã đăng nhập thành công.',
+          preconditions: 'Token Admin hợp lệ',
         },
-        () =>
-          request(server)
-            .delete('/showtimes/999999')
-            .set('Authorization', `Bearer ${adminToken}`),
+        () => deleteShowtime(999999),
         (response) => {
           expect(response.status).toBe(404);
-          parseApiError(response);
+
+          const error = parseApiError(response);
+          expectErrorMessage(error, 404, 'Suất chiếu #999999 không tồn tại.');
         },
       );
     });
 
-    it('Xóa showtime thất bại – Phim chưa kết thúc', async () => {
+    it('Xóa thất bại - Phim chưa kết thúc trả về đúng message', async () => {
       const showtime = await seedShowtime(movieActive);
-
-      const procedure = {
-        params: {
-          id: showtime.id,
-        },
-      };
 
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Xóa showtime thất bại do phim chưa kết thúc',
-          description: 'Xóa showtime của phim vẫn đang trong thời gian chiếu.',
-          procedure: stringifyProcedure(procedure),
+          testCase: 'Phim chưa kết thúc',
+          description: 'Xóa suất chiếu của phim chưa có trạng thái ended.',
+          procedure: stringifyProcedure({
+            params: {
+              id: showtime.id,
+            },
+          }),
           expectedResult: 409,
-          preconditions: 'Phim của showtime đang có trạng thái đang chiếu.',
+          preconditions: 'Phim đang chiếu',
         },
-        () =>
-          request(server)
-            .delete(`/showtimes/${showtime.id}`)
-            .set('Authorization', `Bearer ${adminToken}`),
+        () => deleteShowtime(showtime.id),
         (response) => {
           expect(response.status).toBe(409);
 
           const error = parseApiError(response);
-          expectErrorMessage(error, 409, 'ended');
+          expectErrorMessage(
+            error,
+            409,
+            'Chỉ có thể xoá suất chiếu khi phim đã kết thúc chiếu (ended).',
+          );
         },
       );
     });
 
-    it('Xóa showtime thất bại – Showtime đã bị xóa trước đó', async () => {
+    it('Xóa thất bại - Showtime đã bị xóa trước đó', async () => {
       const showtime = await seedShowtime(movieEnded);
 
       await dataSource.getRepository(Showtime).delete(showtime.id);
-
-      const procedure = {
-        params: {
-          id: showtime.id,
-        },
-      };
 
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Xóa showtime thất bại do showtime đã bị xóa',
-          description: 'Xóa showtime với id đã bị xóa khỏi hệ thống trước đó.',
-          procedure: stringifyProcedure(procedure),
+          testCase: 'Showtime đã bị xóa',
+          description: 'Gửi id của suất chiếu đã bị xóa khỏi hệ thống.',
+          procedure: stringifyProcedure({
+            params: {
+              id: showtime.id,
+            },
+          }),
           expectedResult: 404,
-          preconditions: 'Showtime đã bị xóa trước khi gửi request.',
+          preconditions: 'Showtime đã bị xóa',
         },
-        () =>
-          request(server)
-            .delete(`/showtimes/${showtime.id}`)
-            .set('Authorization', `Bearer ${adminToken}`),
+        () => deleteShowtime(showtime.id),
         (response) => {
           expect(response.status).toBe(404);
-          parseApiError(response);
+
+          const error = parseApiError(response);
+          expectErrorMessage(
+            error,
+            404,
+            `Suất chiếu #${showtime.id} không tồn tại.`,
+          );
         },
       );
     });
   });
 
   describe('Luồng thành công', () => {
-    it('Xóa showtime thành công – Phim đã kết thúc', async () => {
+    it('Xóa thành công - Phim đã kết thúc', async () => {
       const showtime = await seedShowtime(movieEnded);
-
-      const procedure = {
-        params: {
-          id: showtime.id,
-        },
-      };
 
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Xóa showtime thành công',
-          description: 'Xóa showtime của phim đã kết thúc thời gian chiếu.',
-          procedure: stringifyProcedure(procedure),
+          testCase: 'Phim đã kết thúc',
+          description: 'Xóa suất chiếu của phim đã có trạng thái ended.',
+          procedure: stringifyProcedure({
+            params: {
+              id: showtime.id,
+            },
+          }),
           expectedResult: 204,
-          preconditions:
-            'Tài khoản admin đã đăng nhập thành công và phim của showtime đã kết thúc.',
+          preconditions: 'Phim đã kết thúc',
         },
-        () =>
-          request(server)
-            .delete(`/showtimes/${showtime.id}`)
-            .set('Authorization', `Bearer ${adminToken}`),
+        () => deleteShowtime(showtime.id),
         async (response) => {
           expect(response.status).toBe(204);
+          expect(response.body).toEqual({});
 
           const deleted = await dataSource
             .getRepository(Showtime)

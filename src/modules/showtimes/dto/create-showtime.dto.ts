@@ -15,7 +15,7 @@ import {
 
 import { ShowtimeStatus } from '../entities/showtime.entity';
 
-const UTC_DATE_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+const UTC_DATE_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/;
 
 export class ShowtimeItemDto {
   @IsPositive()
@@ -56,13 +56,13 @@ export class ShowtimeItemDto {
 
 export class CreateShowtimeDto {
   @Type(() => Number)
-  @Type(() => Number)
   @IsInt({ message: 'movieId phải là số nguyên.' })
   @IsNotEmpty({ message: 'Vui lòng chọn phim.' })
   movieId!: number;
 
-  @IsArray({ message: 'showtimes phải là một mảng.' })
   @ArrayMinSize(1, { message: 'Phải có ít nhất 1 suất chiếu.' })
+  @IsArray({ message: 'showtimes phải là một mảng.' })
+  @IsNotEmpty({ message: 'Vui lòng nhập danh sách suất chiếu.' })
   @ValidateNested({ each: true })
   @Type(() => ShowtimeItemDto)
   showtimes!: ShowtimeItemDto[];

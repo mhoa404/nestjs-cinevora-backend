@@ -2,7 +2,7 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request, { Response } from 'supertest';
 import cookieParser from 'cookie-parser';
-import { DataSource } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { Server } from 'http';
 
 import {
@@ -13,23 +13,28 @@ import {
 } from '../../helpers/http-test.helper';
 import {
   AgeRating,
-  MovieStatus,
   Movie,
+  MovieStatus,
 } from '../../../src/modules/movies/entities/movie.entity';
 import { AppModule } from '../../../src/app.module';
 import { AuthResponseDto } from '../../../src/modules/auth/dto/auth-response.dto';
 import { exportTestReport, TestCaseRecord } from '../../helpers/excel-reporter';
+import { cleanupRefreshTokens } from '../../helpers/cleanup-refresh-token';
 
 describe('[API] DELETE /movies/:id', () => {
   let app: INestApplication;
   let server: Server;
   let dataSource: DataSource;
+  let movieRepository: Repository<Movie>;
 
   let adminToken = '';
   let customerToken = '';
 
   let endedMovieId = 0;
   let showingMovieId = 0;
+  let comingMovieId = 0;
+
+  const createdMovieIds: number[] = [];
 
   const results: TestCaseRecord[] = [];
   const PREFIX = 'DMV';
@@ -37,7 +42,7 @@ describe('[API] DELETE /movies/:id', () => {
 
   const nextId = (): string => {
     counter += 1;
-    return `${PREFIX}${String(counter).padStart(2, '0')}`;
+    return PREFIX + String(counter).padStart(2, '0');
   };
 
   const formatDate = (date: Date): string => {
@@ -80,6 +85,7 @@ describe('[API] DELETE /movies/:id', () => {
 
     app = moduleFixture.createNestApplication();
     dataSource = app.get<DataSource>(DataSource);
+    movieRepository = dataSource.getRepository(Movie);
 
     app.useGlobalPipes(
       new ValidationPipe({
@@ -106,19 +112,19 @@ describe('[API] DELETE /movies/:id', () => {
 
     customerToken = parseApiData<AuthResponseDto>(customerLoginRes).accessToken;
 
-    const movieRepository = dataSource.getRepository(Movie);
     const uniqueSeed = Date.now();
 
     const endedMovie = await movieRepository.save(
       movieRepository.create({
-        title: `Ended Movie ${uniqueSeed}`,
-        slug: `ended-movie-${uniqueSeed}`,
-        posterUrl: 'https://example.com/poster.jpg',
-        trailerUrl: 'https://example.com/trailer.mp4',
-        description: 'Ended description',
+        title: 'Ended Movie ' + uniqueSeed,
+        slug: 'ended-movie-' + uniqueSeed,
+        posterUrl: 'https://example.com/ended-poster.jpg',
+        trailerUrl: 'https://example.com/ended-trailer.mp4',
+        bannerUrl: 'https://example.com/ended-banner.jpg',
+        description: 'Ended movie for DELETE /movies/:id.',
         duration: 120,
-        director: 'Director',
-        actor: 'Actor',
+        director: 'Ended Director',
+        actor: 'Ended Actor',
         language: 'EN',
         ageRating: AgeRating.C13,
         rated: '13+',
@@ -127,18 +133,21 @@ describe('[API] DELETE /movies/:id', () => {
         endDate: new Date(addDays(-1)),
       }),
     );
+
     endedMovieId = endedMovie.id;
+    createdMovieIds.push(endedMovie.id);
 
     const showingMovie = await movieRepository.save(
       movieRepository.create({
-        title: `Showing Movie ${uniqueSeed}`,
-        slug: `showing-movie-${uniqueSeed}`,
-        posterUrl: 'https://example.com/poster.jpg',
-        trailerUrl: 'https://example.com/trailer.mp4',
-        description: 'Showing description',
+        title: 'Showing Movie ' + uniqueSeed,
+        slug: 'showing-movie-' + uniqueSeed,
+        posterUrl: 'https://example.com/showing-poster.jpg',
+        trailerUrl: 'https://example.com/showing-trailer.mp4',
+        bannerUrl: 'https://example.com/showing-banner.jpg',
+        description: 'Showing movie for DELETE /movies/:id.',
         duration: 120,
-        director: 'Director',
-        actor: 'Actor',
+        director: 'Showing Director',
+        actor: 'Showing Actor',
         language: 'EN',
         ageRating: AgeRating.C13,
         rated: '13+',
@@ -147,10 +156,41 @@ describe('[API] DELETE /movies/:id', () => {
         endDate: new Date(addDays(5)),
       }),
     );
+
     showingMovieId = showingMovie.id;
+    createdMovieIds.push(showingMovie.id);
+
+    const comingMovie = await movieRepository.save(
+      movieRepository.create({
+        title: 'Coming Movie ' + uniqueSeed,
+        slug: 'coming-movie-' + uniqueSeed,
+        posterUrl: 'https://example.com/coming-poster.jpg',
+        trailerUrl: 'https://example.com/coming-trailer.mp4',
+        bannerUrl: 'https://example.com/coming-banner.jpg',
+        description: 'Coming movie for DELETE /movies/:id.',
+        duration: 120,
+        director: 'Coming Director',
+        actor: 'Coming Actor',
+        language: 'EN',
+        ageRating: AgeRating.C13,
+        rated: '13+',
+        status: MovieStatus.COMING,
+        releaseDate: new Date(addDays(10)),
+        endDate: new Date(addDays(20)),
+      }),
+    );
+
+    comingMovieId = comingMovie.id;
+    createdMovieIds.push(comingMovie.id);
   });
 
   afterAll(async () => {
+    if (createdMovieIds.length > 0) {
+      await movieRepository.delete(createdMovieIds);
+    }
+
+    await cleanupRefreshTokens(dataSource);
+
     await exportTestReport(results, PREFIX, 'Delete_Movie');
     await app.close();
   });
@@ -161,17 +201,19 @@ describe('[API] DELETE /movies/:id', () => {
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Security: Missing Token',
+          testCase: 'Không có Header Authorization',
           description: 'Không gửi access token khi gọi API xoá phim.',
-          procedure: 'Không có dữ liệu',
+          procedure: 'DELETE /movies/' + endedMovieId,
           expectedResult: 401,
           preconditions: 'Không có token.',
         },
         async () => {
           const response = await request(server).delete(
-            `/movies/${endedMovieId}`,
+            '/movies/' + endedMovieId,
           );
+
           expect(response.status).toBe(401);
+
           return response;
         },
       );
@@ -182,17 +224,19 @@ describe('[API] DELETE /movies/:id', () => {
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Security: Fake Token',
+          testCase: 'Gửi Token giả',
           description: 'Gửi Bearer token không hợp lệ.',
-          procedure: 'Không có dữ liệu',
+          procedure: 'DELETE /movies/' + endedMovieId,
           expectedResult: 401,
           preconditions: 'Token giả.',
         },
         async () => {
           const response = await request(server)
-            .delete(`/movies/${endedMovieId}`)
+            .delete('/movies/' + endedMovieId)
             .set('Authorization', 'Bearer fake.jwt.token');
+
           expect(response.status).toBe(401);
+
           return response;
         },
       );
@@ -203,17 +247,59 @@ describe('[API] DELETE /movies/:id', () => {
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Security: Customer Forbidden',
+          testCase: 'Gửi Bearer token của Customer',
           description: 'Tài khoản customer cố xoá phim.',
-          procedure: 'Không có dữ liệu',
+          procedure: 'DELETE /movies/' + endedMovieId,
           expectedResult: 403,
           preconditions: 'Dùng token customer.',
         },
         async () => {
           const response = await request(server)
-            .delete(`/movies/${endedMovieId}`)
-            .set('Authorization', `Bearer ${customerToken}`);
+            .delete('/movies/' + endedMovieId)
+            .set('Authorization', 'Bearer ' + customerToken);
+
           expect(response.status).toBe(403);
+
+          const error = parseApiError(response);
+          expectErrorMessage(
+            error,
+            403,
+            'Bạn không có quyền thực hiện hành động này.',
+          );
+
+          return response;
+        },
+      );
+    });
+  });
+
+  describe('Validation Payload', () => {
+    it('Xoá thất bại - ID param không phải số', async () => {
+      await record(
+        {
+          id: nextId(),
+          scope: 'All',
+          testCase: 'ID param không phải số',
+          description:
+            'Gọi DELETE /movies/:id với id không phải numeric string.',
+          procedure: 'DELETE /movies/abc',
+          expectedResult: 400,
+          preconditions: 'Token Admin hợp lệ.',
+        },
+        async () => {
+          const response = await request(server)
+            .delete('/movies/abc')
+            .set('Authorization', 'Bearer ' + adminToken);
+
+          expect(response.status).toBe(400);
+
+          const error = parseApiError(response);
+          expectErrorMessage(
+            error,
+            400,
+            'Validation failed (numeric string is expected)',
+          );
+
           return response;
         },
       );
@@ -226,46 +312,84 @@ describe('[API] DELETE /movies/:id', () => {
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Business: Movie Not Found',
+          testCase: 'Movie ID không tồn tại',
           description: 'Xoá phim với ID không tồn tại.',
-          procedure: 'Không có dữ liệu',
+          procedure: 'DELETE /movies/999999',
           expectedResult: 404,
-          preconditions: 'Dùng token admin.',
+          preconditions: 'Token Admin hợp lệ.',
         },
         async () => {
           const response = await request(server)
             .delete('/movies/999999')
-            .set('Authorization', `Bearer ${adminToken}`);
+            .set('Authorization', 'Bearer ' + adminToken);
+
           expect(response.status).toBe(404);
+
           const error = parseApiError(response);
           expectErrorMessage(error, 404, 'Phim #999999 không tồn tại.');
+
           return response;
         },
       );
     });
 
-    it('Xoá thất bại - Không thể xoá phim khi trạng thái chưa kết thúc', async () => {
+    it('Xoá thất bại - Không thể xoá phim đang chiếu', async () => {
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Business: Cannot Delete Non-Ended Movie',
-          description: 'Cố xoá phim đang có trạng thái SHOWING.',
-          procedure: 'Không có dữ liệu',
+          testCase: 'Movie status now_showing',
+          description:
+            'Cố xoá phim đang có trạng thái now_showing. Service chỉ cho xoá phim ended.',
+          procedure: 'DELETE /movies/' + showingMovieId,
           expectedResult: 400,
-          preconditions: 'Dùng token admin.',
+          preconditions: 'Token Admin hợp lệ.',
         },
         async () => {
           const response = await request(server)
-            .delete(`/movies/${showingMovieId}`)
-            .set('Authorization', `Bearer ${adminToken}`);
+            .delete('/movies/' + showingMovieId)
+            .set('Authorization', 'Bearer ' + adminToken);
+
           expect(response.status).toBe(400);
+
           const error = parseApiError(response);
           expectErrorMessage(
             error,
             400,
             'Chỉ có thể xoá phim khi trạng thái đã kết thúc.',
           );
+
+          return response;
+        },
+      );
+    });
+
+    it('Xoá thất bại - Không thể xoá phim sắp chiếu', async () => {
+      await record(
+        {
+          id: nextId(),
+          scope: 'All',
+          testCase: 'Movie status upcoming',
+          description:
+            'Cố xoá phim đang có trạng thái upcoming. Service chỉ cho xoá phim ended.',
+          procedure: 'DELETE /movies/' + comingMovieId,
+          expectedResult: 400,
+          preconditions: 'Token Admin hợp lệ.',
+        },
+        async () => {
+          const response = await request(server)
+            .delete('/movies/' + comingMovieId)
+            .set('Authorization', 'Bearer ' + adminToken);
+
+          expect(response.status).toBe(400);
+
+          const error = parseApiError(response);
+          expectErrorMessage(
+            error,
+            400,
+            'Chỉ có thể xoá phim khi trạng thái đã kết thúc.',
+          );
+
           return response;
         },
       );
@@ -273,22 +397,30 @@ describe('[API] DELETE /movies/:id', () => {
   });
 
   describe('Luồng thành công', () => {
-    it('Xoá thành công', async () => {
+    it('Xoá thành công - Phim trạng thái ended', async () => {
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Happy Path: Complete Deletion',
-          description: 'Xoá thành công một phim ở trạng thái ENDED.',
-          procedure: 'Không có dữ liệu',
+          testCase: 'Xoá movie ended',
+          description: 'Xoá thành công một phim ở trạng thái ended.',
+          procedure: 'DELETE /movies/' + endedMovieId,
           expectedResult: 204,
-          preconditions: 'Dùng token admin.',
+          preconditions: 'Token Admin hợp lệ.',
         },
         async () => {
           const response = await request(server)
-            .delete(`/movies/${endedMovieId}`)
-            .set('Authorization', `Bearer ${adminToken}`);
+            .delete('/movies/' + endedMovieId)
+            .set('Authorization', 'Bearer ' + adminToken);
+
           expect(response.status).toBe(204);
+          expect(response.body).toEqual({});
+
+          const deletedMovie = await movieRepository.findOneBy({
+            id: endedMovieId,
+          });
+          expect(deletedMovie).toBeNull();
+
           return response;
         },
       );

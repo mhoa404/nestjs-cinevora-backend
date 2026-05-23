@@ -21,6 +21,7 @@ import {
   Movie,
   MovieStatus,
 } from '../../../src/modules/movies/entities/movie.entity';
+import { cleanupRefreshTokens } from '../../helpers/cleanup-refresh-token';
 
 describe('[API] DELETE /genres/:id', () => {
   let app: INestApplication;
@@ -32,6 +33,9 @@ describe('[API] DELETE /genres/:id', () => {
 
   let genreInUseId = 0;
   let genreToDeleteId = 0;
+
+  const createdGenreIds: number[] = [];
+  const createdMovieIds: number[] = [];
 
   const results: TestCaseRecord[] = [];
   const PREFIX = 'DGR';
@@ -108,6 +112,7 @@ describe('[API] DELETE /genres/:id', () => {
       }),
     );
     genreInUseId = inUseGenre.id;
+    createdGenreIds.push(inUseGenre.id);
 
     const freeGenre = await genreRepository.save(
       genreRepository.create({
@@ -116,13 +121,15 @@ describe('[API] DELETE /genres/:id', () => {
       }),
     );
     genreToDeleteId = freeGenre.id;
+    createdGenreIds.push(freeGenre.id);
 
-    await movieRepository.save(
+    const movie = await movieRepository.save(
       movieRepository.create({
         title: `Delete Genre Movie ${seed}`,
         slug: `delete-genre-movie-${seed}`,
         posterUrl: 'https://example.com/delete-genre-movie.jpg',
         trailerUrl: null,
+        bannerUrl: null,
         description: 'Movie linked to genre',
         duration: 110,
         director: 'Director X',
@@ -136,9 +143,23 @@ describe('[API] DELETE /genres/:id', () => {
         genres: [inUseGenre],
       }),
     );
+    createdMovieIds.push(movie.id);
   });
 
   afterAll(async () => {
+    const movieRepository = dataSource.getRepository(Movie);
+    const genreRepository = dataSource.getRepository(Genre);
+
+    if (createdMovieIds.length > 0) {
+      await movieRepository.delete(createdMovieIds);
+    }
+
+    if (createdGenreIds.length > 0) {
+      await genreRepository.delete(createdGenreIds);
+    }
+
+    await cleanupRefreshTokens(dataSource);
+
     await exportTestReport(results, PREFIX, 'Delete_Genre');
     await app.close();
   });
@@ -148,38 +169,19 @@ describe('[API] DELETE /genres/:id', () => {
       await record(
         {
           scope: 'All',
-          testCase: 'Security: Missing Token',
+          testCase: 'Không gửi Header Authorization',
           description: 'Không gửi Authorization header.',
           procedure: `DELETE /genres/${genreToDeleteId}`,
           expectedResult: 401,
-          preconditions: 'Không có token.',
+          preconditions: 'Không có',
         },
         async () => {
           const response = await request(server).delete(
             `/genres/${genreToDeleteId}`,
           );
+
           expect(response.status).toBe(401);
-          return response;
-        },
-      );
-    });
 
-    it('Xoá thất bại - Customer không có quyền', async () => {
-      await record(
-        {
-          scope: 'All',
-          testCase: 'Security: Customer Forbidden',
-          description: 'Customer cố xoá genre.',
-          procedure: `DELETE /genres/${genreToDeleteId}`,
-          expectedResult: 403,
-          preconditions: 'Dùng token customer.',
-        },
-        async () => {
-          const response = await request(server)
-            .delete(`/genres/${genreToDeleteId}`)
-            .set('Authorization', `Bearer ${customerToken}`);
-
-          expect(response.status).toBe(403);
           return response;
         },
       );
@@ -189,11 +191,11 @@ describe('[API] DELETE /genres/:id', () => {
       await record(
         {
           scope: 'All',
-          testCase: 'Security: Fake Token',
+          testCase: 'Gửi token giả',
           description: 'Gửi token giả.',
           procedure: `DELETE /genres/${genreToDeleteId}`,
           expectedResult: 401,
-          preconditions: 'Token giả.',
+          preconditions: 'Không có',
         },
         async () => {
           const response = await request(server)
@@ -201,6 +203,61 @@ describe('[API] DELETE /genres/:id', () => {
             .set('Authorization', 'Bearer fake.jwt.token');
 
           expect(response.status).toBe(401);
+
+          return response;
+        },
+      );
+    });
+
+    it('Xoá thất bại - Customer không có quyền', async () => {
+      await record(
+        {
+          scope: 'All',
+          testCase: 'Gửi token của customer',
+          description: 'Thực hiện xóa genre với tài khoản customer',
+          procedure: `DELETE /genres/${genreToDeleteId}`,
+          expectedResult: 403,
+          preconditions: 'Token Customer hợp lệ',
+        },
+        async () => {
+          const response = await request(server)
+            .delete(`/genres/${genreToDeleteId}`)
+            .set('Authorization', `Bearer ${customerToken}`);
+
+          expect(response.status).toBe(403);
+
+          return response;
+        },
+      );
+    });
+  });
+
+  describe('Validation', () => {
+    it('Xoá thất bại - ID không phải số', async () => {
+      await record(
+        {
+          scope: 'All',
+          testCase: 'Sai định dạng ID',
+          description:
+            'Truyền id là chuỗi chữ cái, ParseIntPipe không thể parse sang number.',
+          procedure: 'DELETE /genres/abc',
+          expectedResult: 400,
+          preconditions: 'Token Admin hợp lệ',
+        },
+        async () => {
+          const response = await request(server)
+            .delete('/genres/abc')
+            .set('Authorization', `Bearer ${adminToken}`);
+
+          expect(response.status).toBe(400);
+
+          const error = parseApiError(response);
+          expectErrorMessage(
+            error,
+            400,
+            'Validation failed (numeric string is expected)',
+          );
+
           return response;
         },
       );
@@ -212,11 +269,11 @@ describe('[API] DELETE /genres/:id', () => {
       await record(
         {
           scope: 'All',
-          testCase: 'Business: Genre Not Found',
+          testCase: 'Xóa genre không tồn tại',
           description: 'Xoá genre không tồn tại.',
           procedure: 'DELETE /genres/999999',
           expectedResult: 404,
-          preconditions: 'Dùng token admin.',
+          preconditions: 'Token Admin hợp lệ',
         },
         async () => {
           const response = await request(server)
@@ -224,8 +281,10 @@ describe('[API] DELETE /genres/:id', () => {
             .set('Authorization', `Bearer ${adminToken}`);
 
           expect(response.status).toBe(404);
+
           const error = parseApiError(response);
           expectErrorMessage(error, 404, 'Thể loại #999999 không tồn tại.');
+
           return response;
         },
       );
@@ -235,11 +294,11 @@ describe('[API] DELETE /genres/:id', () => {
       await record(
         {
           scope: 'All',
-          testCase: 'Business: Conflict FK',
+          testCase: 'Xóa genre đang được sử dụng',
           description: 'Xoá genre đang được gắn với 1 movie.',
           procedure: `DELETE /genres/${genreInUseId}`,
           expectedResult: 409,
-          preconditions: 'Genre đã được gắn vào movie.',
+          preconditions: 'Genre đã được gắn vào movie',
         },
         async () => {
           const response = await request(server)
@@ -247,12 +306,14 @@ describe('[API] DELETE /genres/:id', () => {
             .set('Authorization', `Bearer ${adminToken}`);
 
           expect(response.status).toBe(409);
+
           const error = parseApiError(response);
           expectErrorMessage(
             error,
             409,
             'Không thể xoá thể loại đang được sử dụng bởi 1 phim.',
           );
+
           return response;
         },
       );
@@ -260,12 +321,13 @@ describe('[API] DELETE /genres/:id', () => {
   });
 
   describe('Luồng thành công', () => {
-    it('Xoá thành công - Genre tồn tại và không liên kết phim', async () => {
+    it('Xoá thành công - Genre tồn tại và không liên kết phim trả 204 No Content', async () => {
       await record(
         {
           scope: 'All',
-          testCase: 'Business: Delete Success',
-          description: 'Admin xoá genre không liên kết movie.',
+          testCase: 'Xóa thành công',
+          description:
+            'Admin xoá genre không liên kết movie, API trả 204 No Content.',
           procedure: `DELETE /genres/${genreToDeleteId}`,
           expectedResult: 204,
           preconditions: 'Genre tồn tại và chưa dùng.',
@@ -276,6 +338,8 @@ describe('[API] DELETE /genres/:id', () => {
             .set('Authorization', `Bearer ${adminToken}`);
 
           expect(response.status).toBe(204);
+          expect(response.text).toBe('');
+
           return response;
         },
       );
@@ -285,7 +349,7 @@ describe('[API] DELETE /genres/:id', () => {
       await record(
         {
           scope: 'All',
-          testCase: 'Business: Delete Again',
+          testCase: 'Xóa lại lần 2 cùng ID',
           description: 'Gọi xoá lần 2 với đúng ID đã xoá.',
           procedure: `DELETE /genres/${genreToDeleteId}`,
           expectedResult: 404,
@@ -297,12 +361,14 @@ describe('[API] DELETE /genres/:id', () => {
             .set('Authorization', `Bearer ${adminToken}`);
 
           expect(response.status).toBe(404);
+
           const error = parseApiError(response);
           expectErrorMessage(
             error,
             404,
             `Thể loại #${genreToDeleteId} không tồn tại.`,
           );
+
           return response;
         },
       );
@@ -312,17 +378,26 @@ describe('[API] DELETE /genres/:id', () => {
       await record(
         {
           scope: 'All',
-          testCase: 'Verification: Get Deleted Genre',
+          testCase: 'Kiểm tra genre đã bị xoá',
           description: 'Xác minh genre đã biến mất.',
           procedure: `GET /genres/${genreToDeleteId}`,
           expectedResult: 404,
-          preconditions: 'Genre đã bị xoá.',
+          preconditions: 'Genre đã bị xóa',
         },
         async () => {
           const response = await request(server).get(
             `/genres/${genreToDeleteId}`,
           );
+
           expect(response.status).toBe(404);
+
+          const error = parseApiError(response);
+          expectErrorMessage(
+            error,
+            404,
+            `Thể loại #${genreToDeleteId} không tồn tại.`,
+          );
+
           return response;
         },
       );
@@ -332,20 +407,22 @@ describe('[API] DELETE /genres/:id', () => {
       await record(
         {
           scope: 'All',
-          testCase: 'Verification: Genre Removed From List',
+          testCase: 'Kiểm tra danh sách genre sau khi xoá',
           description: 'Danh sách genre không còn chứa ID đã xoá.',
           procedure: 'GET /genres',
           expectedResult: 200,
-          preconditions: 'Genre đã bị xoá.',
+          preconditions: 'Genre đã bị xoá',
         },
         async () => {
           const response = await request(server).get('/genres');
 
           expect(response.status).toBe(200);
+
           const listGenres = parseApiData<GenreResponseDto[]>(response);
           const exists = listGenres.some(
             (genre) => genre.id === genreToDeleteId,
           );
+
           expect(exists).toBe(false);
 
           return response;

@@ -5,8 +5,14 @@ import cookieParser from 'cookie-parser';
 import { DataSource } from 'typeorm';
 import { Server } from 'http';
 
-import { getActualStatus, parseApiData } from '../../helpers/http-test.helper';
+import {
+  expectErrorMessage,
+  getActualStatus,
+  parseApiData,
+  parseApiError,
+} from '../../helpers/http-test.helper';
 import { Room } from '../../../src/modules/rooms/entities/room.entity';
+import { Seat } from '../../../src/modules/seats/entities/seat.entity';
 import { RoomResponseDto } from '../../../src/modules/rooms/dto/room-response.dto';
 import { AppModule } from '../../../src/app.module';
 import { AuthResponseDto } from '../../../src/modules/auth/dto/auth-response.dto';
@@ -21,6 +27,7 @@ describe('[API] GET /rooms', () => {
   let customerToken = '';
 
   const createdRoomIds: number[] = [];
+  const createdSeatIds: number[] = [];
 
   const results: TestCaseRecord[] = [];
   const PREFIX = 'GRM';
@@ -85,80 +92,136 @@ describe('[API] GET /rooms', () => {
       .send({ email: 'api_client@gmail.com', password: 'Api_client_123' });
     customerToken = parseApiData<AuthResponseDto>(customerLoginRes).accessToken;
 
-    // Seed 2 phòng để test danh sách có sắp xếp
+    const seed = String(Date.now()).slice(-6);
+
     const roomRepository = dataSource.getRepository(Room);
-    const r1 = await roomRepository.save(roomRepository.create({ name: '31' }));
-    const r2 = await roomRepository.save(roomRepository.create({ name: '30' }));
-    createdRoomIds.push(r1.id, r2.id);
+    const seatRepository = dataSource.getRepository(Seat);
+
+    const rooms = await roomRepository.save([
+      roomRepository.create({ name: `ZGRM${seed}` }),
+      roomRepository.create({ name: `AGRM${seed}` }),
+      roomRepository.create({ name: `MGRM${seed}` }),
+    ]);
+
+    createdRoomIds.push(...rooms.map((room) => room.id));
+
+    const roomWithSeats = rooms.find((room) => room.name.startsWith('AGRM'));
+
+    if (!roomWithSeats) {
+      throw new Error('Seed room for totalSeats test was not created.');
+    }
+
+    const seats = await seatRepository.save([
+      seatRepository.create({
+        roomId: roomWithSeats.id,
+        seatKey: 'A1',
+        rowLabel: 'A',
+        seatNumber: 1,
+      }),
+      seatRepository.create({
+        roomId: roomWithSeats.id,
+        seatKey: 'A2',
+        rowLabel: 'A',
+        seatNumber: 2,
+      }),
+    ]);
+
+    createdSeatIds.push(...seats.map((seat) => seat.id));
   });
 
   afterAll(async () => {
+    const seatRepository = dataSource.getRepository(Seat);
     const roomRepository = dataSource.getRepository(Room);
+
+    if (createdSeatIds.length > 0) {
+      await seatRepository.delete(createdSeatIds);
+    }
+
     if (createdRoomIds.length > 0) {
       await roomRepository.delete(createdRoomIds);
     }
+
     await exportTestReport(results, PREFIX, 'Get_Rooms');
     await app.close();
   });
 
   describe('Phân quyền', () => {
-    it('Lấy danh sách thất bại - Không truyền Authorization Token', async () => {
+    it('Lấy danh sách thất bại - Không truyền Authorization Token trả về đúng message', async () => {
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Security: Missing Token',
+          testCase: 'Không gửi Header Authorization',
           description:
             'Không gửi access token khi gọi API lấy danh sách phòng.',
-          procedure: 'Không có dữ liệu',
+          procedure: 'GET /rooms',
           expectedResult: 401,
-          preconditions: 'Không có token.',
+          preconditions: 'Không có',
         },
         async () => {
           const response = await request(server).get('/rooms');
+
           expect(response.status).toBe(401);
+
+          const error = parseApiError(response);
+          expectErrorMessage(error, 401, 'Unauthorized');
+
           return response;
         },
       );
     });
 
-    it('Lấy danh sách thất bại - Truyền Fake Token', async () => {
+    it('Lấy danh sách thất bại - Truyền Fake Token trả về đúng message', async () => {
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Security: Fake Token',
+          testCase: 'Gửi token giả',
           description: 'Gửi Bearer token không hợp lệ.',
-          procedure: 'Không có dữ liệu',
+          procedure: 'GET /rooms với Authorization: Bearer fake.jwt.token',
           expectedResult: 401,
-          preconditions: 'Token giả.',
+          preconditions: 'Không có',
         },
         async () => {
           const response = await request(server)
             .get('/rooms')
             .set('Authorization', 'Bearer fake.jwt.token');
+
           expect(response.status).toBe(401);
+
+          const error = parseApiError(response);
+          expectErrorMessage(error, 401, 'Unauthorized');
+
           return response;
         },
       );
     });
 
-    it('Lấy danh sách thất bại - Role Customer bị chặn', async () => {
+    it('Lấy danh sách thất bại - Role Customer bị chặn trả về đúng message', async () => {
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Security: Customer Forbidden',
+          testCase: 'Gửi token của Customer',
           description: 'Tài khoản Customer cố lấy danh sách phòng chiếu.',
-          procedure: 'Không có dữ liệu',
+          procedure: 'GET /rooms với token Customer',
           expectedResult: 403,
-          preconditions: 'Dùng token Customer.',
+          preconditions: 'Token của customer',
         },
         async () => {
           const response = await request(server)
             .get('/rooms')
             .set('Authorization', `Bearer ${customerToken}`);
+
           expect(response.status).toBe(403);
+
+          const error = parseApiError(response);
+          expectErrorMessage(
+            error,
+            403,
+            'Bạn không có quyền thực hiện hành động này.',
+          );
+
           return response;
         },
       );
@@ -166,17 +229,17 @@ describe('[API] GET /rooms', () => {
   });
 
   describe('Luồng thành công', () => {
-    it('Lấy danh sách thành công - Trả về 200 và mảng phòng sắp xếp theo name ASC', async () => {
+    it('Lấy danh sách thành công - Kiểm tra response shape của RoomResponseDto', async () => {
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Happy Path: List All Rooms Ordered ASC',
+          testCase: 'Kiểm tra response shape',
           description:
-            'Lấy danh sách phòng thành công, kết quả được sắp xếp tăng dần theo name.',
-          procedure: 'Không có dữ liệu',
+            'Kiểm tra response chỉ gồm các field của RoomResponseDto.',
+          procedure: 'GET /rooms',
           expectedResult: 200,
-          preconditions: 'Đã seed 2 phòng "30" và "31" vào DB.',
+          preconditions: 'Token admin hợp lệ',
         },
         async () => {
           const response = await request(server)
@@ -188,20 +251,107 @@ describe('[API] GET /rooms', () => {
           const data = parseApiData<RoomResponseDto[]>(response);
           expect(Array.isArray(data)).toBe(true);
 
-          // Lấy 2 phòng vừa seed để kiểm tra thứ tự
-          const seededRooms = data.filter((r) => createdRoomIds.includes(r.id));
-          expect(seededRooms.length).toBe(2);
+          const seededRooms = data.filter((room) =>
+            createdRoomIds.includes(room.id),
+          );
 
-          // Kiểm tra sắp xếp ASC: "30" phải trước "31"
-          const names = seededRooms.map((r) => r.name);
+          expect(seededRooms.length).toBe(3);
+
+          seededRooms.forEach((room) => {
+            expect(typeof room.id).toBe('number');
+            expect(typeof room.name).toBe('string');
+            expect(typeof room.totalSeats).toBe('number');
+            expect(typeof room.createdAt).toBe('string');
+            expect(typeof room.updatedAt).toBe('string');
+
+            expect(Object.keys(room).sort()).toEqual([
+              'createdAt',
+              'id',
+              'name',
+              'totalSeats',
+              'updatedAt',
+            ]);
+          });
+
+          return response;
+        },
+      );
+    });
+
+    it('Lấy danh sách thành công - Sắp xếp theo name ASC', async () => {
+      await record(
+        {
+          id: nextId(),
+          scope: 'All',
+          testCase: 'Kiểm tra phòng được sắp xếp ASC',
+          description:
+            'Lấy danh sách phòng thành công, kết quả được sắp xếp tăng dần theo name.',
+          procedure: 'GET /rooms',
+          expectedResult: 200,
+          preconditions: 'Token admin hợp lệ',
+        },
+        async () => {
+          const response = await request(server)
+            .get('/rooms')
+            .set('Authorization', `Bearer ${adminToken}`);
+
+          expect(response.status).toBe(200);
+
+          const data = parseApiData<RoomResponseDto[]>(response);
+          const seededRooms = data.filter((room) =>
+            createdRoomIds.includes(room.id),
+          );
+
+          expect(seededRooms.length).toBe(3);
+
+          const names = seededRooms.map((room) => room.name);
           expect(names).toEqual([...names].sort());
 
-          // Kiểm tra shape của từng phần tử
-          const first = data[0];
-          expect(first.id).toBeDefined();
-          expect(first.name).toBeDefined();
-          expect(first.createdAt).toBeDefined();
-          expect(first.updatedAt).toBeDefined();
+          return response;
+        },
+      );
+    });
+
+    it('Lấy danh sách thành công - Trả về đúng totalSeats theo số ghế của phòng', async () => {
+      await record(
+        {
+          id: nextId(),
+          scope: 'All',
+          testCase: 'Kiểm tra totalSeats của phòng',
+          description:
+            'Lấy danh sách phòng thành công, totalSeats phản ánh đúng số ghế thuộc phòng.',
+          procedure: 'GET /rooms',
+          expectedResult: 200,
+          preconditions: 'Token admin hợp lệ',
+        },
+        async () => {
+          const response = await request(server)
+            .get('/rooms')
+            .set('Authorization', `Bearer ${adminToken}`);
+
+          expect(response.status).toBe(200);
+
+          const data = parseApiData<RoomResponseDto[]>(response);
+          const seededRooms = data.filter((room) =>
+            createdRoomIds.includes(room.id),
+          );
+
+          expect(seededRooms.length).toBe(3);
+
+          const roomWithSeats = seededRooms.find((room) =>
+            room.name.startsWith('AGRM'),
+          );
+
+          expect(roomWithSeats).toBeDefined();
+          expect(roomWithSeats?.totalSeats).toBe(2);
+
+          const roomsWithoutSeats = seededRooms.filter(
+            (room) => !room.name.startsWith('AGRM'),
+          );
+
+          roomsWithoutSeats.forEach((room) => {
+            expect(room.totalSeats).toBe(0);
+          });
 
           return response;
         },

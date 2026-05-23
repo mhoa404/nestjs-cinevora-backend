@@ -5,6 +5,7 @@ import request, { Response } from 'supertest';
 import cookieParser from 'cookie-parser';
 import { JwtService } from '@nestjs/jwt';
 import { Server } from 'http';
+import { DataSource } from 'typeorm';
 
 import { exportTestReport, TestCaseRecord } from '../../helpers/excel-reporter';
 import { AuthResponse, AuthUser } from '../../types/auth-user.type';
@@ -17,24 +18,41 @@ import {
 } from '../../helpers/http-test.helper';
 
 type RefreshBody = {
-  refreshToken?: string;
+  refreshToken?: unknown;
 };
 
 describe('[API] POST /auth/refresh', () => {
   let app: INestApplication;
   let server: Server;
+  let dataSource: DataSource;
   let jwtService: JwtService;
   let configService: ConfigService;
+  let validUser: AuthUser;
 
   const results: TestCaseRecord[] = [];
   const PREFIX = (process.env.TEST_PREFIX ?? 'REF').toUpperCase();
   let counter = 0;
 
-  let validUser: AuthUser;
-  let mobileRefreshToken = '';
-  let webRefreshToken = '';
-  let oldMobileRefreshToken = '';
-  let oldWebRefreshToken = '';
+  const validUserCredentials = {
+    email: 'api_client@gmail.com',
+    password: 'Api_client_123',
+  };
+
+  const cleanupTokenUserEmails = [validUserCredentials.email];
+
+  const cleanupRefreshTokens = async (): Promise<void> => {
+    if (!dataSource?.isInitialized) return;
+
+    await dataSource.query(
+      [
+        'DELETE rt',
+        'FROM refresh_tokens rt',
+        'INNER JOIN users u ON u.id = rt.user_id',
+        'WHERE u.email IN (?)',
+      ].join(' '),
+      [cleanupTokenUserEmails],
+    );
+  };
 
   const nextId = (): string => {
     counter += 1;
@@ -69,6 +87,99 @@ describe('[API] POST /auth/refresh', () => {
     }
   };
 
+  const createMobileRefreshToken = async (): Promise<string> => {
+    const response = await request(server).post('/auth/mobile/login').send({
+      email: validUserCredentials.email,
+      password: validUserCredentials.password,
+    });
+
+    expect(response.status).toBe(200);
+
+    return parseApiData<AuthResponse>(response).refreshToken as string;
+  };
+
+  const extractRefreshTokenCookie = (response: Response): string => {
+    const rawCookies = response.headers['set-cookie'];
+    const cookies: string[] = Array.isArray(rawCookies)
+      ? rawCookies
+      : rawCookies
+        ? [rawCookies]
+        : [];
+
+    const refreshTokenCookie = cookies.find((cookie) =>
+      cookie.startsWith('refreshToken='),
+    );
+
+    if (!refreshTokenCookie) {
+      throw new Error('Missing refreshToken cookie from response.');
+    }
+
+    return refreshTokenCookie.split(';')[0];
+  };
+
+  const createWebRefreshTokenCookie = async (): Promise<string> => {
+    const response = await request(server).post('/auth/login').send({
+      email: validUserCredentials.email,
+      password: validUserCredentials.password,
+    });
+
+    expect(response.status).toBe(200);
+
+    return extractRefreshTokenCookie(response);
+  };
+
+  const getRefreshSecret = (): string => {
+    const refreshSecret = configService.get<string>('jwt.refreshSecret');
+
+    if (!refreshSecret) {
+      throw new Error('Missing jwt.refreshSecret config.');
+    }
+
+    return refreshSecret;
+  };
+
+  const createSignedRefreshToken = async (
+    payload: {
+      sub: string;
+      email: string;
+      role: string;
+      exp?: number;
+    },
+    expiresInSeconds?: number,
+  ): Promise<string> => {
+    const options: { secret: string; expiresIn?: number } = {
+      secret: getRefreshSecret(),
+    };
+
+    if (expiresInSeconds) {
+      options.expiresIn = expiresInSeconds;
+    }
+
+    return jwtService.signAsync(payload, options);
+  };
+
+  const createExpiredRefreshToken = async (): Promise<string> => {
+    const pastTime = Math.floor(Date.now() / 1000) - 3600;
+
+    return createSignedRefreshToken({
+      sub: validUser.id,
+      email: validUser.email,
+      role: validUser.role,
+      exp: pastTime,
+    });
+  };
+
+  const createDeletedUserRefreshToken = async (): Promise<string> => {
+    return createSignedRefreshToken(
+      {
+        sub: '00000000-0000-0000-0000-000000000000',
+        email: 'deleted_user@gmail.com',
+        role: validUser.role,
+      },
+      3600,
+    );
+  };
+
   beforeAll(async () => {
     process.env.ENABLE_RECAPTCHA = 'false';
 
@@ -89,51 +200,47 @@ describe('[API] POST /auth/refresh', () => {
     app.use(cookieParser());
 
     await app.init();
+
     server = app.getHttpServer() as Server;
+    dataSource = app.get(DataSource);
     jwtService = app.get<JwtService>(JwtService);
     configService = app.get<ConfigService>(ConfigService);
 
-    const account = {
-      email: 'api_client@gmail.com',
-      password: 'Api_client_123',
-    };
-
-    const loginMobileRes = await request(server)
-      .post('/auth/mobile/login')
-      .send({
-        email: account.email,
-        password: account.password,
-      });
-    const mobileData = parseApiData<AuthResponse>(loginMobileRes);
-    validUser = mobileData.user;
-    mobileRefreshToken = mobileData.refreshToken as string;
-
-    const loginWebRes = await request(server).post('/auth/mobile/login').send({
-      email: account.email,
-      password: account.password,
+    const response = await request(server).post('/auth/mobile/login').send({
+      email: validUserCredentials.email,
+      password: validUserCredentials.password,
     });
-    const webData = parseApiData<AuthResponse>(loginWebRes);
-    webRefreshToken = webData.refreshToken as string;
+
+    expect(response.status).toBe(200);
+    validUser = parseApiData<AuthResponse>(response).user;
+
+    await cleanupRefreshTokens();
+  });
+
+  afterEach(async () => {
+    await cleanupRefreshTokens();
   });
 
   afterAll(async () => {
+    await cleanupRefreshTokens();
     await exportTestReport(results, PREFIX, 'Refresh_Token');
     await app.close();
   });
 
   describe('Mobile Scope', () => {
     it('Refresh Token thành công (Mobile)', async () => {
+      const mobileRefreshToken = await createMobileRefreshToken();
       const body: RefreshBody = { refreshToken: mobileRefreshToken };
 
       await record(
         {
           id: nextId(),
           scope: 'Mobile',
-          testCase: 'Refresh token thành công (Mobile)',
+          testCase: 'Refresh token thành công',
           description: 'Gửi refresh token hợp lệ qua Body để lấy token mới.',
           procedure: stringifyProcedure(body),
           expectedResult: 200,
-          preconditions: 'Có refresh token hợp lệ.',
+          preconditions: 'User đã đăng nhập Mobile và có refresh token hợp lệ.',
         },
         async () => {
           const response = await request(server)
@@ -145,9 +252,10 @@ describe('[API] POST /auth/refresh', () => {
           const res = parseApiData<AuthResponse>(response);
           expect(res.accessToken).toBeDefined();
           expect(res.refreshToken).toBeDefined();
-
-          oldMobileRefreshToken = mobileRefreshToken;
-          mobileRefreshToken = res.refreshToken as string;
+          expect(res.expiresIn).toBeDefined();
+          expect(res.user.email).toBe(validUserCredentials.email);
+          expect(res.user.role).toBeDefined();
+          expect(res.user.isActive).toBe(true);
 
           return response;
         },
@@ -161,7 +269,7 @@ describe('[API] POST /auth/refresh', () => {
         {
           id: nextId(),
           scope: 'Mobile',
-          testCase: 'Thiếu refresh token (Mobile)',
+          testCase: 'Thiếu refresh token',
           description: 'Không truyền trường refreshToken trong Body.',
           procedure: stringifyProcedure(body),
           expectedResult: 400,
@@ -171,6 +279,7 @@ describe('[API] POST /auth/refresh', () => {
           const response = await request(server)
             .post('/auth/mobile/refresh')
             .send(body);
+
           expect(response.status).toBe(400);
 
           const res = parseApiError(response);
@@ -181,23 +290,61 @@ describe('[API] POST /auth/refresh', () => {
       );
     });
 
-    it('Refresh thất bại - Token đã bị thu hồi (Mobile)', async () => {
-      const body: RefreshBody = { refreshToken: oldMobileRefreshToken };
+    it('Refresh thất bại - Sai định dạng refresh token (Mobile)', async () => {
+      const body: RefreshBody = { refreshToken: 123456 };
 
       await record(
         {
           id: nextId(),
           scope: 'Mobile',
-          testCase: 'Token đã bị thu hồi (Mobile)',
-          description: 'Dùng lại token đã refresh thành công trước đó.',
+          testCase: 'Sai định dạng refresh token',
+          description: 'Truyền refreshToken kiểu number thay vì string.',
           procedure: stringifyProcedure(body),
-          expectedResult: 401,
-          preconditions: 'Token trong DB đã có is_revoked = true.',
+          expectedResult: 400,
+          preconditions: 'ValidationPipe bắt lỗi IsString.',
         },
         async () => {
           const response = await request(server)
             .post('/auth/mobile/refresh')
             .send(body);
+
+          expect(response.status).toBe(400);
+
+          const res = parseApiError(response);
+          expectErrorMessage(res, 400, 'Định dạng refresh token không hợp lệ.');
+
+          return response;
+        },
+      );
+    });
+
+    it('Refresh thất bại - Token đã bị thu hồi (Mobile)', async () => {
+      const mobileRefreshToken = await createMobileRefreshToken();
+      const body: RefreshBody = { refreshToken: mobileRefreshToken };
+
+      await record(
+        {
+          id: nextId(),
+          scope: 'Mobile',
+          testCase: 'Token đã bị thu hồi',
+          description:
+            'Dùng lại refresh token đã được consume ở lần refresh trước.',
+          procedure: stringifyProcedure(body),
+          expectedResult: 401,
+          preconditions:
+            'Token đã refresh thành công và bị đánh dấu is_revoked = true.',
+        },
+        async () => {
+          const firstResponse = await request(server)
+            .post('/auth/mobile/refresh')
+            .send(body);
+
+          expect(firstResponse.status).toBe(200);
+
+          const response = await request(server)
+            .post('/auth/mobile/refresh')
+            .send(body);
+
           expect(response.status).toBe(401);
 
           const res = parseApiError(response);
@@ -212,30 +359,31 @@ describe('[API] POST /auth/refresh', () => {
       );
     });
 
-    it('Refresh thất bại - Sai định dạng (Mobile)', async () => {
+    it('Refresh thất bại - Token sai định dạng JWT (Mobile)', async () => {
       const body: RefreshBody = { refreshToken: 'invalid.jwt.string' };
 
       await record(
         {
           id: nextId(),
           scope: 'Mobile',
-          testCase: 'Token sai định dạng (Mobile)',
-          description: 'Gửi một chuỗi linh tinh.',
+          testCase: 'Token sai định dạng JWT',
+          description: 'Gửi chuỗi không phải refresh JWT hợp lệ.',
           procedure: stringifyProcedure(body),
           expectedResult: 401,
-          preconditions: 'Không có.',
+          preconditions: 'Không có token tương ứng trong hệ thống.',
         },
         async () => {
           const response = await request(server)
             .post('/auth/mobile/refresh')
             .send(body);
+
           expect(response.status).toBe(401);
 
           const res = parseApiError(response);
           expectErrorMessage(
             res,
             401,
-            'Refresh token không hợp lệ hoặc đã hết hạn',
+            'Refresh token không hợp lệ hoặc đã hết hạn.',
           );
 
           return response;
@@ -244,28 +392,15 @@ describe('[API] POST /auth/refresh', () => {
     });
 
     it('Refresh thất bại - Token đã hết hạn (Mobile)', async () => {
-      const refreshSecret =
-        configService.get<string>('jwt.refreshSecret') || '';
-      const pastTime = Math.floor(Date.now() / 1000) - 3600;
-
-      const expiredToken = await jwtService.signAsync(
-        {
-          sub: validUser.id,
-          email: validUser.email,
-          role: validUser.role,
-          exp: pastTime,
-        },
-        { secret: refreshSecret },
-      );
-
+      const expiredToken = await createExpiredRefreshToken();
       const body: RefreshBody = { refreshToken: expiredToken };
 
       await record(
         {
           id: nextId(),
           scope: 'Mobile',
-          testCase: 'Token đã hết hạn (Mobile)',
-          description: 'Gửi JWT hợp lệ nhưng exp trong quá khứ.',
+          testCase: 'Token đã hết hạn',
+          description: 'Gửi JWT đúng secret nhưng exp nằm trong quá khứ.',
           procedure: stringifyProcedure(body),
           expectedResult: 401,
           preconditions: 'Token quá hạn.',
@@ -274,13 +409,48 @@ describe('[API] POST /auth/refresh', () => {
           const response = await request(server)
             .post('/auth/mobile/refresh')
             .send(body);
+
           expect(response.status).toBe(401);
 
           const res = parseApiError(response);
           expectErrorMessage(
             res,
             401,
-            'Refresh token không hợp lệ hoặc đã hết hạn',
+            'Refresh token không hợp lệ hoặc đã hết hạn.',
+          );
+
+          return response;
+        },
+      );
+    });
+
+    it('Refresh thất bại - Tài khoản không tồn tại hoặc bị khoá (Mobile)', async () => {
+      const deletedUserToken = await createDeletedUserRefreshToken();
+      const body: RefreshBody = { refreshToken: deletedUserToken };
+
+      await record(
+        {
+          id: nextId(),
+          scope: 'Mobile',
+          testCase: 'Tài khoản không tồn tại hoặc bị khoá',
+          description:
+            'Gửi refresh JWT hợp lệ nhưng sub không còn tồn tại trong bảng users.',
+          procedure: stringifyProcedure(body),
+          expectedResult: 401,
+          preconditions: 'JWT verify thành công nhưng user không tồn tại.',
+        },
+        async () => {
+          const response = await request(server)
+            .post('/auth/mobile/refresh')
+            .send(body);
+
+          expect(response.status).toBe(401);
+
+          const res = parseApiError(response);
+          expectErrorMessage(
+            res,
+            401,
+            'Tài khoản không tồn tại hoặc đã bị khoá',
           );
 
           return response;
@@ -291,22 +461,25 @@ describe('[API] POST /auth/refresh', () => {
 
   describe('Web Scope', () => {
     it('Refresh Token thành công (Web)', async () => {
+      const webRefreshTokenCookie = await createWebRefreshTokenCookie();
       const body: RefreshBody = {};
 
       await record(
         {
           id: nextId(),
           scope: 'Web',
-          testCase: 'Refresh token thành công (Web)',
-          description: 'Gửi refresh token hợp lệ qua Cookie để lấy token mới.',
+          testCase: 'Refresh token thành công',
+          description:
+            'Gửi refresh token hợp lệ qua Cookie để lấy access token mới.',
           procedure: 'Gửi Header: Cookie=refreshToken=...',
           expectedResult: 200,
-          preconditions: 'Có refresh token hợp lệ trong Cookie.',
+          preconditions:
+            'User đã đăng nhập Web và có refreshToken Cookie hợp lệ.',
         },
         async () => {
           const response = await request(server)
             .post('/auth/refresh')
-            .set('Cookie', [`refreshToken=${webRefreshToken}`])
+            .set('Cookie', [webRefreshTokenCookie])
             .send(body);
 
           expect(response.status).toBe(200);
@@ -314,18 +487,21 @@ describe('[API] POST /auth/refresh', () => {
           const res = parseApiData<AuthResponse>(response);
           expect(res.accessToken).toBeDefined();
           expect(res.refreshToken).toBeUndefined();
+          expect(res.expiresIn).toBeDefined();
+          expect(res.user.email).toBe(validUserCredentials.email);
+          expect(res.user.role).toBeDefined();
+          expect(res.user.isActive).toBe(true);
 
           const rawCookies = response.headers['set-cookie'];
           expect(rawCookies).toBeDefined();
+
           const cookies: string[] = Array.isArray(rawCookies)
             ? rawCookies
             : [rawCookies];
 
           expect(
-            cookies.some((cookie) => cookie.includes('refreshToken=')),
+            cookies.some((cookie) => cookie.startsWith('refreshToken=')),
           ).toBeTruthy();
-
-          oldWebRefreshToken = webRefreshToken;
 
           return response;
         },
@@ -339,9 +515,9 @@ describe('[API] POST /auth/refresh', () => {
         {
           id: nextId(),
           scope: 'Web',
-          testCase: 'Thiếu refresh token (Web)',
-          description: 'Không truyền token vào cả Body lẫn Cookie.',
-          procedure: 'Request không gắn Header Cookie.',
+          testCase: 'Thiếu refresh token',
+          description: 'Không gửi refreshToken Cookie.',
+          procedure: 'Request không có Header Cookie.',
           expectedResult: 401,
           preconditions: 'Không có điều kiện đặc biệt.',
         },
@@ -349,6 +525,7 @@ describe('[API] POST /auth/refresh', () => {
           const response = await request(server)
             .post('/auth/refresh')
             .send(body);
+
           expect(response.status).toBe(401);
 
           const res = parseApiError(response);
@@ -364,23 +541,32 @@ describe('[API] POST /auth/refresh', () => {
     });
 
     it('Refresh thất bại - Token đã bị thu hồi (Web)', async () => {
+      const webRefreshTokenCookie = await createWebRefreshTokenCookie();
       const body: RefreshBody = {};
 
       await record(
         {
           id: nextId(),
           scope: 'Web',
-          testCase: 'Token đã bị thu hồi (Web)',
+          testCase: 'Token đã bị thu hồi',
           description:
-            'Đính kèm Cookie chứa token đã refresh thành công trước đó.',
+            'Dùng lại Cookie chứa refresh token đã được consume ở lần refresh trước.',
           procedure: 'Gửi Header: Cookie với token cũ.',
           expectedResult: 401,
-          preconditions: 'Token trong DB đã có is_revoked = true.',
+          preconditions:
+            'Token đã refresh thành công và bị đánh dấu is_revoked = true.',
         },
         async () => {
+          const firstResponse = await request(server)
+            .post('/auth/refresh')
+            .set('Cookie', [webRefreshTokenCookie])
+            .send(body);
+
+          expect(firstResponse.status).toBe(200);
+
           const response = await request(server)
             .post('/auth/refresh')
-            .set('Cookie', [`refreshToken=${oldWebRefreshToken}`])
+            .set('Cookie', [webRefreshTokenCookie])
             .send(body);
 
           expect(response.status).toBe(401);
@@ -397,23 +583,23 @@ describe('[API] POST /auth/refresh', () => {
       );
     });
 
-    it('Refresh thất bại - Sai định dạng (Web)', async () => {
+    it('Refresh thất bại - Token sai định dạng JWT (Web)', async () => {
       const body: RefreshBody = {};
 
       await record(
         {
           id: nextId(),
           scope: 'Web',
-          testCase: 'Token sai định dạng (Web)',
-          description: 'Gắn một chuỗi linh tinh vào Cookie.',
-          procedure: 'Gửi Header: Cookie=refreshToken=invalid.string',
+          testCase: 'Token sai định dạng JWT',
+          description: 'Gắn chuỗi không phải refresh JWT hợp lệ vào Cookie.',
+          procedure: 'Gửi Header: Cookie=refreshToken=invalid.jwt.string',
           expectedResult: 401,
-          preconditions: 'Không có.',
+          preconditions: 'Không có token tương ứng trong hệ thống.',
         },
         async () => {
           const response = await request(server)
             .post('/auth/refresh')
-            .set('Cookie', [`refreshToken=invalid.jwt.string`])
+            .set('Cookie', ['refreshToken=invalid.jwt.string'])
             .send(body);
 
           expect(response.status).toBe(401);
@@ -422,7 +608,7 @@ describe('[API] POST /auth/refresh', () => {
           expectErrorMessage(
             res,
             401,
-            'Refresh token không hợp lệ hoặc đã hết hạn',
+            'Refresh token không hợp lệ hoặc đã hết hạn.',
           );
 
           return response;
@@ -431,28 +617,16 @@ describe('[API] POST /auth/refresh', () => {
     });
 
     it('Refresh thất bại - Token đã hết hạn (Web)', async () => {
-      const refreshSecret =
-        configService.get<string>('jwt.refreshSecret') || '';
-      const pastTime = Math.floor(Date.now() / 1000) - 3600;
-
-      const expiredToken = await jwtService.signAsync(
-        {
-          sub: validUser.id,
-          email: validUser.email,
-          role: validUser.role,
-          exp: pastTime,
-        },
-        { secret: refreshSecret },
-      );
-
+      const expiredToken = await createExpiredRefreshToken();
       const body: RefreshBody = {};
 
       await record(
         {
           id: nextId(),
           scope: 'Web',
-          testCase: 'Token đã hết hạn (Web)',
-          description: 'Gửi JWT hợp lệ trong Cookie nhưng exp ở quá khứ.',
+          testCase: 'Token đã hết hạn',
+          description:
+            'Gửi JWT đúng secret nhưng exp nằm trong quá khứ qua Cookie.',
           procedure: 'Gửi Header: Cookie=refreshToken=expired_jwt_string',
           expectedResult: 401,
           preconditions: 'Token quá hạn.',
@@ -469,8 +643,77 @@ describe('[API] POST /auth/refresh', () => {
           expectErrorMessage(
             res,
             401,
-            'Refresh token không hợp lệ hoặc đã hết hạn',
+            'Refresh token không hợp lệ hoặc đã hết hạn.',
           );
+
+          return response;
+        },
+      );
+    });
+
+    it('Refresh thất bại - Tài khoản không tồn tại hoặc bị khoá (Web)', async () => {
+      const deletedUserToken = await createDeletedUserRefreshToken();
+      const body: RefreshBody = {};
+
+      await record(
+        {
+          id: nextId(),
+          scope: 'Web',
+          testCase: 'Tài khoản không tồn tại hoặc bị khoá',
+          description:
+            'Gửi refresh JWT hợp lệ trong Cookie nhưng sub không còn tồn tại trong bảng users.',
+          procedure: 'Gửi Header: Cookie=refreshToken=deleted_user_jwt',
+          expectedResult: 401,
+          preconditions: 'JWT verify thành công nhưng user không tồn tại.',
+        },
+        async () => {
+          const response = await request(server)
+            .post('/auth/refresh')
+            .set('Cookie', [`refreshToken=${deletedUserToken}`])
+            .send(body);
+
+          expect(response.status).toBe(401);
+
+          const res = parseApiError(response);
+          expectErrorMessage(
+            res,
+            401,
+            'Tài khoản không tồn tại hoặc đã bị khoá',
+          );
+
+          return response;
+        },
+      );
+    });
+
+    it('Refresh thành công - Bỏ qua dữ liệu rác trong Body (Web)', async () => {
+      const webRefreshTokenCookie = await createWebRefreshTokenCookie();
+      const body: RefreshBody = { refreshToken: 123456 };
+
+      await record(
+        {
+          id: nextId(),
+          scope: 'Web',
+          testCase: 'Bỏ qua dữ liệu rác ở Body',
+          description: 'Có Cookie hợp lệ nhưng cố tình gửi body sai định dạng.',
+          procedure: 'Cookie hợp lệ + JSON Body chứa refreshToken kiểu number.',
+          expectedResult: 200,
+          preconditions:
+            'API Web lấy refresh token từ Cookie và không validate Body.',
+        },
+        async () => {
+          const response = await request(server)
+            .post('/auth/refresh')
+            .set('Cookie', [webRefreshTokenCookie])
+            .send(body);
+
+          expect(response.status).toBe(200);
+
+          const res = parseApiData<AuthResponse>(response);
+          expect(res.accessToken).toBeDefined();
+          expect(res.refreshToken).toBeUndefined();
+          expect(res.expiresIn).toBeDefined();
+          expect(res.user.email).toBe(validUserCredentials.email);
 
           return response;
         },

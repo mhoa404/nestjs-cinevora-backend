@@ -26,6 +26,16 @@ const TEST_SUITES: Record<
     file: 'test/api/auth/logout.api.spec.ts',
     description: 'API Đăng xuất (Auth)',
   },
+  get_genres: {
+    prefix: 'GGR',
+    file: 'test/api/genres/get-genres.api.spec.ts',
+    description: 'API Lấy danh sách thể loại phim (Genres)',
+  },
+  get_genre_by_id: {
+    prefix: 'GGI',
+    file: 'test/api/genres/get-genre-by-id.api.spec.ts',
+    description: 'API Lấy thể loại phim theo ID (Genres)',
+  },
   create_genre: {
     prefix: 'CGR',
     file: 'test/api/genres/create-genre.api.spec.ts',
@@ -40,6 +50,16 @@ const TEST_SUITES: Record<
     prefix: 'DGR',
     file: 'test/api/genres/delete-genre.api.spec.ts',
     description: 'API xoá thể loại phim (Genres)',
+  },
+  get_movies: {
+    prefix: 'GMV',
+    file: 'test/api/movies/get-movies.api.spec.ts',
+    description: 'API Lấy danh sách phim (Movies)',
+  },
+  get_movie_detail: {
+    prefix: 'GMD',
+    file: 'test/api/movies/get-movie-detail.api.spec.ts',
+    description: 'API Lấy chi tiết phim (Movies)',
   },
   create_movie: {
     prefix: 'CMV',
@@ -105,6 +125,41 @@ const TEST_SUITES: Record<
     prefix: 'GSD',
     file: 'test/api/showtimes/get-showtime-by-id.api.spec.ts',
     description: 'API Lấy suất chiếu theo ID (Showtimes)',
+  },
+  get_seats: {
+    prefix: 'GSE',
+    file: 'test/api/seats/get-seats.api.spec.ts',
+    description: 'API Lấy danh sách ghế (Seats)',
+  },
+  create_seats: {
+    prefix: 'CSE',
+    file: 'test/api/seats/create-seats.api.spec.ts',
+    description: 'API Tạo ghế (Seats)',
+  },
+  generate_seats: {
+    prefix: 'GNS',
+    file: 'test/api/seats/generate-seats.api.spec.ts',
+    description: 'API Generate ghế (Seats)',
+  },
+  delete_seat: {
+    prefix: 'DSE',
+    file: 'test/api/seats/delete-seat.api.spec.ts',
+    description: 'API Xoá ghế (Seats)',
+  },
+  get_showtime_seats: {
+    prefix: 'GSS',
+    file: 'test/api/bookings/get-showtime-seats.api.spec.ts',
+    description: 'API Lấy sơ đồ ghế suất chiếu (Bookings)',
+  },
+  create_booking: {
+    prefix: 'CBK',
+    file: 'test/api/bookings/create-booking.api.spec.ts',
+    description: 'API Tạo booking (Bookings)',
+  },
+  cancel_booking: {
+    prefix: 'CAB',
+    file: 'test/api/bookings/cancel-booking.api.spec.ts',
+    description: 'API Huỷ booking (Bookings)',
   },
 };
 

@@ -16,9 +16,11 @@ import { RoomResponseDto } from '../../../src/modules/rooms/dto/room-response.dt
 import { AppModule } from '../../../src/app.module';
 import { AuthResponseDto } from '../../../src/modules/auth/dto/auth-response.dto';
 import { exportTestReport, TestCaseRecord } from '../../helpers/excel-reporter';
+import { cleanupRefreshTokens } from '../../helpers/cleanup-refresh-token';
 
 type RoomBody = {
   name?: unknown;
+  extraField?: unknown;
 };
 
 describe('[API] POST /rooms', () => {
@@ -29,6 +31,10 @@ describe('[API] POST /rooms', () => {
   let adminToken = '';
   let customerToken = '';
 
+  let createRoomName = '';
+  let trimRoomName = '';
+  let duplicateRoomName = '';
+
   const createdRoomIds: number[] = [];
 
   const results: TestCaseRecord[] = [];
@@ -37,7 +43,7 @@ describe('[API] POST /rooms', () => {
 
   const nextId = (): string => {
     counter += 1;
-    return `${PREFIX}${String(counter).padStart(2, '0')}`;
+    return PREFIX + String(counter).padStart(2, '0');
   };
 
   const stringifyProcedure = (
@@ -68,6 +74,30 @@ describe('[API] POST /rooms', () => {
     }
   };
 
+  const rememberCreatedRoom = (room: RoomResponseDto): void => {
+    if (typeof room.id === 'number') {
+      createdRoomIds.push(room.id);
+    }
+  };
+
+  const allocateRoomNames = async (): Promise<string[]> => {
+    const roomRepository = dataSource.getRepository(Room);
+    const existingRooms = await roomRepository.find({ select: ['name'] });
+    const existingNames = new Set(existingRooms.map((room) => room.name));
+
+    const availableNames = Array.from({ length: 100 }, (_, index) =>
+      String(index).padStart(2, '0'),
+    ).filter((name) => !existingNames.has(name));
+
+    if (availableNames.length < 3) {
+      throw new Error(
+        'Không đủ room name dạng 2 chữ số để chạy create-room e2e.',
+      );
+    }
+
+    return availableNames.slice(0, 3);
+  };
+
   beforeAll(async () => {
     process.env.ENABLE_RECAPTCHA = 'false';
 
@@ -91,91 +121,121 @@ describe('[API] POST /rooms', () => {
     await app.init();
     server = app.getHttpServer() as Server;
 
+    const allocatedNames = await allocateRoomNames();
+    duplicateRoomName = allocatedNames[0];
+    createRoomName = allocatedNames[1];
+    trimRoomName = allocatedNames[2];
+
     const adminLoginRes = await request(server)
       .post('/auth/mobile/login')
       .send({ email: 'api_tester@gmail.com', password: 'Api_tester_123' });
+
     adminToken = parseApiData<AuthResponseDto>(adminLoginRes).accessToken;
 
     const customerLoginRes = await request(server)
       .post('/auth/mobile/login')
       .send({ email: 'api_client@gmail.com', password: 'Api_client_123' });
+
     customerToken = parseApiData<AuthResponseDto>(customerLoginRes).accessToken;
   });
 
   afterAll(async () => {
     const roomRepository = dataSource.getRepository(Room);
+
     if (createdRoomIds.length > 0) {
       await roomRepository.delete(createdRoomIds);
     }
+
+    await cleanupRefreshTokens(dataSource);
+
     await exportTestReport(results, PREFIX, 'Create_Room');
     await app.close();
   });
 
   describe('Phân quyền', () => {
-    it('Tạo thất bại - Không truyền Authorization Token', async () => {
-      const body: RoomBody = { name: '10' };
+    it('Tạo thất bại - Không truyền Authorization Token trả về đúng message', async () => {
+      const body: RoomBody = { name: '01' };
 
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Security: Missing Token',
+          testCase: 'Không truyền token',
           description: 'Không gửi access token khi gọi API tạo phòng.',
           procedure: stringifyProcedure(body),
           expectedResult: 401,
-          preconditions: 'Không có token.',
+          preconditions: 'Không có token',
         },
         async () => {
           const response = await request(server).post('/rooms').send(body);
+
           expect(response.status).toBe(401);
+
+          const error = parseApiError(response);
+          expectErrorMessage(error, 401, 'Unauthorized');
+
           return response;
         },
       );
     });
 
-    it('Tạo thất bại - Truyền Fake Token', async () => {
-      const body: RoomBody = { name: '10' };
+    it('Tạo thất bại - Truyền Fake Token trả về đúng message', async () => {
+      const body: RoomBody = { name: '01' };
 
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Security: Fake Token',
+          testCase: 'Token không hợp lệ',
           description: 'Gửi Bearer token không hợp lệ.',
           procedure: stringifyProcedure(body),
           expectedResult: 401,
-          preconditions: 'Token giả.',
+          preconditions: 'Token giả',
         },
         async () => {
           const response = await request(server)
             .post('/rooms')
             .set('Authorization', 'Bearer fake.jwt.token')
             .send(body);
+
           expect(response.status).toBe(401);
+
+          const error = parseApiError(response);
+          expectErrorMessage(error, 401, 'Unauthorized');
+
           return response;
         },
       );
     });
 
-    it('Tạo thất bại - Role Customer bị chặn', async () => {
-      const body: RoomBody = { name: '10' };
+    it('Tạo thất bại - Role Customer bị chặn trả về đúng message', async () => {
+      const body: RoomBody = { name: '01' };
 
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Security: Customer Forbidden',
+          testCase: 'Customer không có quyền',
           description: 'Tài khoản Customer cố tạo phòng chiếu.',
           procedure: stringifyProcedure(body),
           expectedResult: 403,
-          preconditions: 'Dùng token Customer.',
+          preconditions: 'Token Customer',
         },
         async () => {
           const response = await request(server)
             .post('/rooms')
-            .set('Authorization', `Bearer ${customerToken}`)
+            .set('Authorization', 'Bearer ' + customerToken)
             .send(body);
+
           expect(response.status).toBe(403);
+
+          const error = parseApiError(response);
+          expectErrorMessage(
+            error,
+            403,
+            'Bạn không có quyền thực hiện hành động này.',
+          );
+
           return response;
         },
       );
@@ -183,169 +243,233 @@ describe('[API] POST /rooms', () => {
   });
 
   describe('Validation Payload', () => {
-    it('Tạo thất bại - Thiếu trường name', async () => {
+    it('Tạo thất bại - Thiếu trường name trả về đúng message', async () => {
       const body = {};
 
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Validation: Missing Name',
+          testCase: 'Thiếu tên phòng',
           description: 'Gửi body rỗng, không có trường name.',
           procedure: stringifyProcedure(body),
           expectedResult: 400,
-          preconditions: 'Dùng token Admin.',
+          preconditions: 'Token Admin',
         },
         async () => {
           const response = await request(server)
             .post('/rooms')
-            .set('Authorization', `Bearer ${adminToken}`)
+            .set('Authorization', 'Bearer ' + adminToken)
             .send(body);
+
           expect(response.status).toBe(400);
+
           const error = parseApiError(response);
-          expect(error.statusCode).toBe(400);
+          expectErrorMessage(
+            error,
+            400,
+            'Tên phòng phải theo định dạng 01, 02, 03... (2 chữ số)',
+          );
+
           return response;
         },
       );
     });
 
-    it('Tạo thất bại - name là chuỗi rỗng', async () => {
+    it('Tạo thất bại - name là chuỗi rỗng trả về đúng message', async () => {
       const body: RoomBody = { name: '' };
 
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Validation: Empty String',
+          testCase: 'Tên phòng rỗng',
           description: 'Gửi name là chuỗi rỗng.',
           procedure: stringifyProcedure(body),
           expectedResult: 400,
-          preconditions: 'Dùng token Admin.',
+          preconditions: 'Token Admin',
         },
         async () => {
           const response = await request(server)
             .post('/rooms')
-            .set('Authorization', `Bearer ${adminToken}`)
+            .set('Authorization', 'Bearer ' + adminToken)
             .send(body);
+
           expect(response.status).toBe(400);
+
           const error = parseApiError(response);
-          expect(error.statusCode).toBe(400);
+          expectErrorMessage(
+            error,
+            400,
+            'Tên phòng phải theo định dạng 01, 02, 03... (2 chữ số)',
+          );
+
           return response;
         },
       );
     });
 
-    it('Tạo thất bại - name không đúng định dạng 2 chữ số (VD: "1")', async () => {
+    it('Tạo thất bại - name chỉ gồm khoảng trắng trả về đúng message', async () => {
+      const body: RoomBody = { name: '   ' };
+
+      await record(
+        {
+          id: nextId(),
+          scope: 'All',
+          testCase: 'Tên phòng chỉ có khoảng trắng',
+          description:
+            'Gửi name chỉ gồm khoảng trắng, Trim decorator sẽ trim về chuỗi rỗng.',
+          procedure: stringifyProcedure(body),
+          expectedResult: 400,
+          preconditions: 'Token Admin',
+        },
+        async () => {
+          const response = await request(server)
+            .post('/rooms')
+            .set('Authorization', 'Bearer ' + adminToken)
+            .send(body);
+
+          expect(response.status).toBe(400);
+
+          const error = parseApiError(response);
+          expectErrorMessage(
+            error,
+            400,
+            'Tên phòng phải theo định dạng 01, 02, 03... (2 chữ số)',
+          );
+
+          return response;
+        },
+      );
+    });
+
+    it('Tạo thất bại - name không đúng định dạng 2 chữ số (VD: 1)', async () => {
       const body: RoomBody = { name: '1' };
 
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Validation: Wrong Format (1 digit)',
+          testCase: 'Tên phòng sai định dạng',
           description: 'Gửi name chỉ có 1 chữ số, không đúng định dạng.',
           procedure: stringifyProcedure(body),
           expectedResult: 400,
-          preconditions: 'Dùng token Admin.',
+          preconditions: 'Token Admin',
         },
         async () => {
           const response = await request(server)
             .post('/rooms')
-            .set('Authorization', `Bearer ${adminToken}`)
+            .set('Authorization', 'Bearer ' + adminToken)
             .send(body);
+
           expect(response.status).toBe(400);
+
           const error = parseApiError(response);
           expectErrorMessage(
             error,
             400,
             'Tên phòng phải theo định dạng 01, 02, 03... (2 chữ số)',
           );
+
           return response;
         },
       );
     });
 
-    it('Tạo thất bại - name không đúng định dạng 2 chữ số (VD: "abc")', async () => {
+    it('Tạo thất bại - name không đúng định dạng 2 chữ số (VD: abc)', async () => {
       const body: RoomBody = { name: 'abc' };
 
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Validation: Wrong Format (letters)',
+          testCase: 'Tên phòng không phải số',
           description: 'Gửi name gồm ký tự chữ cái, không phải số.',
           procedure: stringifyProcedure(body),
           expectedResult: 400,
-          preconditions: 'Dùng token Admin.',
+          preconditions: 'Token Admin',
         },
         async () => {
           const response = await request(server)
             .post('/rooms')
-            .set('Authorization', `Bearer ${adminToken}`)
+            .set('Authorization', 'Bearer ' + adminToken)
             .send(body);
+
           expect(response.status).toBe(400);
+
           const error = parseApiError(response);
           expectErrorMessage(
             error,
             400,
             'Tên phòng phải theo định dạng 01, 02, 03... (2 chữ số)',
           );
+
           return response;
         },
       );
     });
 
-    it('Tạo thất bại - name vượt quá 3 chữ số (VD: "123")', async () => {
+    it('Tạo thất bại - name không đúng định dạng 2 chữ số (VD: 123)', async () => {
       const body: RoomBody = { name: '123' };
 
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Validation: Wrong Format (3 digits)',
+          testCase: 'Tên phòng quá 2 chữ số',
           description: 'Gửi name có 3 chữ số, không đúng định dạng.',
           procedure: stringifyProcedure(body),
           expectedResult: 400,
-          preconditions: 'Dùng token Admin.',
+          preconditions: 'Token Admin',
         },
         async () => {
           const response = await request(server)
             .post('/rooms')
-            .set('Authorization', `Bearer ${adminToken}`)
+            .set('Authorization', 'Bearer ' + adminToken)
             .send(body);
+
           expect(response.status).toBe(400);
+
           const error = parseApiError(response);
           expectErrorMessage(
             error,
             400,
             'Tên phòng phải theo định dạng 01, 02, 03... (2 chữ số)',
           );
+
           return response;
         },
       );
     });
 
-    it('Tạo thất bại - Gửi payload dư field', async () => {
-      const body = { name: '10', extraField: 'hack' };
+    it('Tạo thất bại - Gửi payload dư field trả về đúng message', async () => {
+      const body: RoomBody = { name: '01', extraField: 'hack' };
 
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Validation: Extra Fields',
+          testCase: 'Payload dư field',
           description: 'Gửi thêm field không được khai báo trong DTO.',
           procedure: stringifyProcedure(body),
           expectedResult: 400,
-          preconditions: 'ValidationPipe bật forbidNonWhitelisted.',
+          preconditions: 'Token Admin',
         },
         async () => {
           const response = await request(server)
             .post('/rooms')
-            .set('Authorization', `Bearer ${adminToken}`)
+            .set('Authorization', 'Bearer ' + adminToken)
             .send(body);
+
           expect(response.status).toBe(400);
+
           const error = parseApiError(response);
-          expect(error.statusCode).toBe(400);
+          expectErrorMessage(
+            error,
+            400,
+            'property extraField should not exist',
+          );
+
           return response;
         },
       );
@@ -353,33 +477,37 @@ describe('[API] POST /rooms', () => {
   });
 
   describe('Ràng buộc nghiệp vụ', () => {
-    it('Tạo thất bại - Tên phòng đã tồn tại (409 Conflict)', async () => {
+    it('Tạo thất bại - Tên phòng đã tồn tại', async () => {
       const roomRepository = dataSource.getRepository(Room);
       const existingRoom = await roomRepository.save(
-        roomRepository.create({ name: '11' }),
+        roomRepository.create({ name: duplicateRoomName }),
       );
+
       createdRoomIds.push(existingRoom.id);
 
-      const body: RoomBody = { name: '11' };
+      const body: RoomBody = { name: duplicateRoomName };
 
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Business: Duplicate Name',
+          testCase: 'Tên phòng đã tồn tại',
           description: 'Cố tình tạo phòng với tên đã tồn tại trong hệ thống.',
           procedure: stringifyProcedure(body),
           expectedResult: 409,
-          preconditions: `Room "11" đã được tạo sẵn (ID: ${existingRoom.id}).`,
+          preconditions: 'Token Admin, tên phòng đã tồn tại',
         },
         async () => {
           const response = await request(server)
             .post('/rooms')
-            .set('Authorization', `Bearer ${adminToken}`)
+            .set('Authorization', 'Bearer ' + adminToken)
             .send(body);
+
           expect(response.status).toBe(409);
+
           const error = parseApiError(response);
           expectErrorMessage(error, 409, 'Tên phòng đã tồn tại');
+
           return response;
         },
       );
@@ -388,33 +516,112 @@ describe('[API] POST /rooms', () => {
 
   describe('Luồng thành công', () => {
     it('Tạo thành công - Trả về 201 và dữ liệu phòng hợp lệ', async () => {
-      const body: RoomBody = { name: '10' };
+      const body: RoomBody = { name: createRoomName };
 
       await record(
         {
           id: nextId(),
           scope: 'All',
-          testCase: 'Happy Path: Full Creation',
+          testCase: 'Tạo phòng hợp lệ',
           description: 'Tạo phòng thành công với payload hợp lệ.',
           procedure: stringifyProcedure(body),
           expectedResult: 201,
-          preconditions: 'Dùng token Admin.',
+          preconditions: 'Token Admin, tên phòng chưa tồn tại',
         },
         async () => {
           const response = await request(server)
             .post('/rooms')
-            .set('Authorization', `Bearer ${adminToken}`)
+            .set('Authorization', 'Bearer ' + adminToken)
             .send(body);
 
           expect(response.status).toBe(201);
 
           const data = parseApiData<RoomResponseDto>(response);
-          expect(data.id).toBeDefined();
-          expect(data.name).toBe('10');
-          expect(data.createdAt).toBeDefined();
-          expect(data.updatedAt).toBeDefined();
+          rememberCreatedRoom(data);
 
-          createdRoomIds.push(data.id);
+          expect(typeof data.id).toBe('number');
+          expect(data.name).toBe(createRoomName);
+          expect(data.totalSeats).toBe(0);
+          expect(typeof data.createdAt).toBe('string');
+          expect(typeof data.updatedAt).toBe('string');
+
+          return response;
+        },
+      );
+    });
+
+    it('Tạo thành công - Tự trim khoảng trắng hai đầu', async () => {
+      const body: RoomBody = { name: '   ' + trimRoomName + '   ' };
+
+      await record(
+        {
+          id: nextId(),
+          scope: 'All',
+          testCase: 'Tự trim tên phòng',
+          description: 'Tạo phòng thành công khi name có khoảng trắng hai đầu.',
+          procedure: stringifyProcedure(body),
+          expectedResult: 201,
+          preconditions: 'Token Admin, tên phòng chưa tồn tại',
+        },
+        async () => {
+          const response = await request(server)
+            .post('/rooms')
+            .set('Authorization', 'Bearer ' + adminToken)
+            .send(body);
+
+          expect(response.status).toBe(201);
+
+          const data = parseApiData<RoomResponseDto>(response);
+          rememberCreatedRoom(data);
+
+          expect(data.name).toBe(trimRoomName);
+          expect(data.totalSeats).toBe(0);
+
+          return response;
+        },
+      );
+    });
+
+    it('Tạo thành công - Trả về đúng shape RoomResponseDto', async () => {
+      const body: RoomBody = { name: createRoomName };
+
+      await record(
+        {
+          id: nextId(),
+          scope: 'All',
+          testCase: 'Kiểm tra response',
+          description:
+            'Kiểm tra response tạo phòng chỉ gồm các field của RoomResponseDto.',
+          procedure: stringifyProcedure(body),
+          expectedResult: 201,
+          preconditions: 'Token Admin, phòng đã được tạo',
+        },
+        async () => {
+          const response = await request(server)
+            .get('/rooms')
+            .set('Authorization', 'Bearer ' + adminToken);
+
+          expect(response.status).toBe(200);
+
+          const rooms = parseApiData<RoomResponseDto[]>(response);
+          const data = rooms.find((room) => room.name === createRoomName);
+
+          expect(data).toBeDefined();
+
+          expect(typeof data?.id).toBe('number');
+          expect(data?.name).toBe(createRoomName);
+          expect(data?.totalSeats).toBe(0);
+          expect(typeof data?.createdAt).toBe('string');
+          expect(typeof data?.updatedAt).toBe('string');
+
+          expect(Object.keys(data as RoomResponseDto).sort()).toEqual([
+            'createdAt',
+            'id',
+            'name',
+            'totalSeats',
+            'updatedAt',
+          ]);
+
           return response;
         },
       );

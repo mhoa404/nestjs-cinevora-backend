@@ -14,18 +14,18 @@ import {
 } from '../../helpers/http-test.helper';
 
 type RegisterBody = {
-  fullName?: string;
-  email?: string;
-  password?: string;
-  dateOfBirth?: string;
-  phone?: string;
-  recaptchaToken?: string;
-  unknownField?: string;
-  sex?: string;
-  city?: string;
-  district?: string;
-  address?: string;
-  IDCardNumber?: string;
+  fullName?: unknown;
+  email?: unknown;
+  password?: unknown;
+  dateOfBirth?: unknown;
+  phone?: unknown;
+  recaptchaToken?: unknown;
+  unknownField?: unknown;
+  sex?: unknown;
+  city?: unknown;
+  district?: unknown;
+  address?: unknown;
+  IDCardNumber?: unknown;
 };
 
 type RegisterSuccessResponse = {
@@ -35,6 +35,8 @@ type RegisterSuccessResponse = {
     email: string;
     fullName: string;
     phone: string | null;
+    role?: string;
+    isActive?: boolean;
     [key: string]: unknown;
   };
 };
@@ -42,37 +44,47 @@ type RegisterSuccessResponse = {
 describe('[API] POST /auth/register', () => {
   let app: INestApplication;
   let server: Server;
+  let dataSource: DataSource;
 
   const results: TestCaseRecord[] = [];
   const PREFIX = (process.env.TEST_PREFIX ?? 'REG').toUpperCase();
   let counter = 0;
 
+  const cleanupRegisteredUsers = async (): Promise<void> => {
+    if (!dataSource?.isInitialized) return;
+
+    await dataSource.query('DELETE FROM users WHERE email LIKE ?', [
+      'register_%@example.com',
+    ]);
+  };
+
   const nextId = (): string => {
     counter += 1;
-    return `${PREFIX}${String(counter).padStart(2, '0')}`;
+    return PREFIX + String(counter).padStart(2, '0');
   };
 
   const buildValidBody = (
     overrides: Partial<RegisterBody> = {},
   ): RegisterBody => {
-    const seed = `${Date.now()}_${Math.floor(Math.random() * 100000)}`;
+    const seed =
+      String(Date.now()) + '_' + String(Math.floor(Math.random() * 100000));
+    const phoneSuffix = String(Math.floor(10000000 + Math.random() * 89999999));
 
     return {
       fullName: 'Test Register',
-      email: `register_${seed}@example.com`,
+      email: 'register_' + seed + '@example.com',
       password: 'Test@1234',
       dateOfBirth: '2004-01-20',
-      phone: `9${Math.floor(10000000 + Math.random() * 89999999)}`,
+      phone: '9' + phoneSuffix,
       recaptchaToken: 'bypass-token',
       ...overrides,
     };
   };
 
-  const stringifyProcedure = (body?: RegisterBody): string => {
-    if (!body || Object.keys(body).length === 0) {
-      return 'Không có dữ liệu';
-    }
-
+  const stringifyProcedure = (
+    body?: RegisterBody | Record<string, unknown>,
+  ): string => {
+    if (!body || Object.keys(body).length === 0) return 'Không có dữ liệu';
     return JSON.stringify(body, null, 2);
   };
 
@@ -93,12 +105,7 @@ describe('[API] POST /auth/register', () => {
       passed = false;
       throw error;
     } finally {
-      results.push({
-        ...meta,
-        actualResult,
-        passed,
-        testDate,
-      });
+      results.push({ ...meta, actualResult, passed, testDate });
     }
   };
 
@@ -121,18 +128,19 @@ describe('[API] POST /auth/register', () => {
     );
 
     await app.init();
+
     server = app.getHttpServer() as Server;
+    dataSource = app.get(DataSource);
+
+    await cleanupRegisteredUsers();
+  });
+
+  afterEach(async () => {
+    await cleanupRegisteredUsers();
   });
 
   afterAll(async () => {
-    try {
-      const dataSource = app.get(DataSource);
-      await dataSource.query(
-        `DELETE FROM users WHERE email LIKE 'register_%@example.com'`,
-      );
-    } catch (e) {
-      console.warn('Failed to cleanup users', e);
-    }
+    await cleanupRegisteredUsers();
     await exportTestReport(results, PREFIX, 'Register');
     await app.close();
   });
@@ -159,10 +167,14 @@ describe('[API] POST /auth/register', () => {
         expect(response.status).toBe(201);
 
         const res = parseApiData<RegisterSuccessResponse>(response);
-
         expect(res.message).toBe('Đăng ký tài khoản thành công');
+        expect(res.user.id).toBeDefined();
         expect(res.user.email).toBe(body.email);
         expect(res.user.fullName).toBe(body.fullName);
+        expect(res.user.phone).toBe(body.phone);
+        expect(res.user.role).toBeDefined();
+        expect(res.user.isActive).toBe(true);
+        expect(res.user.password).toBeUndefined();
 
         return response;
       },
@@ -175,7 +187,8 @@ describe('[API] POST /auth/register', () => {
       city: 'Da Nang',
       district: 'Hai Chau',
       address: '123 Le Loi',
-      IDCardNumber: `20${Math.floor(1000000 + Math.random() * 8999999)}`,
+      IDCardNumber:
+        '20' + String(Math.floor(1000000 + Math.random() * 8999999)),
     });
 
     await record(
@@ -186,7 +199,8 @@ describe('[API] POST /auth/register', () => {
         description: 'Gửi đầy đủ dữ liệu bắt buộc và tùy chọn.',
         procedure: stringifyProcedure(body),
         expectedResult: 201,
-        preconditions: 'Server chạy, DB kết nối thành công.',
+        preconditions:
+          'Server chạy, DB kết nối thành công, email/SĐT/CCCD chưa tồn tại.',
       },
       async () => {
         const response = await request(server)
@@ -196,9 +210,10 @@ describe('[API] POST /auth/register', () => {
         expect(response.status).toBe(201);
 
         const res = parseApiData<RegisterSuccessResponse>(response);
-
         expect(res.message).toBe('Đăng ký tài khoản thành công');
         expect(res.user.email).toBe(body.email);
+        expect(res.user.fullName).toBe(body.fullName);
+        expect(res.user.password).toBeUndefined();
 
         return response;
       },
@@ -214,7 +229,7 @@ describe('[API] POST /auth/register', () => {
         scope: 'All',
         testCase: 'Body rỗng',
         description: 'Gửi body rỗng không có trường nào.',
-        procedure: 'Không có dữ liệu',
+        procedure: stringifyProcedure(body),
         expectedResult: 400,
         preconditions: 'Không có điều kiện đặc biệt.',
       },
@@ -226,7 +241,7 @@ describe('[API] POST /auth/register', () => {
         expect(response.status).toBe(400);
 
         const res = parseApiError(response);
-        expect(res.statusCode).toBe(400);
+        expectErrorMessage(res, 400, 'Vui lòng điền đủ họ tên.');
 
         return response;
       },
@@ -255,40 +270,7 @@ describe('[API] POST /auth/register', () => {
         expect(response.status).toBe(400);
 
         const res = parseApiError(response);
-        expectErrorMessage(res, 400, 'Vui lòng nhập địa chỉ email');
-
-        return response;
-      },
-    );
-  });
-
-  it('Đăng ký thất bại - email đã tồn tại', async () => {
-    const setupBody = buildValidBody();
-    await request(server).post('/auth/register').send(setupBody);
-
-    const body = buildValidBody({
-      email: setupBody.email,
-    });
-
-    await record(
-      {
-        id: nextId(),
-        scope: 'All',
-        testCase: 'Email đã tồn tại',
-        description: 'Dùng email đã có trong DB để đăng ký lại.',
-        procedure: stringifyProcedure(body),
-        expectedResult: 409,
-        preconditions: 'Email test đã tồn tại trong DB.',
-      },
-      async () => {
-        const response = await request(server)
-          .post('/auth/register')
-          .send(body);
-
-        expect(response.status).toBe(409);
-
-        const res = parseApiError(response);
-        expectErrorMessage(res, 409, 'Email');
+        expectErrorMessage(res, 400, 'Vui lòng nhập địa chỉ email.');
 
         return response;
       },
@@ -312,9 +294,50 @@ describe('[API] POST /auth/register', () => {
         const response = await request(server)
           .post('/auth/register')
           .send(body);
+
         expect(response.status).toBe(400);
+
         const res = parseApiError(response);
         expectErrorMessage(res, 400, 'Địa chỉ email không hợp lệ.');
+
+        return response;
+      },
+    );
+  });
+
+  it('Đăng ký thất bại - email đã tồn tại', async () => {
+    const setupBody = buildValidBody();
+
+    const setupResponse = await request(server)
+      .post('/auth/register')
+      .send(setupBody);
+
+    expect(setupResponse.status).toBe(201);
+
+    const body = buildValidBody({
+      email: setupBody.email,
+    });
+
+    await record(
+      {
+        id: nextId(),
+        scope: 'All',
+        testCase: 'Email đã tồn tại',
+        description: 'Dùng email đã có trong DB để đăng ký lại.',
+        procedure: stringifyProcedure(body),
+        expectedResult: 409,
+        preconditions: 'Email test đã tồn tại trong DB.',
+      },
+      async () => {
+        const response = await request(server)
+          .post('/auth/register')
+          .send(body);
+
+        expect(response.status).toBe(409);
+
+        const res = parseApiError(response);
+        expectErrorMessage(res, 409, 'Email đã được sử dụng');
+
         return response;
       },
     );
@@ -338,9 +361,12 @@ describe('[API] POST /auth/register', () => {
         const response = await request(server)
           .post('/auth/register')
           .send(body);
+
         expect(response.status).toBe(400);
+
         const res = parseApiError(response);
         expectErrorMessage(res, 400, 'Vui lòng điền đủ họ tên.');
+
         return response;
       },
     );
@@ -363,16 +389,19 @@ describe('[API] POST /auth/register', () => {
         const response = await request(server)
           .post('/auth/register')
           .send(body);
+
         expect(response.status).toBe(400);
+
         const res = parseApiError(response);
         expectErrorMessage(res, 400, 'Họ tên tối đa 100 ký tự.');
+
         return response;
       },
     );
   });
 
   it('Đăng ký thất bại - tên chứa số', async () => {
-    const body = buildValidBody({ fullName: 'Nguyễn Văn A 123' });
+    const body = buildValidBody({ fullName: 'Nguyen Van A 123' });
 
     await record(
       {
@@ -388,13 +417,16 @@ describe('[API] POST /auth/register', () => {
         const response = await request(server)
           .post('/auth/register')
           .send(body);
+
         expect(response.status).toBe(400);
+
         const res = parseApiError(response);
         expectErrorMessage(
           res,
           400,
           'Họ tên không được chứa số hoặc ký tự đặc biệt.',
         );
+
         return response;
       },
     );
@@ -418,15 +450,18 @@ describe('[API] POST /auth/register', () => {
         const response = await request(server)
           .post('/auth/register')
           .send(body);
+
         expect(response.status).toBe(400);
+
         const res = parseApiError(response);
         expectErrorMessage(res, 400, 'Vui lòng nhập mật khẩu');
+
         return response;
       },
     );
   });
 
-  it('Đăng ký thất bại - password ngắn (dưới 8 ký tự)', async () => {
+  it('Đăng ký thất bại - password ngắn dưới 8 ký tự', async () => {
     const body = buildValidBody({ password: 'P@sw1' });
 
     await record(
@@ -443,9 +478,16 @@ describe('[API] POST /auth/register', () => {
         const response = await request(server)
           .post('/auth/register')
           .send(body);
+
         expect(response.status).toBe(400);
+
         const res = parseApiError(response);
-        expectErrorMessage(res, 400, 'Mật khẩu chứa ít nhất 8 ký tự');
+        expectErrorMessage(
+          res,
+          400,
+          'Mật khẩu chứa ít nhất 8 ký tự, bao gồm chữ, số, ký tự hoa và ký tự đặc biệt.',
+        );
+
         return response;
       },
     );
@@ -459,7 +501,8 @@ describe('[API] POST /auth/register', () => {
         id: nextId(),
         scope: 'All',
         testCase: 'Password quá yếu',
-        description: 'Chỉ chứa chữ thường, thiếu các yêu cầu khác.',
+        description:
+          'Chỉ chứa chữ thường, thiếu số, chữ hoa và ký tự đặc biệt.',
         procedure: stringifyProcedure(body),
         expectedResult: 400,
         preconditions: 'Không có điều kiện đặc biệt.',
@@ -468,9 +511,16 @@ describe('[API] POST /auth/register', () => {
         const response = await request(server)
           .post('/auth/register')
           .send(body);
+
         expect(response.status).toBe(400);
+
         const res = parseApiError(response);
-        expectErrorMessage(res, 400, 'Mật khẩu chứa ít nhất 8 ký tự');
+        expectErrorMessage(
+          res,
+          400,
+          'Mật khẩu chứa ít nhất 8 ký tự, bao gồm chữ, số, ký tự hoa và ký tự đặc biệt.',
+        );
+
         return response;
       },
     );
@@ -484,7 +534,7 @@ describe('[API] POST /auth/register', () => {
         id: nextId(),
         scope: 'All',
         testCase: 'Password thiếu ký tự đặc biệt',
-        description: 'Đã đủ chữ hoa, số nhưng thiếu ký tự đặc biệt.',
+        description: 'Đã đủ chữ hoa và số nhưng thiếu ký tự đặc biệt.',
         procedure: stringifyProcedure(body),
         expectedResult: 400,
         preconditions: 'Không có điều kiện đặc biệt.',
@@ -493,9 +543,16 @@ describe('[API] POST /auth/register', () => {
         const response = await request(server)
           .post('/auth/register')
           .send(body);
+
         expect(response.status).toBe(400);
+
         const res = parseApiError(response);
-        expectErrorMessage(res, 400, 'Mật khẩu chứa ít nhất 8 ký tự');
+        expectErrorMessage(
+          res,
+          400,
+          'Mật khẩu chứa ít nhất 8 ký tự, bao gồm chữ, số, ký tự hoa và ký tự đặc biệt.',
+        );
+
         return response;
       },
     );
@@ -509,7 +566,7 @@ describe('[API] POST /auth/register', () => {
         id: nextId(),
         scope: 'All',
         testCase: 'Password thiếu số',
-        description: 'Đã đủ chữ hoa, ký tự đặc biệt nhưng thiếu số.',
+        description: 'Đã đủ chữ hoa và ký tự đặc biệt nhưng thiếu số.',
         procedure: stringifyProcedure(body),
         expectedResult: 400,
         preconditions: 'Không có điều kiện đặc biệt.',
@@ -518,15 +575,22 @@ describe('[API] POST /auth/register', () => {
         const response = await request(server)
           .post('/auth/register')
           .send(body);
+
         expect(response.status).toBe(400);
+
         const res = parseApiError(response);
-        expectErrorMessage(res, 400, 'Mật khẩu chứa ít nhất 8 ký tự');
+        expectErrorMessage(
+          res,
+          400,
+          'Mật khẩu chứa ít nhất 8 ký tự, bao gồm chữ, số, ký tự hoa và ký tự đặc biệt.',
+        );
+
         return response;
       },
     );
   });
 
-  it('Đăng ký thất bại - Password thiếu chữ in Hoa', async () => {
+  it('Đăng ký thất bại - password thiếu chữ in hoa', async () => {
     const body = buildValidBody({ password: 'password@123' });
 
     await record(
@@ -543,9 +607,16 @@ describe('[API] POST /auth/register', () => {
         const response = await request(server)
           .post('/auth/register')
           .send(body);
+
         expect(response.status).toBe(400);
+
         const res = parseApiError(response);
-        expectErrorMessage(res, 400, 'Mật khẩu chứa ít nhất 8 ký tự');
+        expectErrorMessage(
+          res,
+          400,
+          'Mật khẩu chứa ít nhất 8 ký tự, bao gồm chữ, số, ký tự hoa và ký tự đặc biệt.',
+        );
+
         return response;
       },
     );
@@ -569,15 +640,18 @@ describe('[API] POST /auth/register', () => {
         const response = await request(server)
           .post('/auth/register')
           .send(body);
+
         expect(response.status).toBe(400);
+
         const res = parseApiError(response);
         expectErrorMessage(res, 400, 'Vui lòng điền số điện thoại.');
+
         return response;
       },
     );
   });
 
-  it('Đăng ký thất bại - số điện thoại không đúng định dạng', async () => {
+  it('Đăng ký thất bại - số điện thoại bắt đầu bằng 0', async () => {
     const body = buildValidBody({ phone: '0912345678' });
 
     await record(
@@ -585,7 +659,7 @@ describe('[API] POST /auth/register', () => {
         id: nextId(),
         scope: 'All',
         testCase: 'SĐT bắt đầu bằng 0',
-        description: 'Truyền SĐT có số 0 ở đầu (vi phạm regex).',
+        description: 'Truyền SĐT có số 0 ở đầu, vi phạm regex.',
         procedure: stringifyProcedure(body),
         expectedResult: 400,
         preconditions: 'Regex yêu cầu bỏ số 0 ở đầu.',
@@ -594,9 +668,12 @@ describe('[API] POST /auth/register', () => {
         const response = await request(server)
           .post('/auth/register')
           .send(body);
+
         expect(response.status).toBe(400);
+
         const res = parseApiError(response);
         expectErrorMessage(res, 400, 'Số điện thoại không hợp lệ.');
+
         return response;
       },
     );
@@ -619,9 +696,12 @@ describe('[API] POST /auth/register', () => {
         const response = await request(server)
           .post('/auth/register')
           .send(body);
+
         expect(response.status).toBe(400);
+
         const res = parseApiError(response);
         expectErrorMessage(res, 400, 'Số điện thoại không hợp lệ.');
+
         return response;
       },
     );
@@ -644,9 +724,12 @@ describe('[API] POST /auth/register', () => {
         const response = await request(server)
           .post('/auth/register')
           .send(body);
+
         expect(response.status).toBe(400);
+
         const res = parseApiError(response);
         expectErrorMessage(res, 400, 'Số điện thoại không hợp lệ.');
+
         return response;
       },
     );
@@ -654,7 +737,12 @@ describe('[API] POST /auth/register', () => {
 
   it('Đăng ký thất bại - số điện thoại tồn tại', async () => {
     const setupBody = buildValidBody();
-    await request(server).post('/auth/register').send(setupBody);
+
+    const setupResponse = await request(server)
+      .post('/auth/register')
+      .send(setupBody);
+
+    expect(setupResponse.status).toBe(201);
 
     const body = buildValidBody({ phone: setupBody.phone });
 
@@ -672,9 +760,12 @@ describe('[API] POST /auth/register', () => {
         const response = await request(server)
           .post('/auth/register')
           .send(body);
+
         expect(response.status).toBe(409);
+
         const res = parseApiError(response);
         expectErrorMessage(res, 409, 'Số điện thoại đã được sử dụng.');
+
         return response;
       },
     );
@@ -698,9 +789,12 @@ describe('[API] POST /auth/register', () => {
         const response = await request(server)
           .post('/auth/register')
           .send(body);
+
         expect(response.status).toBe(400);
+
         const res = parseApiError(response);
         expectErrorMessage(res, 400, 'Vui lòng điền ngày tháng năm sinh.');
+
         return response;
       },
     );
@@ -714,7 +808,7 @@ describe('[API] POST /auth/register', () => {
         id: nextId(),
         scope: 'All',
         testCase: 'Ngày sinh sai định dạng',
-        description: 'Truyền ngày sinh không đúng format (cần YYYY-MM-DD).',
+        description: 'Truyền ngày sinh không đúng format YYYY-MM-DD.',
         procedure: stringifyProcedure(body),
         expectedResult: 400,
         preconditions: 'Không có điều kiện đặc biệt.',
@@ -723,13 +817,16 @@ describe('[API] POST /auth/register', () => {
         const response = await request(server)
           .post('/auth/register')
           .send(body);
+
         expect(response.status).toBe(400);
+
         const res = parseApiError(response);
         expectErrorMessage(
           res,
           400,
           'Ngày sinh không đúng định dạng (YYYY-MM-DD).',
         );
+
         return response;
       },
     );
@@ -764,6 +861,34 @@ describe('[API] POST /auth/register', () => {
     );
   });
 
+  it('Đăng ký thất bại - giới tính không hợp lệ', async () => {
+    const body = buildValidBody({ sex: 'Other' });
+
+    await record(
+      {
+        id: nextId(),
+        scope: 'All',
+        testCase: 'Giới tính không hợp lệ',
+        description: 'Truyền sex không thuộc enum Nam/Nữ/Khác.',
+        procedure: stringifyProcedure(body),
+        expectedResult: 400,
+        preconditions: 'ValidationPipe bắt lỗi IsEnum.',
+      },
+      async () => {
+        const response = await request(server)
+          .post('/auth/register')
+          .send(body);
+
+        expect(response.status).toBe(400);
+
+        const res = parseApiError(response);
+        expectErrorMessage(res, 400, 'Giới tính không hợp lệ.');
+
+        return response;
+      },
+    );
+  });
+
   it('Đăng ký thất bại - gửi field thừa', async () => {
     const body = buildValidBody({
       unknownField: 'abc',
@@ -787,7 +912,7 @@ describe('[API] POST /auth/register', () => {
         expect(response.status).toBe(400);
 
         const res = parseApiError(response);
-        expectErrorMessage(res, 400);
+        expectErrorMessage(res, 400, 'property unknownField should not exist');
 
         return response;
       },
