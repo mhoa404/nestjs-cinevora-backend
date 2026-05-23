@@ -42,16 +42,26 @@ export class CreateBookings1710000000004 implements MigrationInterface {
 
     await queryRunner.query(`
       CREATE TABLE \`payments\` (
-        \`id\`                INT             NOT NULL AUTO_INCREMENT,
-        \`booking_id\`        INT             NOT NULL,
-        \`transaction_id\`    VARCHAR(255)    NULL,
-        \`payment_method\`    ENUM('momo', 'zalopay', 'vnpay') NOT NULL,
-        \`amount\`            DECIMAL(10,0)   NOT NULL,
-        \`status\`            ENUM('pending', 'success', 'failed') NOT NULL DEFAULT 'pending',
-        \`provider_response\` JSON            NULL,
-        \`created_at\`        DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-        \`updated_at\`        DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+        \`id\`               INT             NOT NULL AUTO_INCREMENT,
+        \`booking_id\`       INT             NOT NULL,
+        \`amount\`           DECIMAL(12,0)   NOT NULL,
+        \`method\`           ENUM('momo')    NOT NULL DEFAULT 'momo',
+        \`status\`           ENUM('pending', 'success', 'failed', 'authorized') NOT NULL DEFAULT 'pending',
+        \`momo_order_id\`    VARCHAR(100)    NOT NULL,
+        \`momo_request_id\`  VARCHAR(100)    NOT NULL,
+        \`momo_trans_id\`    VARCHAR(100)    NULL,
+        \`pay_url\`          TEXT            NULL,
+        \`short_link\`       TEXT            NULL,
+        \`result_code\`      INT             NULL,
+        \`message\`          VARCHAR(255)    NULL,
+        \`response_time\`    BIGINT          NULL,
+        \`raw_response\`     JSON            NULL,
+        \`paid_at\`          DATETIME(3)     NULL,
+        \`created_at\`       DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+        \`updated_at\`       DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
         CONSTRAINT \`PK_payments\` PRIMARY KEY (\`id\`),
+        CONSTRAINT \`UQ_payments_momo_order_id\` UNIQUE (\`momo_order_id\`),
+        CONSTRAINT \`UQ_payments_momo_request_id\` UNIQUE (\`momo_request_id\`),
         CONSTRAINT \`FK_payments_booking\` FOREIGN KEY (\`booking_id\`)
           REFERENCES \`bookings\`(\`id\`) ON DELETE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
@@ -59,6 +69,10 @@ export class CreateBookings1710000000004 implements MigrationInterface {
 
     await queryRunner.query(
       `CREATE INDEX \`IDX_payments_booking_id\` ON \`payments\`(\`booking_id\`)`,
+    );
+
+    await queryRunner.query(
+      `CREATE INDEX \`IDX_payments_status\` ON \`payments\`(\`status\`)`,
     );
 
     await queryRunner.query(`
@@ -97,6 +111,9 @@ export class CreateBookings1710000000004 implements MigrationInterface {
     );
     await queryRunner.query(`DROP TABLE \`booking_seats\``);
 
+    await queryRunner.query(
+      `DROP INDEX \`IDX_payments_status\` ON \`payments\``,
+    );
     await queryRunner.query(
       `DROP INDEX \`IDX_payments_booking_id\` ON \`payments\``,
     );
