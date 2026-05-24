@@ -13,7 +13,7 @@ export class CreateBookings1710000000004 implements MigrationInterface {
         \`total_price\`             DECIMAL(12,0)   NOT NULL,
         \`booked_at\`               DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
         \`expires_at\`              DATETIME(3)     NOT NULL,
-        \`status\`                  ENUM('pending', 'confirmed', 'cancelled', 'expired') NOT NULL DEFAULT 'pending',
+        \`status\`                  ENUM('pending', 'paid', 'confirmed', 'cancelled', 'expired') NOT NULL DEFAULT 'pending',
         \`snapshot_movie_title\`    VARCHAR(255)    NOT NULL,
         \`snapshot_room_name\`      VARCHAR(20)     NOT NULL,
         \`snapshot_showtime_start\` DATETIME(3)     NOT NULL,
@@ -42,26 +42,19 @@ export class CreateBookings1710000000004 implements MigrationInterface {
 
     await queryRunner.query(`
       CREATE TABLE \`payments\` (
-        \`id\`               INT             NOT NULL AUTO_INCREMENT,
-        \`booking_id\`       INT             NOT NULL,
-        \`amount\`           DECIMAL(12,0)   NOT NULL,
-        \`method\`           ENUM('momo')    NOT NULL DEFAULT 'momo',
-        \`status\`           ENUM('pending', 'success', 'failed', 'authorized') NOT NULL DEFAULT 'pending',
-        \`momo_order_id\`    VARCHAR(100)    NOT NULL,
-        \`momo_request_id\`  VARCHAR(100)    NOT NULL,
-        \`momo_trans_id\`    VARCHAR(100)    NULL,
-        \`pay_url\`          TEXT            NULL,
-        \`short_link\`       TEXT            NULL,
-        \`result_code\`      INT             NULL,
-        \`message\`          VARCHAR(255)    NULL,
-        \`response_time\`    BIGINT          NULL,
-        \`raw_response\`     JSON            NULL,
-        \`paid_at\`          DATETIME(3)     NULL,
-        \`created_at\`       DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-        \`updated_at\`       DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+        \`id\`                 INT             NOT NULL AUTO_INCREMENT,
+        \`booking_id\`         INT             NOT NULL,
+        \`amount\`             DECIMAL(12,0)   NOT NULL,
+        \`method\`             ENUM('momo')    NOT NULL DEFAULT 'momo',
+        \`status\`             ENUM('pending', 'success', 'failed', 'authorized') NOT NULL DEFAULT 'pending',
+        \`gateway_order_id\`   VARCHAR(100)    NOT NULL,
+        \`gateway_trans_id\`   VARCHAR(100)    NULL,
+        \`gateway_metadata\`   JSON            NULL,
+        \`paid_at\`            DATETIME(3)     NULL,
+        \`created_at\`         DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+        \`updated_at\`         DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
         CONSTRAINT \`PK_payments\` PRIMARY KEY (\`id\`),
-        CONSTRAINT \`UQ_payments_momo_order_id\` UNIQUE (\`momo_order_id\`),
-        CONSTRAINT \`UQ_payments_momo_request_id\` UNIQUE (\`momo_request_id\`),
+        CONSTRAINT \`UQ_payments_gateway_order_id\` UNIQUE (\`gateway_order_id\`),
         CONSTRAINT \`FK_payments_booking\` FOREIGN KEY (\`booking_id\`)
           REFERENCES \`bookings\`(\`id\`) ON DELETE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
@@ -69,6 +62,10 @@ export class CreateBookings1710000000004 implements MigrationInterface {
 
     await queryRunner.query(
       `CREATE INDEX \`IDX_payments_booking_id\` ON \`payments\`(\`booking_id\`)`,
+    );
+
+    await queryRunner.query(
+      `CREATE INDEX \`IDX_payments_gateway_trans_id\` ON \`payments\`(\`gateway_trans_id\`)`,
     );
 
     await queryRunner.query(
@@ -113,6 +110,9 @@ export class CreateBookings1710000000004 implements MigrationInterface {
 
     await queryRunner.query(
       `DROP INDEX \`IDX_payments_status\` ON \`payments\``,
+    );
+    await queryRunner.query(
+      `DROP INDEX \`IDX_payments_gateway_trans_id\` ON \`payments\``,
     );
     await queryRunner.query(
       `DROP INDEX \`IDX_payments_booking_id\` ON \`payments\``,

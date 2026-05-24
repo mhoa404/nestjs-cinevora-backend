@@ -201,7 +201,7 @@ export class BookingsService {
         continue;
       }
 
-      if (row.status === BookingStatus.CONFIRMED) {
+      if (this.isBookedStatus(row.status)) {
         bookedSeatIds.add(seatId);
       }
 
@@ -347,7 +347,7 @@ export class BookingsService {
       .andWhere(
         `
         (
-          booking.status = :confirmedStatus
+          booking.status IN (:...bookedStatuses)
           OR (
             booking.status = :pendingStatus
             AND booking.expires_at > :now
@@ -355,7 +355,7 @@ export class BookingsService {
         )
         `,
         {
-          confirmedStatus: BookingStatus.CONFIRMED,
+          bookedStatuses: [BookingStatus.PAID, BookingStatus.CONFIRMED],
           pendingStatus: BookingStatus.PENDING,
           now,
         },
@@ -378,7 +378,7 @@ export class BookingsService {
       .andWhere(
         `
         (
-          booking.status = :confirmedStatus
+          booking.status IN (:...bookedStatuses)
           OR (
             booking.status = :pendingStatus
             AND booking.expires_at > :now
@@ -386,7 +386,7 @@ export class BookingsService {
         )
         `,
         {
-          confirmedStatus: BookingStatus.CONFIRMED,
+          bookedStatuses: [BookingStatus.PAID, BookingStatus.CONFIRMED],
           pendingStatus: BookingStatus.PENDING,
           now,
         },
@@ -442,13 +442,13 @@ export class BookingsService {
       return;
     }
 
-    const confirmedSeatKeys = rows
-      .filter((row) => row.status === BookingStatus.CONFIRMED)
+    const bookedSeatKeys = rows
+      .filter((row) => this.isBookedStatus(row.status))
       .map((row) => row.seatKey);
 
-    if (confirmedSeatKeys.length > 0) {
+    if (bookedSeatKeys.length > 0) {
       throw new ConflictException(
-        `Ghế đã được đặt: ${confirmedSeatKeys.join(', ')}`,
+        `Ghế đã được đặt: ${bookedSeatKeys.join(', ')}`,
       );
     }
 
@@ -459,6 +459,10 @@ export class BookingsService {
     throw new ConflictException(
       `Ghế đang được giữ: ${pendingSeatKeys.join(', ')}`,
     );
+  }
+
+  private isBookedStatus(status: BookingStatus): boolean {
+    return [BookingStatus.PAID, BookingStatus.CONFIRMED].includes(status);
   }
 
   private toSeatAvailabilityResponse(
@@ -501,6 +505,26 @@ export class BookingsService {
     return dto;
   }
 
+  private getSeatPrice(seatType: SeatType, showtime: Showtime): number {
+    switch (seatType) {
+      case SeatType.VIP:
+        return Number(showtime.priceVip);
+      case SeatType.COUPLE:
+        return Number(showtime.priceCouple);
+      case SeatType.STANDARD:
+      default:
+        return Number(showtime.priceStandard);
+    }
+  }
+
+  private getSeatKeysByIds(seats: Seat[], seatIds: number[]): string[] {
+    const seatKeyById = new Map(seats.map((seat) => [seat.id, seat.seatKey]));
+
+    return seatIds
+      .map((seatId) => seatKeyById.get(seatId))
+      .filter((seatKey): seatKey is string => Boolean(seatKey));
+  }
+
   private buildBookingSeatResponse(
     seats: Seat[],
     showtime: Showtime,
@@ -513,30 +537,15 @@ export class BookingsService {
     }));
   }
 
-  private getSeatKeysByIds(seats: Seat[], seatIds: number[]): string[] {
-    const seatIdSet = new Set(seatIds);
-
-    return seats
-      .filter((seat) => seatIdSet.has(seat.id))
-      .map((seat) => seat.seatKey);
-  }
-
-  private getSeatPrice(seatType: SeatType, showtime: Showtime): number {
-    if (seatType === SeatType.VIP) {
-      return Number(showtime.priceVip);
-    }
-
-    if (seatType === SeatType.COUPLE) {
-      return Number(showtime.priceCouple ?? showtime.priceVip);
-    }
-
-    return Number(showtime.priceStandard);
-  }
-
   private async releaseBookingSeats(booking: Booking): Promise<void> {
-    await this.seatHoldService.releaseSeats(
-      booking.showtimeId,
-      booking.bookingSeats.map((bookingSeat) => bookingSeat.seatId),
+    const seatIds = booking.bookingSeats.map(
+      (bookingSeat) => bookingSeat.seatId,
     );
+
+    if (seatIds.length === 0) {
+      return;
+    }
+
+    await this.seatHoldService.releaseSeats(booking.showtimeId, seatIds);
   }
 }
