@@ -48,7 +48,7 @@ interface SeatStatusRow {
 
 @Injectable()
 export class BookingsService {
-  private readonly holdTtlMs = 600_000;
+  private readonly holdTtlMs = 300_000;
 
   constructor(
     @InjectRepository(Booking)
