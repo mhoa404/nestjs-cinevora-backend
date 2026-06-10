@@ -13,7 +13,7 @@ export interface SeatHoldData {
 
 @Injectable()
 export class SeatHoldService {
-  private readonly holdTtlSeconds = 600;
+  private readonly holdTtlSeconds = 300; // 5 minutes
 
   constructor(@Inject(REDIS_CLIENT) private readonly redis: Redis) {}
 

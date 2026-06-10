@@ -22,10 +22,14 @@ export enum PaymentStatus {
   AUTHORIZED = 'authorized',
 }
 
+export interface PaymentGatewayMetadata {
+  [key: string]: unknown;
+}
+
 @Entity('payments')
 @Index('IDX_payments_booking_id', ['bookingId'])
-@Index('IDX_payments_momo_order_id', ['momoOrderId'], { unique: true })
-@Index('IDX_payments_momo_request_id', ['momoRequestId'], { unique: true })
+@Index('IDX_payments_gateway_order_id', ['gatewayOrderId'], { unique: true })
+@Index('IDX_payments_gateway_trans_id', ['gatewayTransId'])
 @Index('IDX_payments_status', ['status'])
 export class Payment {
   @PrimaryGeneratedColumn()
@@ -54,69 +58,26 @@ export class Payment {
   status!: PaymentStatus;
 
   @Column({
-    name: 'momo_order_id',
+    name: 'gateway_order_id',
     type: 'varchar',
     length: 100,
   })
-  momoOrderId!: string;
+  gatewayOrderId!: string;
 
   @Column({
-    name: 'momo_request_id',
-    type: 'varchar',
-    length: 100,
-  })
-  momoRequestId!: string;
-
-  @Column({
-    name: 'momo_trans_id',
+    name: 'gateway_trans_id',
     type: 'varchar',
     length: 100,
     nullable: true,
   })
-  momoTransId!: string | null;
+  gatewayTransId!: string | null;
 
   @Column({
-    name: 'pay_url',
-    type: 'text',
-    nullable: true,
-  })
-  payUrl!: string | null;
-
-  @Column({
-    name: 'short_link',
-    type: 'text',
-    nullable: true,
-  })
-  shortLink!: string | null;
-
-  @Column({
-    name: 'result_code',
-    type: 'int',
-    nullable: true,
-  })
-  resultCode!: number | null;
-
-  @Column({
-    name: 'message',
-    type: 'varchar',
-    length: 255,
-    nullable: true,
-  })
-  message!: string | null;
-
-  @Column({
-    name: 'response_time',
-    type: 'bigint',
-    nullable: true,
-  })
-  responseTime!: string | null;
-
-  @Column({
-    name: 'raw_response',
+    name: 'gateway_metadata',
     type: 'json',
     nullable: true,
   })
-  rawResponse!: Record<string, unknown> | null;
+  gatewayMetadata!: PaymentGatewayMetadata | null;
 
   @Column({
     name: 'paid_at',

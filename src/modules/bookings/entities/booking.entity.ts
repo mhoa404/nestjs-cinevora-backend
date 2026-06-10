@@ -16,6 +16,7 @@ import { BookingSeat } from './booking-seat.entity';
 
 export enum BookingStatus {
   PENDING = 'pending',
+  PAID = 'paid',
   CONFIRMED = 'confirmed',
   CANCELLED = 'cancelled',
   EXPIRED = 'expired',

@@ -1,4 +1,3 @@
-// src/modules/payments/payments.service.ts
 import axios, { AxiosError } from 'axios';
 import {
   BadGatewayException,
@@ -10,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
+import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 
 import { UserRole } from '../../common/constants/role.constant';
 import { Booking, BookingStatus } from '../bookings/entities/booking.entity';
@@ -19,6 +19,7 @@ import { CreateMomoPaymentDto } from './dto/create-payment.dto';
 import { MomoCallbackDto } from './dto/payment-callback.dto';
 import {
   Payment,
+  PaymentGatewayMetadata,
   PaymentMethod,
   PaymentStatus,
 } from './entities/payment.entity';
@@ -46,8 +47,8 @@ interface MomoPaymentResult {
   resultCode: number;
   message: string;
   responseTime: number;
-  rawResponseKey: 'callbackResponse' | 'queryResponse';
-  rawResponse: Record<string, unknown>;
+  metadataKey: 'callbackPayload' | 'queryResponse';
+  metadata: Record<string, unknown>;
 }
 
 @Injectable()
@@ -93,19 +94,6 @@ export class PaymentsService {
       });
 
       throw new BadRequestException('Booking đã hết hạn thanh toán.');
-    }
-
-    const existingPendingPayment = await this.paymentRepository.findOne({
-      where: {
-        bookingId: booking.id,
-        method: PaymentMethod.MOMO,
-        status: PaymentStatus.PENDING,
-      },
-      order: { createdAt: 'DESC' },
-    });
-
-    if (existingPendingPayment?.payUrl) {
-      return this.toCreateMomoPaymentResponse(existingPendingPayment);
     }
 
     const amount = Number(booking.totalPrice);
@@ -166,20 +154,18 @@ export class PaymentsService {
         amount,
         method: PaymentMethod.MOMO,
         status: PaymentStatus.PENDING,
-        momoOrderId: orderId,
-        momoRequestId: requestId,
-        momoTransId: null,
-        payUrl: null,
-        shortLink: null,
-        resultCode: null,
-        message: null,
-        responseTime: null,
-        rawResponse: {
-          createRequest: requestBody,
+        gatewayOrderId: orderId,
+        gatewayTransId: null,
+        gatewayMetadata: {
+          momo: {
+            createRequest: requestBody,
+          },
         },
         paidAt: null,
       }),
     );
+
+    let responseData: MomoCreatePaymentApiResponse;
 
     try {
       const response = await axios.post<MomoCreatePaymentApiResponse>(
@@ -193,53 +179,59 @@ export class PaymentsService {
         },
       );
 
-      await this.paymentRepository.update(payment.id, {
-        payUrl: response.data.payUrl ?? null,
-        shortLink: response.data.shortLink ?? null,
-        resultCode: response.data.resultCode,
-        message: response.data.message,
-        responseTime: String(response.data.responseTime),
-        rawResponse: {
-          createRequest: requestBody,
-          createResponse: response.data,
-        },
-        status:
-          response.data.resultCode === 0
-            ? PaymentStatus.PENDING
-            : PaymentStatus.FAILED,
-      });
-
-      const updatedPayment = await this.paymentRepository.findOne({
-        where: { id: payment.id },
-      });
-
-      if (!updatedPayment) {
-        throw new BadGatewayException(
-          'Không thể đọc lại dữ liệu payment sau khi tạo giao dịch MoMo.',
-        );
-      }
-
-      if (response.data.resultCode !== 0) {
-        throw new BadGatewayException(response.data.message);
-      }
-
-      return this.toCreateMomoPaymentResponse(updatedPayment);
+      responseData = response.data;
     } catch (error) {
       const message = this.getAxiosErrorMessage(error);
 
       await this.paymentRepository.update(payment.id, {
         status: PaymentStatus.FAILED,
-        message,
-        rawResponse: {
-          createRequest: requestBody,
-          createError: message,
-        },
+        gatewayMetadata: this.toPaymentGatewayMetadataUpdate(
+          this.mergeGatewayMetadata(payment.gatewayMetadata, {
+            momo: {
+              createRequest: requestBody,
+              createError: message,
+            },
+          }),
+        ),
       });
 
       throw new BadGatewayException(
         `Không thể tạo thanh toán MoMo: ${message}`,
       );
     }
+
+    const nextStatus =
+      responseData.resultCode === 0
+        ? PaymentStatus.PENDING
+        : PaymentStatus.FAILED;
+
+    await this.paymentRepository.update(payment.id, {
+      status: nextStatus,
+      gatewayMetadata: this.toPaymentGatewayMetadataUpdate(
+        this.mergeGatewayMetadata(payment.gatewayMetadata, {
+          momo: {
+            createRequest: requestBody,
+            createResponse: responseData,
+          },
+        }),
+      ),
+    });
+
+    const updatedPayment = await this.paymentRepository.findOne({
+      where: { id: payment.id },
+    });
+
+    if (!updatedPayment) {
+      throw new BadGatewayException(
+        'Không thể đọc lại dữ liệu payment sau khi tạo giao dịch MoMo.',
+      );
+    }
+
+    if (responseData.resultCode !== 0) {
+      throw new BadGatewayException(responseData.message);
+    }
+
+    return this.toCreateMomoPaymentResponse(updatedPayment);
   }
 
   async handleMomoCallback(dto: MomoCallbackDto): Promise<void> {
@@ -275,8 +267,7 @@ export class PaymentsService {
 
     const payment = await this.paymentRepository.findOne({
       where: {
-        momoOrderId: dto.orderId,
-        momoRequestId: dto.requestId,
+        gatewayOrderId: dto.orderId,
         method: PaymentMethod.MOMO,
       },
     });
@@ -293,7 +284,7 @@ export class PaymentsService {
       return;
     }
 
-    this.assertValidMomoResult(payment, {
+    const momoResult: MomoPaymentResult = {
       partnerCode: dto.partnerCode,
       orderId: dto.orderId,
       requestId: dto.requestId,
@@ -302,22 +293,12 @@ export class PaymentsService {
       resultCode: dto.resultCode,
       message: dto.message,
       responseTime: dto.responseTime,
-      rawResponseKey: 'callbackResponse',
-      rawResponse: dto as unknown as Record<string, unknown>,
-    });
+      metadataKey: 'callbackPayload',
+      metadata: dto as unknown as Record<string, unknown>,
+    };
 
-    await this.syncPaymentResult(payment, {
-      partnerCode: dto.partnerCode,
-      orderId: dto.orderId,
-      requestId: dto.requestId,
-      amount: dto.amount,
-      transId: dto.transId,
-      resultCode: dto.resultCode,
-      message: dto.message,
-      responseTime: dto.responseTime,
-      rawResponseKey: 'callbackResponse',
-      rawResponse: dto as unknown as Record<string, unknown>,
-    });
+    this.assertValidMomoResult(payment, momoResult);
+    await this.syncPaymentResult(payment, momoResult);
   }
 
   async checkMomoTransactionStatus(
@@ -326,7 +307,7 @@ export class PaymentsService {
   ): Promise<CheckMomoTransactionStatusResponse> {
     const payment = await this.paymentRepository.findOne({
       where: {
-        momoOrderId: dto.orderId,
+        gatewayOrderId: dto.orderId,
         method: PaymentMethod.MOMO,
       },
       relations: {
@@ -340,11 +321,13 @@ export class PaymentsService {
 
     this.assertCanAccessPayment(payment, user);
 
+    const requestId = this.getMomoRequestId(payment);
+
     const rawSignature = buildMomoQueryRawSignature({
       accessKey: this.momoConfig.accessKey,
-      orderId: payment.momoOrderId,
+      orderId: payment.gatewayOrderId,
       partnerCode: this.momoConfig.partnerCode,
-      requestId: payment.momoRequestId,
+      requestId,
     });
 
     const signature = createMomoSignature(
@@ -354,8 +337,8 @@ export class PaymentsService {
 
     const requestBody = {
       partnerCode: this.momoConfig.partnerCode,
-      requestId: payment.momoRequestId,
-      orderId: payment.momoOrderId,
+      requestId,
+      orderId: payment.gatewayOrderId,
       signature,
       lang: this.momoConfig.lang,
     };
@@ -379,11 +362,14 @@ export class PaymentsService {
       const message = this.getAxiosErrorMessage(error);
 
       await this.paymentRepository.update(payment.id, {
-        rawResponse: {
-          ...(payment.rawResponse ?? {}),
-          queryRequest: requestBody,
-          queryError: message,
-        },
+        gatewayMetadata: this.toPaymentGatewayMetadataUpdate(
+          this.mergeGatewayMetadata(payment.gatewayMetadata, {
+            momo: {
+              queryRequest: requestBody,
+              queryError: message,
+            },
+          }),
+        ),
       });
 
       throw new BadGatewayException(
@@ -400,8 +386,8 @@ export class PaymentsService {
       resultCode: responseData.resultCode,
       message: responseData.message,
       responseTime: responseData.responseTime,
-      rawResponseKey: 'queryResponse',
-      rawResponse: responseData as unknown as Record<string, unknown>,
+      metadataKey: 'queryResponse',
+      metadata: responseData as unknown as Record<string, unknown>,
     };
 
     this.assertValidMomoResult(payment, momoResult);
@@ -418,13 +404,13 @@ export class PaymentsService {
       this.getBookingStatusFromPaymentStatus(nextPaymentStatus);
 
     return {
-      orderId: payment.momoOrderId,
-      requestId: payment.momoRequestId,
+      orderId: payment.gatewayOrderId,
+      requestId,
       amount: Number(payment.amount),
       transId:
         responseData.transId !== undefined
           ? String(responseData.transId)
-          : payment.momoTransId,
+          : payment.gatewayTransId,
       resultCode: responseData.resultCode,
       message: responseData.message,
       paymentStatus: nextPaymentStatus,
@@ -436,7 +422,7 @@ export class PaymentsService {
   private async syncPaymentResult(
     payment: Payment,
     momoResult: MomoPaymentResult,
-    extraRawResponse?: Record<string, unknown>,
+    extraMomoMetadata?: Record<string, unknown>,
   ): Promise<void> {
     if (payment.status === PaymentStatus.SUCCESS) {
       return;
@@ -449,36 +435,35 @@ export class PaymentsService {
     const nextBookingStatus =
       this.getBookingStatusFromPaymentStatus(nextPaymentStatus);
 
-    const nextMomoTransId =
+    const nextGatewayTransId =
       momoResult.transId !== undefined && momoResult.transId !== null
         ? String(momoResult.transId)
-        : payment.momoTransId;
+        : payment.gatewayTransId;
 
-    const nextRawResponse: Payment['rawResponse'] = {
-      ...(payment.rawResponse ?? {}),
-      ...(extraRawResponse ?? {}),
-      [momoResult.rawResponseKey]: momoResult.rawResponse,
-    };
+    const nextGatewayMetadata = this.mergeGatewayMetadata(
+      payment.gatewayMetadata,
+      {
+        momo: {
+          ...(extraMomoMetadata ?? {}),
+          [momoResult.metadataKey]: momoResult.metadata,
+        },
+      },
+    );
 
     await this.dataSource.transaction(async (manager) => {
       const paymentRepository = manager.getRepository(Payment);
       const bookingRepository = manager.getRepository(Booking);
 
-      await paymentRepository.save(
-        paymentRepository.create({
-          id: payment.id,
-          status: nextPaymentStatus,
-          momoTransId: nextMomoTransId,
-          resultCode: momoResult.resultCode,
-          message: momoResult.message,
-          responseTime: String(momoResult.responseTime),
-          rawResponse: nextRawResponse,
-          paidAt:
-            nextPaymentStatus === PaymentStatus.SUCCESS
-              ? new Date(momoResult.responseTime)
-              : payment.paidAt,
-        }),
-      );
+      await paymentRepository.update(payment.id, {
+        status: nextPaymentStatus,
+        gatewayTransId: nextGatewayTransId,
+        gatewayMetadata:
+          this.toPaymentGatewayMetadataUpdate(nextGatewayMetadata),
+        paidAt:
+          nextPaymentStatus === PaymentStatus.SUCCESS
+            ? new Date(momoResult.responseTime)
+            : payment.paidAt,
+      });
 
       if (nextBookingStatus) {
         await bookingRepository.update(payment.bookingId, {
@@ -500,17 +485,17 @@ export class PaymentsService {
       throw new BadRequestException('partnerCode không hợp lệ.');
     }
 
-    if (momoResult.orderId !== payment.momoOrderId) {
+    if (momoResult.orderId !== payment.gatewayOrderId) {
       this.logger.warn(
-        `MoMo orderId mismatch: expected=${payment.momoOrderId}, received=${momoResult.orderId}`,
+        `MoMo orderId mismatch: expected=${payment.gatewayOrderId}, received=${momoResult.orderId}`,
       );
 
       throw new BadRequestException('orderId không hợp lệ.');
     }
 
-    if (momoResult.requestId !== payment.momoRequestId) {
+    if (momoResult.requestId !== this.getMomoRequestId(payment)) {
       this.logger.warn(
-        `MoMo requestId mismatch: expected=${payment.momoRequestId}, received=${momoResult.requestId}`,
+        `MoMo requestId mismatch: expected=${this.getMomoRequestId(payment)}, received=${momoResult.requestId}`,
       );
 
       throw new BadRequestException('requestId không hợp lệ.');
@@ -550,6 +535,10 @@ export class PaymentsService {
       return PaymentStatus.AUTHORIZED;
     }
 
+    if ([7000, 7002].includes(resultCode)) {
+      return PaymentStatus.PENDING;
+    }
+
     return PaymentStatus.FAILED;
   }
 
@@ -557,11 +546,7 @@ export class PaymentsService {
     paymentStatus: PaymentStatus,
   ): BookingStatus | null {
     if (paymentStatus === PaymentStatus.SUCCESS) {
-      return BookingStatus.CONFIRMED;
-    }
-
-    if (paymentStatus === PaymentStatus.FAILED) {
-      return BookingStatus.CANCELLED;
+      return BookingStatus.PAID;
     }
 
     return null;
@@ -570,15 +555,108 @@ export class PaymentsService {
   private toCreateMomoPaymentResponse(
     payment: Payment,
   ): CreateMomoPaymentResponse {
+    const createResponse = this.getMomoMetadataObject(
+      payment,
+      'createResponse',
+    );
+
     return {
-      orderId: payment.momoOrderId,
-      requestId: payment.momoRequestId,
+      orderId: payment.gatewayOrderId,
+      requestId: this.getMomoRequestId(payment),
       amount: Number(payment.amount),
-      resultCode: payment.resultCode,
-      message: payment.message,
-      payUrl: payment.payUrl,
-      shortLink: payment.shortLink,
+      resultCode: this.getMetadataNumber(createResponse, 'resultCode'),
+      message: this.getMetadataString(createResponse, 'message'),
+      payUrl: this.getMetadataString(createResponse, 'payUrl'),
+      shortLink: this.getMetadataString(createResponse, 'shortLink'),
     };
+  }
+
+  private getMomoRequestId(payment: Payment): string {
+    const createRequest = this.getMomoMetadataObject(payment, 'createRequest');
+    return (
+      this.getMetadataString(createRequest, 'requestId') ??
+      payment.gatewayOrderId
+    );
+  }
+
+  private getMomoMetadataObject(
+    payment: Payment,
+    key: string,
+  ): Record<string, unknown> | null {
+    const momoMetadata = payment.gatewayMetadata?.momo;
+
+    if (!this.isRecord(momoMetadata)) {
+      return null;
+    }
+
+    const value = momoMetadata[key];
+
+    if (!this.isRecord(value)) {
+      return null;
+    }
+
+    return value;
+  }
+
+  private getMetadataString(
+    metadata: Record<string, unknown> | null,
+    key: string,
+  ): string | null {
+    const value = metadata?.[key];
+
+    if (typeof value === 'string') {
+      return value;
+    }
+
+    if (typeof value === 'number') {
+      return String(value);
+    }
+
+    return null;
+  }
+
+  private getMetadataNumber(
+    metadata: Record<string, unknown> | null,
+    key: string,
+  ): number | null {
+    const value = metadata?.[key];
+
+    if (typeof value === 'number') {
+      return value;
+    }
+
+    if (typeof value === 'string' && value.trim() !== '') {
+      const parsedValue = Number(value);
+      return Number.isFinite(parsedValue) ? parsedValue : null;
+    }
+
+    return null;
+  }
+
+  private mergeGatewayMetadata(
+    currentMetadata: PaymentGatewayMetadata | null,
+    nextMetadata: PaymentGatewayMetadata,
+  ): PaymentGatewayMetadata {
+    const currentMomoMetadata = this.isRecord(currentMetadata?.momo)
+      ? currentMetadata.momo
+      : {};
+
+    const nextMomoMetadata = this.isRecord(nextMetadata.momo)
+      ? nextMetadata.momo
+      : {};
+
+    return {
+      ...(currentMetadata ?? {}),
+      ...nextMetadata,
+      momo: {
+        ...currentMomoMetadata,
+        ...nextMomoMetadata,
+      },
+    };
+  }
+
+  private isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
   }
 
   private getAxiosErrorMessage(error: unknown): string {
@@ -595,5 +673,11 @@ export class PaymentsService {
     }
 
     return 'Unknown error';
+  }
+
+  private toPaymentGatewayMetadataUpdate(
+    metadata: PaymentGatewayMetadata | null,
+  ): QueryDeepPartialEntity<PaymentGatewayMetadata | null> {
+    return metadata as unknown as QueryDeepPartialEntity<PaymentGatewayMetadata | null>;
   }
 }
