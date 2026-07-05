@@ -22,12 +22,11 @@ interface MovieSeedItem {
   genreSlugs: string[];
 }
 
-interface ShowtimeSeedItem {
-  movieIndex: number;
+interface PreparedShowtime {
+  movieSlug: string;
   roomName: string;
-  dayOffsetAfterRelease: number;
-  hour: number;
-  minute: number;
+  startTime: Date;
+  endTime: Date;
   status: 'open' | 'sold_out';
   priceStandard: number;
   priceVip: number;
@@ -197,46 +196,157 @@ export class SeedDevData1710000000008 implements MigrationInterface {
     today: Date,
   ): Promise<void> {
     const movies = this.getMovieSeeds();
+    const nowShowingMovies = movies.filter((m) => m.status === 'now_showing');
+    const roomNames = ['01', '02', '03', '04', '05'];
 
-    const preparedShowtimes = this.getShowtimeSeeds().map((showtime) => {
-      const movie = movies[showtime.movieIndex];
-      const releaseDate = this.addDays(today, movie.releaseOffsetDays);
-      const startTime = this.withUtcTime(
-        this.addDays(releaseDate, showtime.dayOffsetAfterRelease),
-        showtime.hour,
-        showtime.minute,
-      );
-      const endTime = this.addMinutes(startTime, movie.duration);
-
-      return {
-        showtime,
-        movie,
-        roomName: showtime.roomName,
-        startTime,
-        endTime,
-      };
-    });
+    const preparedShowtimes = this.generateShowtimesFor7Days(
+      today,
+      nowShowingMovies,
+      roomNames,
+    );
 
     this.assertNoBufferConflicts(preparedShowtimes);
 
-    for (const { showtime, movie, startTime, endTime } of preparedShowtimes) {
+    for (const showtime of preparedShowtimes) {
       await queryRunner.query(`
         INSERT INTO \`showtimes\` (
           \`movie_id\`, \`room_id\`, \`start_time\`, \`end_time\`,
           \`status\`, \`price_standard\`, \`price_vip\`, \`price_couple\`
         )
         SELECT m.id, r.id,
-          '${this.toMysqlDateTime(startTime)}',
-          '${this.toMysqlDateTime(endTime)}',
+          '${this.toMysqlDateTime(showtime.startTime)}',
+          '${this.toMysqlDateTime(showtime.endTime)}',
           '${showtime.status}',
           ${showtime.priceStandard},
           ${showtime.priceVip},
           ${showtime.priceCouple}
         FROM \`movies\` m
         INNER JOIN \`rooms\` r ON r.name = '${showtime.roomName}'
-        WHERE m.slug = '${this.escapeSql(movie.slug)}'
+        WHERE m.slug = '${this.escapeSql(showtime.movieSlug)}'
       `);
     }
+  }
+
+  /**
+   * Sinh suất chiếu rải rác 7 ngày tới cho tất cả phim now_showing.
+   *
+   * Thuật toán:
+   *  - Mỗi ngày, mỗi phòng có các khung giờ bắt đầu từ 08:00 UTC.
+   *  - Lần lượt đặt phim vào slot, tính end_time = start_time + duration.
+   *  - Slot tiếp theo = end_time + BUFFER_MINUTES (30 phút).
+   *  - Phim được xoay vòng (round-robin) qua các phòng/ngày để rải đều.
+   *  - Mỗi phim có ít nhất 2-3 suất/ngày, tối đa phụ thuộc vào slot khả dụng.
+   */
+  private generateShowtimesFor7Days(
+    today: Date,
+    movies: MovieSeedItem[],
+    roomNames: string[],
+  ): PreparedShowtime[] {
+    const result: PreparedShowtime[] = [];
+
+    // Giờ hoạt động của rạp: 08:00 - 23:59 UTC mỗi ngày
+    const CINEMA_OPEN_HOUR = 8;
+    const CINEMA_CLOSE_HOUR = 23;
+
+    // Giá vé theo khung giờ
+    const getPricing = (
+      hour: number,
+    ): { standard: number; vip: number; couple: number } => {
+      if (hour < 12) {
+        return { standard: 65000, vip: 80000, couple: 130000 }; // Buổi sáng
+      }
+      if (hour < 17) {
+        return { standard: 75000, vip: 90000, couple: 150000 }; // Buổi chiều
+      }
+      return { standard: 90000, vip: 110000, couple: 180000 }; // Buổi tối
+    };
+
+    // Duyệt 7 ngày, bắt đầu từ hôm nay (day 0) đến ngày thứ 6
+    for (let dayOffset = 0; dayOffset < 7; dayOffset += 1) {
+      const day = this.addDays(today, dayOffset);
+
+      // Mỗi phòng tracking thời gian trống sớm nhất (bắt đầu từ CINEMA_OPEN_HOUR)
+      const roomNextAvailable = new Map<string, Date>();
+      for (const room of roomNames) {
+        roomNextAvailable.set(room, this.withUtcTime(day, CINEMA_OPEN_HOUR, 0));
+      }
+
+      // Tạo danh sách phim-phòng cần xếp cho ngày này.
+      // Mỗi phim được gán 2-3 suất chiếu trên các phòng khác nhau.
+      // Dùng round-robin để phim rải đều các phòng.
+      interface SlotRequest {
+        movie: MovieSeedItem;
+        roomName: string;
+      }
+
+      const slotRequests: SlotRequest[] = [];
+
+      // Phân bổ: mỗi phim nhận 2 suất/ngày cơ bản
+      // Phim index chẵn nhận thêm 1 suất vào ngày chẵn, phim index lẻ thêm 1 suất vào ngày lẻ
+      // => tổng trung bình ~2.5 suất/phim/ngày, đủ phủ cho 10 phim x 5 phòng
+      for (let movieIndex = 0; movieIndex < movies.length; movieIndex += 1) {
+        const movie = movies[movieIndex];
+        const showtimesThisDay = movieIndex % 2 === dayOffset % 2 ? 3 : 2;
+
+        for (let s = 0; s < showtimesThisDay; s += 1) {
+          // Chọn phòng bằng round-robin: (movieIndex + s + dayOffset) % roomCount
+          const roomIdx = (movieIndex + s * 2 + dayOffset) % roomNames.length;
+          slotRequests.push({
+            movie,
+            roomName: roomNames[roomIdx],
+          });
+        }
+      }
+
+      // Sắp xếp slot requests theo phòng, sau đó theo duration ngắn trước
+      // (phim ngắn lên đầu để tối ưu lấp slot)
+      slotRequests.sort((a, b) => {
+        const roomCompare = a.roomName.localeCompare(b.roomName);
+        if (roomCompare !== 0) return roomCompare;
+        return a.movie.duration - b.movie.duration;
+      });
+
+      // Xếp từng slot vào phòng
+      for (const request of slotRequests) {
+        const nextAvailable = roomNextAvailable.get(request.roomName)!;
+        const startTime = new Date(nextAvailable);
+
+        // Kiểm tra: suất chiếu phải kết thúc trước giờ đóng cửa
+        const endTime = this.addMinutes(startTime, request.movie.duration);
+        if (
+          endTime.getUTCHours() >= CINEMA_CLOSE_HOUR &&
+          endTime.getUTCMinutes() > 30
+        ) {
+          // Không đủ chỗ trong ngày này cho phòng này, bỏ qua
+          continue;
+        }
+
+        // Cũng kiểm tra startTime phải cùng ngày
+        if (startTime.getUTCDate() !== day.getUTCDate()) {
+          continue;
+        }
+
+        const hour = startTime.getUTCHours();
+        const pricing = getPricing(hour);
+
+        result.push({
+          movieSlug: request.movie.slug,
+          roomName: request.roomName,
+          startTime,
+          endTime,
+          status: 'open',
+          priceStandard: pricing.standard,
+          priceVip: pricing.vip,
+          priceCouple: pricing.couple,
+        });
+
+        // Cập nhật thời gian trống tiếp theo = endTime + BUFFER_MINUTES
+        const nextSlotStart = this.addMinutes(endTime, BUFFER_MINUTES);
+        roomNextAvailable.set(request.roomName, nextSlotStart);
+      }
+    }
+
+    return result;
   }
 
   private assertNoBufferConflicts(
@@ -269,136 +379,14 @@ export class SeedDevData1710000000008 implements MigrationInterface {
 
         if (current.startTime < previousEndWithBuffer) {
           throw new Error(
-            `Seed showtimes bị trùng phòng ${roomName}: ${current.startTime.toISOString()}`,
+            `Seed showtimes bị trùng phòng ${roomName}: ` +
+              `prev=[${previous.startTime.toISOString()} -> ${previous.endTime.toISOString()}], ` +
+              `curr=[${current.startTime.toISOString()}], ` +
+              `prevEnd+buffer=${previousEndWithBuffer.toISOString()}`,
           );
         }
       }
     }
-  }
-
-  private getShowtimeSeeds(): ShowtimeSeedItem[] {
-    // 10 suất chiếu này chỉ dùng cho 10 phim đang chiếu tại rạp.
-    // movieIndex 0 -> 9 tương ứng với 10 phim có status = 'now_showing'.
-    //
-    // Vì 10 phim now_showing có releaseOffsetDays lần lượt từ -1 đến -10,
-    // nên dayOffsetAfterRelease được set để start_time luôn nằm ở tương lai.
-    //
-    // end_time sẽ được tính tự động ở seedShowtimes():
-    //   end_time = start_time + movie.duration
-    //
-    // Buffer 30 phút vẫn được kiểm tra trong assertNoBufferConflicts().
-    return [
-      {
-        movieIndex: 0,
-        roomName: '01',
-        dayOffsetAfterRelease: 2,
-        hour: 9,
-        minute: 0,
-        status: 'open',
-        priceStandard: 70000,
-        priceVip: 85000,
-        priceCouple: 140000,
-      },
-      {
-        movieIndex: 1,
-        roomName: '02',
-        dayOffsetAfterRelease: 3,
-        hour: 10,
-        minute: 0,
-        status: 'open',
-        priceStandard: 70000,
-        priceVip: 85000,
-        priceCouple: 140000,
-      },
-      {
-        movieIndex: 2,
-        roomName: '03',
-        dayOffsetAfterRelease: 4,
-        hour: 9,
-        minute: 30,
-        status: 'open',
-        priceStandard: 75000,
-        priceVip: 90000,
-        priceCouple: 150000,
-      },
-      {
-        movieIndex: 3,
-        roomName: '04',
-        dayOffsetAfterRelease: 5,
-        hour: 12,
-        minute: 30,
-        status: 'open',
-        priceStandard: 75000,
-        priceVip: 90000,
-        priceCouple: 150000,
-      },
-      {
-        movieIndex: 4,
-        roomName: '05',
-        dayOffsetAfterRelease: 6,
-        hour: 18,
-        minute: 30,
-        status: 'open',
-        priceStandard: 80000,
-        priceVip: 95000,
-        priceCouple: 160000,
-      },
-      {
-        movieIndex: 5,
-        roomName: '01',
-        dayOffsetAfterRelease: 7,
-        hour: 13,
-        minute: 0,
-        status: 'open',
-        priceStandard: 80000,
-        priceVip: 95000,
-        priceCouple: 160000,
-      },
-      {
-        movieIndex: 6,
-        roomName: '02',
-        dayOffsetAfterRelease: 8,
-        hour: 14,
-        minute: 30,
-        status: 'open',
-        priceStandard: 85000,
-        priceVip: 100000,
-        priceCouple: 170000,
-      },
-      {
-        movieIndex: 7,
-        roomName: '03',
-        dayOffsetAfterRelease: 9,
-        hour: 16,
-        minute: 0,
-        status: 'open',
-        priceStandard: 85000,
-        priceVip: 100000,
-        priceCouple: 170000,
-      },
-      {
-        movieIndex: 8,
-        roomName: '04',
-        dayOffsetAfterRelease: 10,
-        hour: 18,
-        minute: 45,
-        status: 'open',
-        priceStandard: 90000,
-        priceVip: 105000,
-        priceCouple: 180000,
-      },
-      {
-        movieIndex: 9,
-        roomName: '05',
-        dayOffsetAfterRelease: 11,
-        hour: 22,
-        minute: 30,
-        status: 'open',
-        priceStandard: 90000,
-        priceVip: 105000,
-        priceCouple: 180000,
-      },
-    ];
   }
 
   private getMovieSeeds(): MovieSeedItem[] {

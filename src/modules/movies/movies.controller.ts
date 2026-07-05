@@ -27,7 +27,7 @@ export class MoviesController {
 
   @Post()
   @UseGuards(RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.CREATED)
   create(@Body() dto: CreateMovieDto): Promise<MovieResponseDto> {
     return this.moviesService.create(dto);
@@ -47,7 +47,7 @@ export class MoviesController {
 
   @Patch(':id')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.ADMIN)
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateMovieDto,
@@ -57,7 +57,7 @@ export class MoviesController {
 
   @Delete(':id')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.moviesService.remove(id);

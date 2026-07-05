@@ -22,7 +22,7 @@ services:
     ports:
       - "${PORT:-3000}:3000"
     env_file:
-      - .env.local
+      - .env
     environment:
       # Override DB/Redis hosts to use Docker service names
       DB_HOST: localhost

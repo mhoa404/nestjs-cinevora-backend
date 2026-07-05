@@ -39,7 +39,7 @@ export class GenresController {
 
   @Post()
   @UseGuards(RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.CREATED)
   create(@Body() dto: CreateGenreDto): Promise<GenreResponseDto> {
     return this.genresService.create(dto);
@@ -47,7 +47,7 @@ export class GenresController {
 
   @Patch(':id')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.ADMIN)
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateGenreDto,
@@ -57,7 +57,7 @@ export class GenresController {
 
   @Delete(':id')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.genresService.remove(id);

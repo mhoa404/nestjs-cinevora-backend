@@ -131,7 +131,7 @@ export class BookingsService {
       throw new NotFoundException('Booking không tồn tại.');
     }
 
-    const isAdmin = [UserRole.ADMIN, UserRole.SUPER_ADMIN].includes(userRole);
+    const isAdmin = [UserRole.ADMIN].includes(userRole);
 
     if (booking.userId !== userId && !isAdmin) {
       throw new ForbiddenException('Bạn không có quyền huỷ booking này.');

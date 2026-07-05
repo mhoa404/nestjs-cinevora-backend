@@ -26,7 +26,7 @@ export class SeatsController {
 
   @Get()
   @UseGuards(RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.ADMIN)
   findAll(
     @Query('roomId', ParseIntPipe) roomId: number,
   ): Promise<SeatResponseDto[]> {
@@ -35,7 +35,7 @@ export class SeatsController {
 
   @Post()
   @UseGuards(RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.CREATED)
   create(@Body() dto: CreateSeatsDto): Promise<SeatResponseDto[]> {
     return this.seatsService.create(dto);
@@ -43,7 +43,7 @@ export class SeatsController {
 
   @Post('generate')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.CREATED)
   generateSeats(@Body() dto: GenerateSeatsDto): Promise<SeatResponseDto[]> {
     return this.seatsService.generateSeats(dto);
@@ -51,7 +51,7 @@ export class SeatsController {
 
   @Delete(':id')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.seatsService.remove(id);

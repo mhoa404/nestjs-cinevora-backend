@@ -511,7 +511,7 @@ export class PaymentsService {
   }
 
   private assertCanAccessPayment(payment: Payment, user: User): void {
-    const privilegedRoles = [UserRole.ADMIN, UserRole.SUPER_ADMIN];
+    const privilegedRoles = [UserRole.ADMIN];
 
     if (privilegedRoles.includes(user.role)) {
       return;

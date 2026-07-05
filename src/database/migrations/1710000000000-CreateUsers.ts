@@ -17,7 +17,7 @@ export class CreateUsers1710000000000 implements MigrationInterface {
         \`address\`          VARCHAR(255)    NULL,
         \`sex\`              ENUM('Nam', 'Nữ', 'Khác') NULL,
         \`id_card_number\`   VARCHAR(20)     NULL,
-        \`role\`             ENUM('customer', 'staff', 'admin', 'super_admin') NOT NULL DEFAULT 'customer',
+        \`role\`             ENUM('customer', 'admin') NOT NULL DEFAULT 'customer',
         \`is_active\`        TINYINT(1)      NOT NULL DEFAULT 1,
         \`last_login_at\`    DATETIME(3)     NULL,
         \`created_at\`       DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3),

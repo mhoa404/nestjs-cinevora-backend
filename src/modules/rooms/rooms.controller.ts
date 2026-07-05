@@ -22,7 +22,7 @@ import { RoomsService } from './rooms.service';
 
 @Controller('rooms')
 @UseGuards(RolesGuard)
-@Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+@Roles(UserRole.ADMIN)
 export class RoomsController {
   constructor(private readonly roomsService: RoomsService) {}
 

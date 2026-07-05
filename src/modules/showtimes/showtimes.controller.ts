@@ -29,7 +29,7 @@ export class ShowtimesController {
   constructor(private readonly showtimesService: ShowtimesService) {}
 
   @Post()
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.CREATED)
   create(@Body() dto: CreateShowtimeDto): Promise<ShowtimeResponseDto[]> {
     return this.showtimesService.create(dto);
@@ -48,7 +48,7 @@ export class ShowtimesController {
   }
 
   @Patch(':id')
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.ADMIN)
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateShowtimeDto,
@@ -57,7 +57,7 @@ export class ShowtimesController {
   }
 
   @Delete(':id')
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.showtimesService.remove(id);

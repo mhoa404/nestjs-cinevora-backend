@@ -23,7 +23,7 @@ import { UsersModule } from './modules/users/users.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
-      envFilePath: ['.env.local'],
+      envFilePath: ['.env'],
       isGlobal: true,
       load: [appConfig, databaseConfig, jwtConfig, redisConfig],
     }),

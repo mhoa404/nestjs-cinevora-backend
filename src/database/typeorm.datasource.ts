@@ -2,7 +2,7 @@ import * as dotenv from 'dotenv';
 import { join } from 'path';
 import { DataSource } from 'typeorm';
 
-dotenv.config({ path: '.env.local' });
+dotenv.config({ path: '.env' });
 
 const isTsRuntime = __filename.endsWith('.ts');
 
